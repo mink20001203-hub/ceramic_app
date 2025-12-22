@@ -1,0 +1,43 @@
+# pubspec.yaml 파일 전체를 다음 내용으로 덮어쓰세요.
+name: ceramic_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter  
+  
+  # ✅ 기존 패키지
+  intl: ^0.18.1
+  cupertino_icons: ^1.0.8
+
+  # ✅ 새로 추가된 필수 패키지 (띄어쓰기 중요)
+  provider: ^6.1.1       # 상태 관리
+  hive: ^2.2.3           # 로컬 데이터베이스
+  path_provider: ^2.1.2  # 로컬 경로 접근용
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # ✅ Hive 코드 생성 및 실행기
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.8
+
+  # ✅ 기존 개발 의존성
+  flutter_lints: ^2.0.0
+
+# assets 관련 코드는 assets 폴더를 만들었을 경우 주석 해제하여 사용합니다.
+# assets:
+#   - assets/images/
+flutter:
+  uses-material-design: true
+
+  # 🚨 여기서부터 중요합니다! (왼쪽 벽에서 2칸 띄우고 작성)
+  assets:
+    - assets/images/
