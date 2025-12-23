@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
-import 'package:provider/provider.dart';
-import '../models/cart_provider.dart';
-import 'package:provider/provider.dart';
-import '../models/cart_provider.dart';
+import '../models/user_data_manager.dart';
 
 class DetailScreen extends StatelessWidget {
   final Product product;
@@ -13,109 +11,146 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final NumberFormat priceFormat = NumberFormat('#,###', 'ko_KR');
+    final priceFormat = NumberFormat('#,###', 'ko_KR');
+    final userManager = Provider.of<UserDataManager>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(product.title), // AppBar에 상품명 표시
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        // 내용이 길어질 수 있으므로 스크롤 가능하게 설정
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1. 상세 이미지 (화면 너비에 맞추고 높이를 적절히 고정)
-            product.image != null
-                ? Image.asset(
-                    product.image!,
-                    width: double.infinity,
-                    height: 400, // 상세페이지 이미지 높이 고정
-                    fit: BoxFit.cover, // 영역을 가득 채우도록 설정
-                  )
-                : Container(
-                    width: double.infinity,
-                    height: 400,
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 100),
-                  ),
+      // 이미지가 상단 끝까지 차도록 AppBar를 제거하고 Stack을 사용합니다.
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. 대형 상품 이미지
+                Hero(
+                  tag: 'product-${product.title}', // 메인 화면과 연결되는 애니메이션 효과
+                  child: product.image != null
+                      ? Image.asset(
+                          product.image!,
+                          width: double.infinity,
+                          height: 400,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          height: 400,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image, size: 100),
+                        ),
+                ),
 
-            // 2. 상품 정보 텍스트 영역
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product.title,
-                    style: const TextStyle(
-                        fontSize: 24, fontWeight: FontWeight.bold),
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 2. 카테고리 및 제목
+                      Text(
+                        "Ceramic Collection",
+                        style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        product.title,
+                        style: const TextStyle(
+                            fontSize: 28, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // 3. 가격 정보
+                      Text(
+                        "${priceFormat.format(product.price)}원",
+                        style: const TextStyle(
+                            fontSize: 22,
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 20),
+                      const Divider(),
+                      const SizedBox(height: 20),
+
+                      // 4. 상품 상세 설명 (풍성하게 추가)
+                      const Text(
+                        "상품 설명",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "${product.title}은(는) 장인의 손길로 하나하나 정성스럽게 제작된 핸드메이드 도자기입니다. "
+                        "고온에서 구워내어 내구성이 뛰어나며, 천연 유약을 사용하여 은은한 광택과 함께 각 제품마다 고유한 무늬를 가지고 있는 것이 특징입니다.\n\n"
+                        "일상의 식탁을 더욱 특별하게 만들어주는 감성적인 디자인을 만나보세요. 선물용으로도 매우 인기가 높습니다.",
+                        style: const TextStyle(
+                            fontSize: 16, height: 1.6, color: Colors.black87),
+                      ),
+                      const SizedBox(height: 100), // 하단 버튼 공간 확보
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    product.subTitle,
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    '${priceFormat.format(product.price)}원',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF6750A4),
-                    ),
-                  ),
-                  const Divider(height: 40), // 구분선
-                  const Text(
-                    '상품 상세 설명',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '이 상품은 장인의 손길로 정성스럽게 제작된 도자기입니다. '
-                    '실생활에서 사용하기 좋으며 선물용으로도 매우 인기 있는 작품입니다.',
-                    style: TextStyle(fontSize: 16, height: 1.5),
-                  ),
-                ],
+                ),
+              ],
+            ),
+          ),
+
+          // 5. 상단 커스텀 뒤로가기 버튼
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 10,
+            left: 15,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Colors.black26,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.arrow_back, color: Colors.white),
               ),
             ),
-          ],
-        ),
-      ),
-      // 3. 하단 구매하기 버튼 예시
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () {
-            // ✅ 장바구니에 담기 기능 실행
-            Provider.of<CartProvider>(context, listen: false)
-                .addToCart(product);
+          ),
 
-            // 담겼다는 알림(스낵바) 표시
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${product.title}이 장바구니에 담겼습니다!'),
-                duration: const Duration(seconds: 2),
-                action: SnackBarAction(
-                  label: '이동',
-                  onPressed: () {
-                    // TODO: 장바구니 탭으로 이동하는 로직 추가 가능
-                  },
+          // 6. 하단 고정 구매하기 버튼
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 15, 20, 30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 10,
+                      offset: Offset(0, -5))
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: () {
+                  // 구매 로직 실행 (기존 기능 연결)
+                  userManager.addPurchase([product]);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${product.title} 구매가 완료되었습니다!')),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text(
+                  "바로 구매하기",
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
                 ),
               ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF6750A4),
-            minimumSize: const Size(double.infinity, 50),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           ),
-          child: const Text('구매하기',
-              style: TextStyle(fontSize: 18, color: Colors.white)),
-        ),
+        ],
       ),
     );
   }
