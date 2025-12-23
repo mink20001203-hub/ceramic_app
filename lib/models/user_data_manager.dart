@@ -24,15 +24,14 @@ class UserDataManager with ChangeNotifier {
 
   void addPurchase(List<Product> products) {
     _purchasedProducts.addAll(products);
-    _mileage += 500; // 주문 시 마일리지 적립
+    _mileage += 500;
     notifyListeners();
   }
 
-  // 4. ✅ 찜하기(위시리스트) 기능 추가
+  // 4. 찜하기(위시리스트) 기능
   final List<Product> _wishlist = [];
   List<Product> get wishlist => _wishlist;
 
-  // 찜 상태 토글 (있으면 삭제, 없으면 추가)
   void toggleWishlist(Product product) {
     if (_wishlist.contains(product)) {
       _wishlist.remove(product);
@@ -42,8 +41,23 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 현재 상품이 찜 상태인지 확인
   bool isFavorite(Product product) {
     return _wishlist.contains(product);
   }
-}
+
+  // ✅ 5. 장바구니 기능 (클래스 안에 정확히 포함됨)
+  final List<Product> _cartItems = [];
+  List<Product> get cartItems => _cartItems;
+
+  void addToCart(Product product) {
+    if (!_cartItems.contains(product)) {
+      _cartItems.add(product);
+      notifyListeners();
+    }
+  }
+
+  void clearCart() {
+    _cartItems.clear();
+    notifyListeners();
+  }
+} // <--- 클래스를 닫는 이 중괄호가 맨 마지막에 와야 합니다!
