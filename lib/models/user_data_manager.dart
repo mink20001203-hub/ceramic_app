@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'product.dart';
 
+class CartItem {
+  final Product product;
+  int quantity;
+  CartItem({required this.product, this.quantity = 1});
+}
+
 class UserDataManager with ChangeNotifier {
-  // 1. 하단 탭 바 인덱스 관리
   int _currentTabIndex = 0;
   int get currentTabIndex => _currentTabIndex;
 
@@ -11,14 +16,12 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 2. 마일리지 및 후기 정보
   int _mileage = 1500;
   int get mileage => _mileage;
 
   int _reviewCount = 2;
   int get reviewCount => _reviewCount;
 
-  // 3. 구매 기록 관리
   final List<Product> _purchasedProducts = [];
   List<Product> get purchasedProducts => _purchasedProducts;
 
@@ -28,36 +31,50 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 4. 찜하기(위시리스트) 기능
   final List<Product> _wishlist = [];
   List<Product> get wishlist => _wishlist;
 
   void toggleWishlist(Product product) {
-    if (_wishlist.contains(product)) {
-      _wishlist.remove(product);
-    } else {
-      _wishlist.add(product);
-    }
+    _wishlist.contains(product)
+        ? _wishlist.remove(product)
+        : _wishlist.add(product);
     notifyListeners();
   }
 
-  bool isFavorite(Product product) {
-    return _wishlist.contains(product);
-  }
+  bool isFavorite(Product product) => _wishlist.contains(product);
 
-  // ✅ 5. 장바구니 기능 (클래스 안에 정확히 포함됨)
-  final List<Product> _cartItems = [];
-  List<Product> get cartItems => _cartItems;
+  // 장바구니 로직
+  final List<CartItem> _cartWithQuantity = [];
+  List<CartItem> get items => _cartWithQuantity;
 
   void addToCart(Product product) {
-    if (!_cartItems.contains(product)) {
-      _cartItems.add(product);
-      notifyListeners();
+    for (var item in _cartWithQuantity) {
+      if (item.product.id == product.id) {
+        item.quantity++;
+        notifyListeners();
+        return;
+      }
     }
+    _cartWithQuantity.add(CartItem(product: product));
+    notifyListeners();
+  }
+
+  void removeSingleItem(String productId) {
+    _cartWithQuantity.removeWhere((item) => item.product.id == productId);
+    notifyListeners();
   }
 
   void clearCart() {
-    _cartItems.clear();
+    _cartWithQuantity.clear();
     notifyListeners();
   }
-} // <--- 클래스를 닫는 이 중괄호가 맨 마지막에 와야 합니다!
+
+  // ✅ 요청하신 총액 계산 로직
+  int get totalAmount {
+    int total = 0;
+    for (var item in _cartWithQuantity) {
+      total += item.product.price * item.quantity;
+    }
+    return total;
+  }
+}
