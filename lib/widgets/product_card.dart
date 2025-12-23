@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // ✅ 가격 포맷을 위해 필요
+import 'package:provider/provider.dart';
 import '../models/product.dart';
-import '../screens/detail_screen.dart';
+import '../models/user_data_manager.dart';
+import '../screens/detail_screen.dart'; // ✅ 실제 파일명에 맞춰 수정됨
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -10,82 +11,90 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 가격 포맷 설정 (이미지 소스 참고)
-    final NumberFormat priceFormat = NumberFormat('#,###', 'ko_KR');
-
     return GestureDetector(
       onTap: () {
+        // 상품 클릭 시 상세 페이지로 이동
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DetailScreen(product: product),
+            builder: (context) =>
+                DetailScreen(product: product), // ✅ 클래스명 확인 필요
           ),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
+      child: Card(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
+        elevation: 2,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // 1. 상품 이미지 (BoxFit.cover 적용)
+          children: [
+            // 1. 이미지 및 찜하기 버튼 (Stack 사용)
             Expanded(
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(10)),
-                child: product.image != null
-                    ? Image.asset(
-                        product.image!,
-                        fit: BoxFit.cover, // ✅ 이미지 꽉 채우기
-                        width: double.infinity,
-                      )
-                    : Container(
-                        color: Colors.grey[200],
-                        child: const Center(
-                            child: Icon(Icons.image_not_supported)),
-                      ),
+              child: Stack(
+                children: [
+                  // 상품 이미지
+                  ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(10)),
+                    child: product.image != null
+                        ? Image.asset(
+                            product.image!,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          )
+                        : const Center(child: Icon(Icons.image, size: 50)),
+                  ),
+                  // 오른쪽 상단 하트 버튼
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Consumer<UserDataManager>(
+                      builder: (context, userManager, child) {
+                        final isFav = userManager.isFavorite(product);
+                        return GestureDetector(
+                          onTap: () {
+                            userManager.toggleWishlist(product);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Colors.black26,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isFav ? Icons.favorite : Icons.favorite_border,
+                              color: isFav ? Colors.red : Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-
-            // 2. 상품 정보
+            // 2. 상품 정보 (텍스트 부분)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.title, // ✅ name 대신 title 사용
+                    product.title, // ✅ name 대신 title로 수정됨
                     style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.bold),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  // 상품 부제(subTitle)가 있다면 표시 (이미지 소스 참고)
-                  Text(
-                    product.subTitle,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        fontWeight: FontWeight.bold, fontSize: 14),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${priceFormat.format(product.price)}원', // ✅ 포맷팅된 가격 표시
+                    "${product.price}원",
                     style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF6750A4),
-                    ),
+                        color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

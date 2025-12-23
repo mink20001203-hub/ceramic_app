@@ -1,41 +1,49 @@
 import 'package:flutter/material.dart';
-
-// 구매 기록을 저장하기 위한 클래스
-class PurchaseRecord {
-  final String title;
-  final int price;
-  final DateTime date;
-
-  PurchaseRecord(
-      {required this.title, required this.price, required this.date});
-}
+import 'product.dart';
 
 class UserDataManager with ChangeNotifier {
-  String _userName = '도자기 팬';
-  String _userEmail = 'ceramic_lover@example.com';
-  int _mileage = 1500; // 마일리지 추가
-  int _reviewCount = 5; // 리뷰 수 추가
+  // 1. 하단 탭 바 인덱스 관리
+  int _currentTabIndex = 0;
+  int get currentTabIndex => _currentTabIndex;
 
-  // 구매 기록 리스트
-  List<PurchaseRecord> _purchaseRecords = [];
-
-  // Getter들
-  String get userName => _userName;
-  String get userEmail => _userEmail;
-  int get mileage => _mileage;
-  int get reviewCount => _reviewCount;
-  List<PurchaseRecord> get purchaseRecords => _purchaseRecords;
-
-  // 구매 기록 추가 함수
-  void addPurchase(PurchaseRecord record) {
-    _purchaseRecords.insert(0, record); // 최신순으로 추가
-    _mileage += (record.price * 0.01).toInt(); // 구매 금액의 1% 적립
+  void setTabIndex(int index) {
+    _currentTabIndex = index;
     notifyListeners();
   }
 
-  void updateUser(String name, String email) {
-    _userName = name;
-    _userEmail = email;
+  // 2. 마일리지 및 후기 정보
+  int _mileage = 1500;
+  int get mileage => _mileage;
+
+  int _reviewCount = 2;
+  int get reviewCount => _reviewCount;
+
+  // 3. 구매 기록 관리
+  final List<Product> _purchasedProducts = [];
+  List<Product> get purchasedProducts => _purchasedProducts;
+
+  void addPurchase(List<Product> products) {
+    _purchasedProducts.addAll(products);
+    _mileage += 500; // 주문 시 마일리지 적립
     notifyListeners();
+  }
+
+  // 4. ✅ 찜하기(위시리스트) 기능 추가
+  final List<Product> _wishlist = [];
+  List<Product> get wishlist => _wishlist;
+
+  // 찜 상태 토글 (있으면 삭제, 없으면 추가)
+  void toggleWishlist(Product product) {
+    if (_wishlist.contains(product)) {
+      _wishlist.remove(product);
+    } else {
+      _wishlist.add(product);
+    }
+    notifyListeners();
+  }
+
+  // 현재 상품이 찜 상태인지 확인
+  bool isFavorite(Product product) {
+    return _wishlist.contains(product);
   }
 }
