@@ -2,134 +2,99 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
-import '../widgets/product_card.dart'; // ✅ 상품 카드 재사용을 위해 추가
+import 'wishlist_screen.dart';
 
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // ✅ UserDataManager에서 실시간 데이터를 가져옵니다.
     final userManager = Provider.of<UserDataManager>(context);
-    final history = userManager.purchasedProducts;
-    final wishlist = userManager.wishlist; // ✅ 찜한 목록 가져오기
+    final purchasedItems = userManager.purchasedProducts;
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
     return Scaffold(
       appBar: AppBar(title: const Text('마이페이지'), centerTitle: true),
       body: SingleChildScrollView(
-        // ✅ 내용이 길어질 수 있으므로 스크롤 가능하게 변경
         child: Column(
           children: [
-            // 1. 상단 프로필 영역 (기존 유지)
-            Container(
-              padding: const EdgeInsets.all(20),
-              color: Colors.grey[50],
-              child: Column(
-                children: [
-                  const Row(
-                    children: [
-                      CircleAvatar(
-                          radius: 30, child: Icon(Icons.person, size: 40)),
-                      SizedBox(width: 15),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('도자기 매니아님',
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.bold)),
-                          Text('반갑습니다!', style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      _buildInfoItem('마일리지',
-                          '${priceFormat.format(userManager.mileage)}P'),
-                      Container(width: 1, height: 30, color: Colors.grey[300]),
-                      _buildInfoItem('나의 후기', '${userManager.reviewCount}건'),
-                    ],
-                  ),
-                ],
+            // 1. 사용자 프로필 및 마일리지 영역
+            _buildProfileSection(userManager),
+            const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const WishlistScreen()),
+                );
+              },
+              icon: const Icon(Icons.favorite, size: 18),
+              label: const Text('찜한 상품 보기'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pink[50],
+                foregroundColor: Colors.pink,
+                elevation: 0,
               ),
             ),
 
-            const Divider(height: 1),
-
-            // 2. ✅ 내가 찜한 상품 영역 (새로 추가)
+            // 2. 구매 내역 타이틀
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              padding: const EdgeInsets.all(16.0),
               child: Row(
                 children: [
-                  const Icon(Icons.favorite, size: 20, color: Colors.red),
+                  const Icon(Icons.shopping_bag_outlined,
+                      color: Colors.deepPurple),
                   const SizedBox(width: 8),
-                  const Text('내가 찜한 상품',
+                  const Text('최근 구매 내역',
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 8),
-                  Text('${wishlist.length}',
-                      style: const TextStyle(color: Colors.red)),
+                  const Spacer(),
+                  Text('총 ${purchasedItems.length}건',
+                      style: const TextStyle(color: Colors.grey)),
                 ],
               ),
             ),
 
-            wishlist.isEmpty
+            // 3. 구매 내역 리스트 (데이터 연결)
+            purchasedItems.isEmpty
                 ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text('찜한 상품이 없습니다.',
-                        style: TextStyle(color: Colors.grey)),
-                  )
-                : SizedBox(
-                    height: 220, // 찜한 상품 카드의 높이
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal, // 가로 스크롤
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      itemCount: wishlist.length,
-                      itemBuilder: (context, index) {
-                        return SizedBox(
-                          width: 160, // 카드 너비
-                          child: ProductCard(product: wishlist[index]),
-                        );
-                      },
-                    ),
-                  ),
-
-            const Divider(height: 30),
-
-            // 3. 최근 구매 기록 영역 (기존 유지)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Icon(Icons.history, size: 20),
-                  SizedBox(width: 8),
-                  Text('최근 구매 기록',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-
-            // 구매 내역 리스트 (기존 유지하되, 전체 스크롤을 위해 ListView.builder 수정)
-            history.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Text('구매 내역이 없습니다.'),
+                    padding: EdgeInsets.symmetric(vertical: 50),
+                    child: Center(child: Text('구매한 상품이 없습니다.')),
                   )
                 : ListView.builder(
-                    shrinkWrap: true, // ✅ 전체 스크롤 안에서 작동하도록 설정
-                    physics:
-                        const NeverScrollableScrollPhysics(), // ✅ 중복 스크롤 방지
-                    itemCount: history.length,
+                    shrinkWrap: true, // ScrollView 안에 있으므로 필수
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: purchasedItems.length,
                     itemBuilder: (context, index) {
-                      final item = history[index];
-                      return ListTile(
-                        leading: Image.asset(item.image!, width: 50),
-                        title: Text(item.title),
-                        subtitle: Text('${priceFormat.format(item.price)}원'),
-                        trailing: const Text('결제완료',
-                            style: TextStyle(color: Colors.deepPurple)),
+                      final product = purchasedItems[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.all(10),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.asset(product.image!,
+                                width: 60, height: 60, fit: BoxFit.cover),
+                          ),
+                          title: Text(product.title,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle:
+                              Text('${priceFormat.format(product.price)}원'),
+                          trailing: ElevatedButton(
+                            onPressed: () {
+                              _showReviewDialog(context, product, userManager);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('리뷰 쓰기'),
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -139,19 +104,120 @@ class MyPageScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoItem(String label, String value) {
-    return Expanded(
-      child: Column(
+  // 상단 프로필 섹션 위젯
+  Widget _buildProfileSection(UserDataManager userManager) {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Row(
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-          const SizedBox(height: 5),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple)),
+          const CircleAvatar(
+            radius: 40,
+            backgroundColor: Colors.deepPurple,
+            child: Icon(Icons.person, size: 50, color: Colors.white),
+          ),
+          const SizedBox(width: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('도자기 애호가님',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildInfoChip('마일리지', '${userManager.mileage}P'),
+                  const SizedBox(width: 10),
+                  _buildInfoChip('후기', '${userManager.reviewCount}건'),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.deepPurple.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Text('$label $value',
+          style: const TextStyle(
+              fontSize: 12,
+              color: Colors.deepPurple,
+              fontWeight: FontWeight.bold)),
+    );
+  } // 리뷰 작성 팝업창 함수
+
+  void _showReviewDialog(BuildContext context, product, userManager) {
+    final TextEditingController commentController = TextEditingController();
+    double selectedRating = 5.0; // 기본 별점
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          // 팝업 내에서 별점 상태를 변경하기 위해 필요
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('${product.title} 리뷰 작성'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('상품은 어떠셨나요?'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          index < selectedRating
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: Colors.amber,
+                        ),
+                        onPressed: () {
+                          setState(() => selectedRating = index + 1.0);
+                        },
+                      );
+                    }),
+                  ),
+                  TextField(
+                    controller: commentController,
+                    decoration:
+                        const InputDecoration(hintText: '솔직한 후기를 남겨주세요.'),
+                    maxLines: 3,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('취소')),
+                ElevatedButton(
+                  onPressed: () {
+                    if (commentController.text.isNotEmpty) {
+                      userManager.addReview(
+                        product.id,
+                        product.title,
+                        selectedRating,
+                        commentController.text,
+                      );
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('리뷰가 등록되었습니다! 마일리지 100P 적립!')),
+                      );
+                    }
+                  },
+                  child: const Text('등록'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

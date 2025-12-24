@@ -1,39 +1,58 @@
 import 'package:flutter/material.dart';
 import 'product.dart';
 
+// --- 1. 장바구니 아이템 모델 ---
 class CartItem {
   final Product product;
   int quantity;
   CartItem({required this.product, this.quantity = 1});
 }
 
+// --- 2. 리뷰 데이터 모델 (추가된 부분) ---
+class Review {
+  final String productId;
+  final String productName;
+  final double rating;
+  final String comment;
+  final DateTime date;
+
+  Review({
+    required this.productId,
+    required this.productName,
+    required this.rating,
+    required this.comment,
+    required this.date,
+  });
+}
+
+// --- 3. 통합 데이터 관리 클래스 ---
 class UserDataManager with ChangeNotifier {
+  // 탭 관리
   int _currentTabIndex = 0;
   int get currentTabIndex => _currentTabIndex;
-
   void setTabIndex(int index) {
     _currentTabIndex = index;
     notifyListeners();
   }
 
+  // 프로필 정보 (마일리지, 후기 수)
   int _mileage = 1500;
   int get mileage => _mileage;
-
   int _reviewCount = 2;
   int get reviewCount => _reviewCount;
 
+  // 구매 목록
   final List<Product> _purchasedProducts = [];
   List<Product> get purchasedProducts => _purchasedProducts;
-
   void addPurchase(List<Product> products) {
     _purchasedProducts.addAll(products);
     _mileage += 500;
     notifyListeners();
   }
 
+  // 찜하기(위시리스트)
   final List<Product> _wishlist = [];
   List<Product> get wishlist => _wishlist;
-
   void toggleWishlist(Product product) {
     _wishlist.contains(product)
         ? _wishlist.remove(product)
@@ -69,12 +88,31 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ 요청하신 총액 계산 로직
   int get totalAmount {
     int total = 0;
     for (var item in _cartWithQuantity) {
       total += item.product.price * item.quantity;
     }
     return total;
+  }
+
+  // ✅ [오늘 추가된 리뷰 로직]
+  final List<Review> _reviews = [];
+  List<Review> get reviews => _reviews;
+
+  void addReview(
+      String productId, String productName, double rating, String comment) {
+    _reviews.add(Review(
+      productId: productId,
+      productName: productName,
+      rating: rating,
+      comment: comment,
+      date: DateTime.now(),
+    ));
+
+    _mileage += 100; // 리뷰 보너스 마일리지
+    _reviewCount++; // 프로필 후기 개수 증가
+
+    notifyListeners(); // 📢 화면을 새로 그려라!
   }
 }
