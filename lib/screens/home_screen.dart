@@ -1,45 +1,35 @@
-// lib/screens/home_screen.dart 파일 전체 코드 (MainContent 위젯)
-
 import 'package:flutter/material.dart';
-// ... (다른 import)
-
-import '../widgets/product_card.dart'; // ✅ 상위 폴더(lib)로 가서 widgets 폴더를 찾음
-import '../models/product.dart'; // ✅ 상위 폴더(lib)로 가서 models 폴더를 찾음
+import '../models/product.dart';
+import '../widgets/product_card.dart';
 
 class HomeScreen extends StatelessWidget {
-  // 🚨 클래스 이름을 HomeScreen으로 변경
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // 기존 MainScreen의 Scaffold body 내용을 여기에 붙여 넣습니다. (MainContent 내용을 그대로 사용)
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final int crossAxisCount = screenWidth > 800 ? 3 : 2;
+    // 1. 변수 선언 (이 부분이 살아있어야 에러가 안 납니다)
+    final List<Product> filteredProducts = dummyProducts;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: ListView(
-        children: [
-          const Text(
-            '오늘의 추천 도자기',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ceramic Studio'),
+        elevation: 0,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: GridView.builder(
+          // 2. 요청하신 디자인 수정 사항 적용
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.68, // 카드를 더 세로로 길게
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 25,
           ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: dummyProducts.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16.0,
-              mainAxisSpacing: 16.0,
-              childAspectRatio: 0.5,
-            ),
-            itemBuilder: (context, index) {
-              return ProductCard(product: dummyProducts[index]);
-            },
-          ),
-        ],
+          itemCount: filteredProducts.length,
+          itemBuilder: (context, index) {
+            return ProductCard(product: filteredProducts[index]);
+          },
+        ),
       ),
     );
   }
