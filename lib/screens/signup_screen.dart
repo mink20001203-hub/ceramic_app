@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/user_data_manager.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -79,14 +81,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ElevatedButton(
               onPressed: _isAgreed
                   ? () {
+                      // 1. 필수 정보 입력 확인
                       if (_nameController.text.isEmpty ||
-                          _emailController.text.isEmpty) {
+                          _emailController.text.isEmpty ||
+                          _passwordController.text.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('모든 정보를 입력해주세요.')),
                         );
                         return;
                       }
 
+                      // 2. 비밀번호 일치 확인
                       if (_passwordController.text !=
                           _confirmPasswordController.text) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -94,13 +99,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         );
                         return;
                       }
+
+                      // 3. 모든 검증 통과 시 이름 저장 및 가입 완료 처리
+                      Provider.of<UserDataManager>(context, listen: false)
+                          .setUserName(_nameController.text);
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content: Text('회원가입이 완료되었습니다! 로그인을 진행해주세요.')),
                       );
+
                       Navigator.pop(context); // 가입 완료 후 로그인 창으로 돌아가기
                     }
-                  : null,
+                  : null, // 약관 동의 안 하면 버튼 비활성화
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 padding: const EdgeInsets.symmetric(vertical: 16),
