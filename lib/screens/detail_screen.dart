@@ -3,12 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../models/user_data_manager.dart';
+import 'checkout_screen.dart'; // 결제 화면 임포트 확인
 
 class DetailScreen extends StatelessWidget {
   final Product product;
   const DetailScreen({super.key, required this.product});
 
-  // --- 1. 장바구니 알림 바텀 시트 함수 ---
+  // --- 장바구니 알림 바텀 시트 ---
   void _showCartBottomSheet(BuildContext context, UserDataManager userManager) {
     showModalBottomSheet(
       context: context,
@@ -33,22 +34,15 @@ class DetailScreen extends StatelessWidget {
               const Text('나와 비슷한 고객들이 비교한 상품',
                   style: TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 16),
-
-              // 비슷한 상품 리스트 (가로 스크롤)
               SizedBox(
                 height: 180,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: 4,
-                  itemBuilder: (context, index) {
-                    return _buildSimilarProductItem();
-                  },
+                  itemBuilder: (context, index) => _buildSimilarProductItem(),
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // 하단 버튼들
               Row(
                 children: [
                   Expanded(
@@ -56,7 +50,6 @@ class DetailScreen extends StatelessWidget {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Colors.grey),
                       ),
                       child: const Text('쇼핑 계속하기',
                           style: TextStyle(color: Colors.black)),
@@ -66,10 +59,9 @@ class DetailScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context); // 시트 닫기
-                        userManager.setTabIndex(2); // 장바구니 탭 인덱스로 설정
-                        Navigator.popUntil(
-                            context, (route) => route.isFirst); // 메인으로 이동
+                        Navigator.pop(context);
+                        userManager.setTabIndex(2);
+                        Navigator.popUntil(context, (route) => route.isFirst);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
@@ -88,7 +80,6 @@ class DetailScreen extends StatelessWidget {
     );
   }
 
-  // 비슷한 상품 아이템 레이아웃 위젯
   Widget _buildSimilarProductItem() {
     return Container(
       width: 120,
@@ -172,7 +163,7 @@ class DetailScreen extends StatelessWidget {
               ),
             ),
           ),
-          // --- 하단 고정 버튼 영역 ---
+          // 하단 버튼 영역
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             decoration: const BoxDecoration(color: Colors.white, boxShadow: [
@@ -184,9 +175,7 @@ class DetailScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      // 1. 데이터에 추가
                       userManager.addToCart(product);
-                      // 2. 바텀 시트 띄우기
                       _showCartBottomSheet(context, userManager);
                     },
                     style: OutlinedButton.styleFrom(
@@ -201,9 +190,14 @@ class DetailScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      userManager.addPurchase([product]);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('주문이 완료되었습니다!')));
+                      // 결제 화면으로 이동
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              CheckoutScreen(product: product),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
