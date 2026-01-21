@@ -8,6 +8,112 @@ class DetailScreen extends StatelessWidget {
   final Product product;
   const DetailScreen({super.key, required this.product});
 
+  // --- 1. 장바구니 알림 바텀 시트 함수 ---
+  void _showCartBottomSheet(BuildContext context, UserDataManager userManager) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  '장바구니에 상품이 담겼습니다.',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text('나와 비슷한 고객들이 비교한 상품',
+                  style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const SizedBox(height: 16),
+
+              // 비슷한 상품 리스트 (가로 스크롤)
+              SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: 4,
+                  itemBuilder: (context, index) {
+                    return _buildSimilarProductItem();
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // 하단 버튼들
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: const BorderSide(color: Colors.grey),
+                      ),
+                      child: const Text('쇼핑 계속하기',
+                          style: TextStyle(color: Colors.black)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context); // 시트 닫기
+                        userManager.setTabIndex(2); // 장바구니 탭 인덱스로 설정
+                        Navigator.popUntil(
+                            context, (route) => route.isFirst); // 메인으로 이동
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('장바구니 보기',
+                          style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 비슷한 상품 아이템 레이아웃 위젯
+  Widget _buildSimilarProductItem() {
+    return Container(
+      width: 120,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 120,
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(child: Icon(Icons.image, color: Colors.grey)),
+          ),
+          const SizedBox(height: 8),
+          const Text('유사 상품 이름',
+              style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis),
+          const Text('19,900원',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userManager = Provider.of<UserDataManager>(context, listen: false);
@@ -66,6 +172,7 @@ class DetailScreen extends StatelessWidget {
               ),
             ),
           ),
+          // --- 하단 고정 버튼 영역 ---
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             decoration: const BoxDecoration(color: Colors.white, boxShadow: [
@@ -77,12 +184,10 @@ class DetailScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      userManager.addToCart(product); // 1. 장바구니 추가
-                      userManager.setTabIndex(2); // 2. 탭 이동 설정
-                      Navigator.popUntil(
-                          context, (route) => route.isFirst); // 3. 메인으로 이동
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('장바구니에 담았습니다!')));
+                      // 1. 데이터에 추가
+                      userManager.addToCart(product);
+                      // 2. 바텀 시트 띄우기
+                      _showCartBottomSheet(context, userManager);
                     },
                     style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.deepPurple),
