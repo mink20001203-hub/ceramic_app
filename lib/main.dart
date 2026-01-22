@@ -48,18 +48,22 @@ class MyApp extends StatelessWidget {
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
 
-  final List<Widget> _screens = const [
-    HomeScreen(),
-    CategoryScreen(),
-    CartScreen(),
-    MyPageScreen(),
-  ];
-
+  // ⚠️ 기존의 리스트 방식을 build 안으로 옮기거나, 직접 인덱스로 접근하게 수정합니다.
   @override
   Widget build(BuildContext context) {
+    // Provider로부터 userManager를 가져옵니다.
     final userManager = Provider.of<UserDataManager>(context);
 
+    // 표시할 화면들을 리스트로 정의 (build 안에 두어야 상태 변경 시 확실히 인지합니다)
+    final List<Widget> screens = [
+      const HomeScreen(),
+      const CategoryScreen(),
+      const CartScreen(),
+      const MyPageScreen(),
+    ];
+
     return Scaffold(
+      // 1. 홈 탭(0번)일 때만 앱바를 표시하는 기존 로직 유지
       appBar: userManager.currentTabIndex == 0
           ? AppBar(
               title: const Text('도자기 스튜디오'),
@@ -78,48 +82,64 @@ class MainScreen extends StatelessWidget {
               ],
             )
           : null,
-      body: _screens[userManager.currentTabIndex],
+
+      // 2. 현재 인덱스에 맞는 화면 표시
+      body: screens[userManager.currentTabIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: userManager.currentTabIndex,
         onTap: (index) {
-          userManager.setTabIndex(index);
+          userManager.setTabIndex(index); // 탭 클릭 시 변경
         },
-        // ⚠️ 여기 items 앞에 있던 const를 반드시 지워야 합니다!
         items: [
           const BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
           const BottomNavigationBarItem(
               icon: Icon(Icons.category), label: '카테고리'),
+
+          // --- 장바구니 아이콘 (애니메이션 포함) ---
           BottomNavigationBarItem(
             icon: Consumer<UserDataManager>(
               builder: (context, userManager, child) {
-                int cartCount = userManager.items.length;
+                int count = userManager.items.length;
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.shopping_cart),
-                    if (cartCount > 0)
+                    if (count > 0)
                       Positioned(
                         right: -8,
                         top: -8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '$cartCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                        child: TweenAnimationBuilder<double>(
+                          key: ValueKey(count),
+                          duration: const Duration(seconds: 1),
+                          tween: Tween<double>(begin: 0.0, end: 1.0),
+                          curve: Curves.elasticOut,
+                          builder: (context, value, child) {
+                            return Transform.scale(
+                              scale: 0.5 + (value * 0.7),
+                              child: child,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
                             ),
-                            textAlign: TextAlign.center,
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
                       ),
@@ -129,6 +149,7 @@ class MainScreen extends StatelessWidget {
             ),
             label: '장바구니',
           ),
+
           const BottomNavigationBarItem(
               icon: Icon(Icons.person), label: '마이페이지'),
         ],

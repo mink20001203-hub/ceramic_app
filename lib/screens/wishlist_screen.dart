@@ -8,7 +8,6 @@ class WishlistScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Provider를 통해 사용자 데이터 관리자 가져오기
     final userManager = Provider.of<UserDataManager>(context);
     final wishlist = userManager.wishlist;
     final priceFormat = NumberFormat('#,###', 'ko_KR');
@@ -66,20 +65,27 @@ class WishlistScreen extends StatelessWidget {
                       '${priceFormat.format(product.price)}원',
                       style: const TextStyle(color: Colors.deepPurple),
                     ),
-                    // 아이콘 두 개를 나란히 배치하기 위해 Row 사용
                     trailing: Row(
-                      mainAxisSize:
-                          MainAxisSize.min, // 중요: Row의 크기를 아이콘 너비만큼만 차지하게 함
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // 장바구니 버튼
+                        // ✅ 장바구니 버튼 로직 연결
                         IconButton(
                           icon: const Icon(Icons.shopping_cart_outlined),
                           onPressed: () {
-                            // TODO: userManager.addToCart(product) 같은 기능을 연결하세요
+                            // 장바구니에 상품 추가
+                            userManager.addToCart(product);
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('${product.title}을 장바구니에 담았습니다.'),
                                 duration: const Duration(seconds: 1),
+                                // 💡 팁: 장바구니로 바로 이동하는 액션 추가
+                                action: SnackBarAction(
+                                  label: '이동',
+                                  textColor: Colors.white,
+                                  onPressed: () =>
+                                      userManager.setTabIndex(2), // 장바구니 탭 인덱스
+                                ),
                               ),
                             );
                           },
@@ -99,9 +105,6 @@ class WishlistScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    onTap: () {
-                      // 상세 페이지 이동 로직이 있다면 여기에 추가
-                    },
                   ),
                 );
               },
