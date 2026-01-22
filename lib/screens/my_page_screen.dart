@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
+import '../models/product.dart'; // ✅ Product 모델 import 확인
 import 'login_screen.dart';
 import 'wishlist_screen.dart';
 
@@ -116,8 +117,9 @@ class MyPageScreen extends StatelessWidget {
                             Text('${priceFormat.format(product.price)}원'),
                             const SizedBox(height: 8),
                             ElevatedButton(
-                              onPressed: () => _showReviewDialog(
-                                  context, product, userManager),
+                              // ✅ 매개변수를 2개만 전달하도록 수정
+                              onPressed: () =>
+                                  _showReviewDialog(context, product),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.deepPurple,
@@ -160,7 +162,6 @@ class MyPageScreen extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ✅ 수정 포인트: const 삭제
                   Text('${userManager.userName}님',
                       style: const TextStyle(
                           fontSize: 20, fontWeight: FontWeight.bold)),
@@ -212,64 +213,82 @@ class MyPageScreen extends StatelessWidget {
   }
 
   // --- 4. 리뷰 작성 팝업창 ---
-  void _showReviewDialog(BuildContext context, product, userManager) {
-    final TextEditingController commentController = TextEditingController();
-    double selectedRating = 5.0;
+  void _showReviewDialog(BuildContext context, Product product) {
+    // 함수 내부에서 userManager를 가져옵니다.
+    final userManager = Provider.of<UserDataManager>(context, listen: false);
+    final TextEditingController controller = TextEditingController();
+    double rating = 5.0;
 
     showDialog(
       context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('${product.title} 리뷰 작성'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('상품은 어떠셨나요?'),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return IconButton(
-                        icon: Icon(
-                            index < selectedRating
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: Colors.amber),
-                        onPressed: () =>
-                            setState(() => selectedRating = index + 1.0),
-                      );
-                    }),
-                  ),
-                  TextField(
-                    controller: commentController,
-                    decoration:
-                        const InputDecoration(hintText: '솔직한 후기를 남겨주세요.'),
-                    maxLines: 3,
-                  ),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Text('${product.title} 후기 작성'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('이 도자기는 어떠셨나요?'),
+              const SizedBox(height: 15),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                    5,
+                    (index) => IconButton(
+                          icon: Icon(
+                            index < rating ? Icons.star : Icons.star_border,
+                            color: Colors.amber,
+                            size: 32,
+                          ),
+                          onPressed: () =>
+                              setDialogState(() => rating = index + 1.0),
+                        )),
               ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('취소')),
-                ElevatedButton(
-                  onPressed: () {
-                    if (commentController.text.isNotEmpty) {
-                      userManager.addReview(product.id, product.title,
-                          selectedRating, commentController.text);
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Text('리뷰가 등록되었습니다! 마일리지 100P 적립!')));
-                    }
-                  },
-                  child: const Text('등록'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: '도자기의 질감이나 색감이 어땠는지 공유해주세요!',
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.deepPurple),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-              ],
-            );
-          },
-        );
-      },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              onPressed: () {
+                if (controller.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('내용을 입력해주세요!')),
+                  );
+                  return;
+                }
+                userManager.addReview(
+                    product.id, product.title, rating, controller.text);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('소중한 후기 감사합니다! 100마일리지가 적립되었습니다.')),
+                );
+              },
+              child: const Text('등록하기', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
