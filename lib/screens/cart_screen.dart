@@ -10,6 +10,53 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
+// 주문 확인 팝업을 띄우는 함수
+    void _showOrderConfirmDialog(
+        BuildContext context, UserDataManager userManager) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('주문 확인'),
+            content: Text(
+              '총 ${userManager.items.length}개의 상품을 주문하시겠습니까?\n'
+              '결제 금액: ${NumberFormat('#,###', 'ko_KR').format(userManager.totalAmount)}원',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(), // 취소: 팝업 닫기
+                child: const Text('취소', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // 1. 팝업 닫기
+                  Navigator.of(context).pop();
+
+                  // 2. 실제 주문 로직 실행
+                  final productsToBuy =
+                      userManager.items.map((e) => e.product).toList();
+                  userManager.addPurchase(productsToBuy);
+                  userManager.clearCart();
+
+                  // 3. 알림 메시지 표시
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('주문이 완료되었습니다! 마이페이지로 이동합니다.')),
+                  );
+
+                  // 4. 마이페이지 탭으로 이동
+                  userManager.setTabIndex(3);
+                },
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple),
+                child:
+                    const Text('주문하기', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
     return Consumer<UserDataManager>(
       builder: (context, userManager, child) {
         final cartItems = userManager.items;
@@ -131,19 +178,8 @@ class CartScreen extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: cartItems.isEmpty
                                   ? null
-                                  : () {
-                                      final productsToBuy = cartItems
-                                          .map((e) => e.product)
-                                          .toList();
-                                      userManager.addPurchase(productsToBuy);
-                                      userManager.clearCart();
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text('주문이 완료되었습니다!')),
-                                      );
-                                      userManager.setTabIndex(3);
-                                    },
+                                  : () => _showOrderConfirmDialog(
+                                      context, userManager), // 팝업 함수 호출
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.deepPurple,
                                 foregroundColor: Colors.white,
