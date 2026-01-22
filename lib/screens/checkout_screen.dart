@@ -74,12 +74,18 @@ class CheckoutScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
-            // 실제 주문 로직 실행
-            Provider.of<UserDataManager>(context, listen: false)
-                .addPurchase([product]);
-            Navigator.pop(context); // 주문창 닫기
-            ScaffoldMessenger.of(context)
-                .showSnackBar(const SnackBar(content: Text('주문이 완료되었습니다!')));
+            final userManager =
+                Provider.of<UserDataManager>(context, listen: false);
+
+            // 1. 주문 목록에 추가
+            userManager.addPurchase([product]);
+
+            // 2. 만약 장바구니에 이 상품이 있다면 제거 (새로 추가할 로직)
+            userManager.removeFromCart(product);
+
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                content: Text('주문이 완료되었습니다! 장바구니에서 상품을 비웠습니다.')));
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.deepPurple,

@@ -29,10 +29,10 @@ class Review {
 class UserDataManager with ChangeNotifier {
   // ✅ [로그인 및 사용자 정보 관리]
   bool _isLoggedIn = false;
-  String _userName = "손님"; // 사용자 이름 추가 (기본값: 손님)
+  String _userName = "손님";
 
   bool get isLoggedIn => _isLoggedIn;
-  String get userName => _userName; // 외부에서 이름을 읽기 위한 Getter
+  String get userName => _userName;
 
   void login() {
     _isLoggedIn = true;
@@ -41,17 +41,14 @@ class UserDataManager with ChangeNotifier {
 
   void logout() {
     _isLoggedIn = false;
-    _userName = "손님"; // 로그아웃 시 이름 초기화
+    _userName = "손님";
     notifyListeners();
   }
 
-  // ✅ 회원가입 시 이름을 저장하기 위한 함수
   void setUserName(String name) {
     _userName = name;
     notifyListeners();
   }
-
-  // --- 기존 로직들 유지 ---
 
   // 탭 관리
   int _currentTabIndex = 0;
@@ -90,7 +87,7 @@ class UserDataManager with ChangeNotifier {
 
   bool isFavorite(Product product) => _wishlist.contains(product);
 
-  // 장바구니 로직
+  // --- 장바구니 로직 ---
   final List<CartItem> _cartWithQuantity = [];
   List<CartItem> get items => _cartWithQuantity;
 
@@ -103,6 +100,13 @@ class UserDataManager with ChangeNotifier {
       }
     }
     _cartWithQuantity.add(CartItem(product: product));
+    notifyListeners();
+  }
+
+  // ✅ 결제 완료 시 호출할 장바구니 제거 로직
+  void removeFromCart(Product product) {
+    // 상품 ID가 같은 아이템을 찾아 장바구니에서 삭제
+    _cartWithQuantity.removeWhere((item) => item.product.id == product.id);
     notifyListeners();
   }
 
@@ -138,8 +142,8 @@ class UserDataManager with ChangeNotifier {
       date: DateTime.now(),
     ));
 
-    _mileage += 100; // 리뷰 보너스 마일리지
-    _reviewCount++; // 프로필 후기 개수 증가
+    _mileage += 100;
+    _reviewCount++;
 
     notifyListeners();
   }
