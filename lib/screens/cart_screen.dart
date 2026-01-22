@@ -10,10 +10,8 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
-    // ✅ Consumer를 사용하여 UserDataManager의 상태 변화를 감시합니다.
     return Consumer<UserDataManager>(
       builder: (context, userManager, child) {
-        // UserDataManager 안에 있는 items(장바구니 리스트)를 가져옵니다.
         final cartItems = userManager.items;
 
         return Scaffold(
@@ -21,6 +19,14 @@ class CartScreen extends StatelessWidget {
             title: const Text('내 장바구니'),
             centerTitle: true,
             elevation: 0,
+            actions: [
+              if (cartItems.isNotEmpty)
+                TextButton(
+                  onPressed: () => userManager.clearCart(),
+                  child:
+                      const Text('전체삭제', style: TextStyle(color: Colors.red)),
+                ),
+            ],
           ),
           body: cartItems.isEmpty
               ? const Center(
@@ -39,32 +45,55 @@ class CartScreen extends StatelessWidget {
                           return Card(
                             margin: const EdgeInsets.symmetric(
                                 horizontal: 15, vertical: 8),
-                            child: ListTile(
-                              leading: Image.asset(
-                                item.product.image!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              ),
-                              title: Text(item.product.title,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold)),
-                              subtitle: Text(
-                                  '${priceFormat.format(item.product.price)}원 x ${item.quantity}개'),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.delete_outline,
-                                    color: Colors.red),
-                                onPressed: () {
-                                  // 상품 한 종류 삭제 로직
-                                  userManager.removeSingleItem(item.product.id);
-                                },
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: ListTile(
+                                leading: Image.asset(
+                                  item.product.image!,
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                ),
+                                title: Text(item.product.title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold)),
+                                subtitle: Text(
+                                    '${priceFormat.format(item.product.price * item.quantity)}원'),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                          Icons.remove_circle_outline),
+                                      onPressed: () => userManager
+                                          .decrementQuantity(item.product.id),
+                                    ),
+                                    Text('${item.quantity}',
+                                        style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold)),
+                                    IconButton(
+                                      icon:
+                                          const Icon(Icons.add_circle_outline),
+                                      onPressed: () => userManager
+                                          .incrementQuantity(item.product.id),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline,
+                                          color: Colors.grey),
+                                      onPressed: () => userManager
+                                          .removeSingleItem(item.product.id),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
                     ),
-                    // 하단 합계 및 주문하기 버튼 영역
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -103,24 +132,16 @@ class CartScreen extends StatelessWidget {
                               onPressed: cartItems.isEmpty
                                   ? null
                                   : () {
-                                      // 1. 현재 장바구니 상품들을 구매 목록으로 전달
                                       final productsToBuy = cartItems
                                           .map((e) => e.product)
                                           .toList();
                                       userManager.addPurchase(productsToBuy);
-
-                                      // 2. 장바구니 비우기
                                       userManager.clearCart();
-
-                                      // 3. 알림 메시지 표시
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         const SnackBar(
-                                            content: Text(
-                                                '주문이 완료되었습니다! 마이페이지로 이동합니다.')),
+                                            content: Text('주문이 완료되었습니다!')),
                                       );
-
-                                      // 4. 마이페이지 탭(index 3)으로 이동
                                       userManager.setTabIndex(3);
                                     },
                               style: ElevatedButton.styleFrom(
@@ -129,7 +150,7 @@ class CartScreen extends StatelessWidget {
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 15),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                    borderRadius: BorderRadius.circular(12)),
                               ),
                               child: const Text('주문하기',
                                   style: TextStyle(fontSize: 18)),

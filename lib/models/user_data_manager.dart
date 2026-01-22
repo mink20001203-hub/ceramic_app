@@ -105,9 +105,30 @@ class UserDataManager with ChangeNotifier {
 
   // ✅ 결제 완료 시 호출할 장바구니 제거 로직
   void removeFromCart(Product product) {
-    // 상품 ID가 같은 아이템을 찾아 장바구니에서 삭제
     _cartWithQuantity.removeWhere((item) => item.product.id == product.id);
     notifyListeners();
+  }
+
+  // ✅ 수량 증가 (추가된 위치 확인!)
+  void incrementQuantity(String productId) {
+    for (var item in _cartWithQuantity) {
+      if (item.product.id == productId) {
+        item.quantity++;
+        notifyListeners();
+        return;
+      }
+    }
+  }
+
+  // ✅ 수량 감소 (추가된 위치 확인!)
+  void decrementQuantity(String productId) {
+    for (var item in _cartWithQuantity) {
+      if (item.product.id == productId && item.quantity > 1) {
+        item.quantity--;
+        notifyListeners();
+        return;
+      }
+    }
   }
 
   void removeSingleItem(String productId) {
@@ -147,4 +168,4 @@ class UserDataManager with ChangeNotifier {
 
     notifyListeners();
   }
-}
+} // 👈 클래스가 여기서 딱 한 번 닫혀야 합니다.
