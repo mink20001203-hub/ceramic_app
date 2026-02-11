@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
-import '../models/product.dart'; // ✅ Product 모델 import 확인
+import '../models/product.dart';
 import 'login_screen.dart';
-import 'wishlist_screen.dart';
 
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
@@ -16,14 +15,18 @@ class MyPageScreen extends StatelessWidget {
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('마이페이지'),
+        title:
+            const Text('마이페이지', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         actions: [
           if (userManager.isLoggedIn)
             IconButton(
-              icon: const Icon(Icons.logout),
+              icon: const Icon(Icons.logout_outlined),
               onPressed: () => _showLogoutConfirmDialog(context, userManager),
             ),
         ],
@@ -50,7 +53,10 @@ class MyPageScreen extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => const LoginScreen()),
             ),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6342E8),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+            ),
             child:
                 const Text('로그인하러 가기', style: TextStyle(color: Colors.white)),
           ),
@@ -60,8 +66,8 @@ class MyPageScreen extends StatelessWidget {
   }
 
   // --- 2. 로그인 후 전체 UI ---
-  Widget _buildFullMyPage(
-      BuildContext context, userManager, purchasedItems, priceFormat) {
+  Widget _buildFullMyPage(BuildContext context, UserDataManager userManager,
+      List<Product> purchasedItems, NumberFormat priceFormat) {
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -72,7 +78,7 @@ class MyPageScreen extends StatelessWidget {
             child: Row(
               children: [
                 const Icon(Icons.shopping_bag_outlined,
-                    color: Colors.deepPurple),
+                    color: Color(0xFF6342E8)),
                 const SizedBox(width: 8),
                 const Text('최근 구매 내역',
                     style:
@@ -94,18 +100,26 @@ class MyPageScreen extends StatelessWidget {
                   itemCount: purchasedItems.length,
                   itemBuilder: (context, index) {
                     final product = purchasedItems[index];
+                    final bool hasReview = userManager.hasReview(product.id);
+
                     return Card(
+                      color: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: Colors.grey.shade200),
+                      ),
                       margin: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.all(10),
+                        contentPadding: const EdgeInsets.all(12),
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: product.image != null
                               ? Image.asset(product.image!,
-                                  width: 60, height: 60, fit: BoxFit.cover)
+                                  width: 70, height: 70, fit: BoxFit.cover)
                               : Container(
-                                  width: 60, height: 60, color: Colors.grey),
+                                  width: 70, height: 70, color: Colors.grey),
                         ),
                         title: Text(product.title,
                             style:
@@ -114,27 +128,33 @@ class MyPageScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
-                            Text('${priceFormat.format(product.price)}원'),
-                            const SizedBox(height: 8),
+                            Text('${priceFormat.format(product.price)}원',
+                                style: const TextStyle(color: Colors.grey)),
+                            const SizedBox(height: 12),
                             ElevatedButton(
-                              // ✅ 매개변수를 2개만 전달하도록 수정
-                              onPressed: () =>
-                                  _showReviewDialog(context, product),
+                              onPressed: () => _showReviewDialog(
+                                  context, product,
+                                  existingReview:
+                                      userManager.getReview(product.id)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.deepPurple,
+                                backgroundColor: hasReview
+                                    ? Colors.white
+                                    : const Color(0xFF6342E8),
+                                foregroundColor: hasReview
+                                    ? const Color(0xFF6342E8)
+                                    : Colors.white,
                                 side:
-                                    const BorderSide(color: Colors.deepPurple),
+                                    const BorderSide(color: Color(0xFF6342E8)),
                                 elevation: 0,
-                                minimumSize: const Size(80, 30),
+                                minimumSize: const Size(100, 36),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8)),
                               ),
-                              child: const Text('리뷰 쓰기',
-                                  style: TextStyle(fontSize: 12)),
+                              child: Text(hasReview ? '리뷰 수정하기' : '리뷰 쓰기',
+                                  style: const TextStyle(fontSize: 13)),
                             ),
                           ],
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                        onTap: () {/* 상세 페이지 이동 */},
                       ),
                     );
                   },
@@ -144,52 +164,38 @@ class MyPageScreen extends StatelessWidget {
     );
   }
 
-  // --- 3. 프로필 섹션 위젯 ---
+  // --- 3. 프로필 및 대시보드 ---
   Widget _buildProfileSection(
       BuildContext context, UserDataManager userManager) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
+    return Container(
+      padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.deepPurple,
-                child: Icon(Icons.person, size: 50, color: Colors.white),
-              ),
-              const SizedBox(width: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${userManager.userName}님',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildInfoChip('마일리지', '${userManager.mileage}P'),
-                      const SizedBox(width: 8),
-                      _buildInfoChip('후기', '${userManager.reviewCount}건'),
-                    ],
-                  ),
-                ],
-              ),
+              Text('${userManager.userName}님',
+                  style: const TextStyle(
+                      fontSize: 24, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              const Icon(Icons.settings_outlined, color: Colors.grey),
             ],
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const WishlistScreen())),
-              icon: const Icon(Icons.favorite, size: 18, color: Colors.red),
-              label: const Text('찜한 상품 보기'),
-              style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  foregroundColor: Colors.red),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9F9F9),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatItem('마일리지', '${userManager.mileage}P'),
+                Container(width: 1, height: 20, color: Colors.grey[300]),
+                _buildStatItem('나의 리뷰', '${userManager.reviewCount}'),
+                Container(width: 1, height: 20, color: Colors.grey[300]),
+                _buildStatItem('쿠폰', '3'),
+              ],
             ),
           ),
         ],
@@ -197,27 +203,28 @@ class MyPageScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text('$label $value',
-          style: const TextStyle(
-              fontSize: 12,
-              color: Colors.deepPurple,
-              fontWeight: FontWeight.bold)),
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      children: [
+        Text(value,
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF6342E8))),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 
-  // --- 4. 리뷰 작성 팝업창 ---
-  void _showReviewDialog(BuildContext context, Product product) {
-    // 함수 내부에서 userManager를 가져옵니다.
+  // --- 4. 사진 첨부 기능이 포함된 리뷰 팝업 ---
+  void _showReviewDialog(BuildContext context, Product product,
+      {Review? existingReview}) {
     final userManager = Provider.of<UserDataManager>(context, listen: false);
-    final TextEditingController controller = TextEditingController();
-    double rating = 5.0;
+    final TextEditingController controller =
+        TextEditingController(text: existingReview?.comment ?? "");
+    double rating = existingReview?.rating ?? 5.0;
+    String? pickedImagePath = existingReview?.imagePath;
 
     showDialog(
       context: context,
@@ -225,66 +232,102 @@ class MyPageScreen extends StatelessWidget {
         builder: (context, setDialogState) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text('${product.title} 후기 작성'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('이 도자기는 어떠셨나요?'),
-              const SizedBox(height: 15),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                    5,
-                    (index) => IconButton(
-                          icon: Icon(
-                            index < rating ? Icons.star : Icons.star_border,
-                            color: Colors.amber,
-                            size: 32,
+          title: Text(existingReview != null ? '후기 수정하기' : '후기 작성하기'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                      5,
+                      (index) => IconButton(
+                            icon: Icon(
+                                index < rating ? Icons.star : Icons.star_border,
+                                color: Colors.amber,
+                                size: 32),
+                            onPressed: () =>
+                                setDialogState(() => rating = index + 1.0),
+                          )),
+                ),
+                const SizedBox(height: 15),
+
+                // 📷 사진 첨부 섹션
+                InkWell(
+                  onTap: () {
+                    setDialogState(() => pickedImagePath = product.image);
+                  },
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: pickedImagePath != null
+                        ? Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.asset(pickedImagePath!,
+                                    width: double.infinity, fit: BoxFit.cover),
+                              ),
+                              // ✅ 에러 해결: Position -> Positioned 로 수정
+                              const Positioned(
+                                  right: 5,
+                                  top: 5,
+                                  child: Icon(Icons.check_circle,
+                                      color: Color(0xFF6342E8))),
+                            ],
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt_outlined,
+                                  color: Colors.grey, size: 30),
+                              SizedBox(height: 5),
+                              Text('사진 첨부하기',
+                                  style: TextStyle(
+                                      color: Colors.grey, fontSize: 12)),
+                            ],
                           ),
-                          onPressed: () =>
-                              setDialogState(() => rating = index + 1.0),
-                        )),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: controller,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: '도자기의 질감이나 색감이 어땠는지 공유해주세요!',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.deepPurple),
-                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 15),
+
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: '내용을 입력해주세요.',
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소', style: TextStyle(color: Colors.grey)),
-            ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소')),
             ElevatedButton(
-              style:
-                  ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6342E8)),
               onPressed: () {
-                if (controller.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('내용을 입력해주세요!')),
-                  );
-                  return;
+                if (existingReview != null) {
+                  userManager.updateReview(
+                      product.id, rating, controller.text, pickedImagePath);
+                } else {
+                  userManager.addReview(
+                      product.id, product.title, rating, controller.text,
+                      imagePath: pickedImagePath);
                 }
-                userManager.addReview(
-                    product.id, product.title, rating, controller.text);
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('소중한 후기 감사합니다! 100마일리지가 적립되었습니다.')),
-                );
               },
-              child: const Text('등록하기', style: TextStyle(color: Colors.white)),
+              child: Text(existingReview != null ? '수정 완료' : '등록하기',
+                  style: const TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -292,7 +335,6 @@ class MyPageScreen extends StatelessWidget {
     );
   }
 
-  // --- 5. 로그아웃 확인 팝업 ---
   void _showLogoutConfirmDialog(
       BuildContext context, UserDataManager userManager) {
     showDialog(

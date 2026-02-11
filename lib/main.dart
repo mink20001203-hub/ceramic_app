@@ -31,13 +31,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // lib/main.dart
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color(0xFF6750A4),
+        scaffoldBackgroundColor: Colors.white, // 전체 배경 흰색
+        primaryColor: const Color(0xFF6342E8), // 메인 포인트 보라색
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF222222), // 앱바 글씨 진회색
+          elevation: 0, // 앱바 밑에 그림자 제거 (필수!)
+          centerTitle: true,
+        ),
+        // 하단 네비게이션바 스타일
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          selectedItemColor: Color(0xFF6342E8),
+          unselectedItemColor: Colors.grey,
+          backgroundColor: Colors.white,
+          type: BottomNavigationBarType.fixed,
+        ),
       ),
-      home: const SplashScreen(), // ✅ 처음 시작을 SplashScreen으로 설정
+      home: const MainScreen(),
     );
   }
 }

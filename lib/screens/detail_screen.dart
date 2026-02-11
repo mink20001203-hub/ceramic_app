@@ -3,13 +3,13 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../models/user_data_manager.dart';
-import 'checkout_screen.dart'; // 결제 화면 임포트 확인
+import 'checkout_screen.dart';
 
 class DetailScreen extends StatelessWidget {
   final Product product;
   const DetailScreen({super.key, required this.product});
 
-  // --- 장바구니 알림 바텀 시트 ---
+  // --- 장바구니 알림 바텀 시트 (기존 유지) ---
   void _showCartBottomSheet(BuildContext context, UserDataManager userManager) {
     showModalBottomSheet(
       context: context,
@@ -59,9 +59,10 @@ class DetailScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context);
-                        userManager.setTabIndex(2);
-                        Navigator.popUntil(context, (route) => route.isFirst);
+                        Navigator.pop(context); // 바텀시트 닫기
+                        userManager.setTabIndex(2); // 장바구니 탭으로 인덱스 변경
+                        Navigator.popUntil(
+                            context, (route) => route.isFirst); // 메인으로 이동
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
@@ -107,6 +108,7 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // build 내에서 userManager를 가져옵니다.
     final userManager = Provider.of<UserDataManager>(context, listen: false);
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
@@ -114,6 +116,14 @@ class DetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(product.title),
         actions: [
+          // 🏠 1. 강사님 조언: 상단 홈 버튼 추가
+          IconButton(
+            icon: const Icon(Icons.home_outlined),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          // 2. 찜하기 버튼 (기존 유지)
           Consumer<UserDataManager>(
             builder: (context, manager, child) {
               final isFav = manager.isFavorite(product);
@@ -133,8 +143,14 @@ class DetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Image.asset(product.image!,
-                      width: double.infinity, height: 300, fit: BoxFit.cover),
+                  if (product.image != null)
+                    Image.asset(product.image!,
+                        width: double.infinity, height: 300, fit: BoxFit.cover)
+                  else
+                    Container(
+                        width: double.infinity,
+                        height: 300,
+                        color: Colors.grey[300]),
                   Padding(
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
@@ -175,6 +191,7 @@ class DetailScreen extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
+                      // ✅ CartProvider 대신 userManager를 사용하여 에러 해결
                       userManager.addToCart(product);
                       _showCartBottomSheet(context, userManager);
                     },
@@ -190,7 +207,6 @@ class DetailScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
-                      // 결제 화면으로 이동
                       Navigator.push(
                         context,
                         MaterialPageRoute(
