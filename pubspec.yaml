@@ -20,6 +20,7 @@ dependencies:
   provider: ^6.1.1       # 상태 관리
   hive: ^2.2.3           # 로컬 데이터베이스
   path_provider: ^2.1.2  # 로컬 경로 접근용
+  peanut: ^6.0.0
 
 dev_dependencies:
   flutter_test:
