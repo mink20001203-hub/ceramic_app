@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
+import '../models/user_data_manager.dart';
 
 // 선택한 카테고리의 상품만 보여주는 결과 화면.
 class CategoryResultScreen extends StatelessWidget {
@@ -10,9 +12,10 @@ class CategoryResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 전체 상품 리스트(dummyProducts)에서 선택된 카테고리와 일치하는 것만 추출
+    // 1. 전체 상품 리스트에서 선택된 카테고리와 일치하는 것만 추출
+    final products = context.watch<UserDataManager>().products;
     final filteredItems =
-        dummyProducts.where((product) => product.category == category).toList();
+        products.where((product) => product.category == category).toList();
 
     return Scaffold(
       appBar: AppBar(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
+import '../models/user_data_manager.dart';
 
 // 홈 랜딩 화면. 초기 로딩 속도를 위해 로컬 에셋 기반의 단순한 히어로를 사용한다.
 
@@ -11,6 +13,7 @@ class HomeScreen extends StatelessWidget {
   // lib/screens/home_screen.dart
 
   Widget build(BuildContext context) {
+    final products = context.watch<UserDataManager>().products;
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -91,9 +94,9 @@ class HomeScreen extends StatelessWidget {
                   crossAxisSpacing: 15,
                   mainAxisSpacing: 15,
                 ),
-                itemCount: dummyProducts.length,
+                itemCount: products.length,
                 itemBuilder: (context, index) {
-                  return ProductCard(product: dummyProducts[index]);
+                  return ProductCard(product: products[index]);
                 },
               ),
             ),

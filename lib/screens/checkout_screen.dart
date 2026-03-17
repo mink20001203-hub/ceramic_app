@@ -17,6 +17,7 @@ class CheckoutScreen extends StatelessWidget {
     final hasSale = product.isSale && product.salePrice != null;
     final itemPrice = hasSale ? product.salePrice! : product.price;
     final totalPrice = itemPrice + deliveryFee;
+    final userManager = Provider.of<UserDataManager>(context);
 
     return Scaffold(
       appBar: AppBar(title: const Text('주문/결제'), centerTitle: true),
@@ -47,27 +48,47 @@ class CheckoutScreen extends StatelessWidget {
             ),
             const Divider(),
 
-            // 2. 배송지 정보 (틀만 작성)
+            // 2. 배송지 정보
             _buildSectionTitle('배송지 정보'),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('서울시 강남구 ... (기본 배송지)'),
+            Column(
+              children: userManager.addresses
+                  .map(
+                    (addr) => RadioListTile<String>(
+                      value: addr.id,
+                      groupValue: userManager.selectedAddress?.id,
+                      onChanged: (value) {
+                        if (value != null) {
+                          userManager.setSelectedAddress(value);
+                        }
+                      },
+                      title: Text('${addr.label} · ${addr.recipient}'),
+                      subtitle:
+                          Text('${addr.addressLine} (${addr.phone})'),
+                      dense: true,
+                    ),
+                  )
+                  .toList(),
             ),
             const Divider(),
 
-            // 3. 결제 수단 (버튼들 틀만 작성)
+            // 3. 결제 수단
             _buildSectionTitle('결제수단'),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 3,
-              childAspectRatio: 2,
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildPaymentMethod('신용카드'),
-                _buildPaymentMethod('네이버페이'),
-                _buildPaymentMethod('카카오페이'),
-              ],
+            Column(
+              children: userManager.paymentMethods
+                  .map(
+                    (pm) => RadioListTile<String>(
+                      value: pm.id,
+                      groupValue: userManager.selectedPayment?.id,
+                      onChanged: (value) {
+                        if (value != null) {
+                          userManager.setSelectedPayment(value);
+                        }
+                      },
+                      title: Text(pm.label),
+                      dense: true,
+                    ),
+                  )
+                  .toList(),
             ),
             const Divider(),
 
@@ -92,14 +113,15 @@ class CheckoutScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
-            final userManager =
-                Provider.of<UserDataManager>(context, listen: false);
-
             // 1. 주문 목록에 추가
-            userManager.placeSingleOrder(product, option: selectedOption);
+            context
+                .read<UserDataManager>()
+                .placeSingleOrder(product, option: selectedOption);
 
             // 2. 만약 장바구니에 이 상품이 있다면 제거
-            userManager.removeFromCart(product, option: selectedOption);
+            context
+                .read<UserDataManager>()
+                .removeFromCart(product, option: selectedOption);
 
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -127,10 +149,6 @@ class CheckoutScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Widget _buildPaymentMethod(String name) {
-    return Card(child: Center(child: Text(name)));
   }
 
   Widget _buildPriceRow(String label, int price, NumberFormat format,

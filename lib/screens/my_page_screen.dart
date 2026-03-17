@@ -213,6 +213,8 @@ class MyPageScreen extends StatelessWidget {
                     side: BorderSide(color: Colors.grey.shade200),
                   ),
                   child: ListTile(
+                    onTap: () =>
+                        _showOrderDetailSheet(context, order, priceFormat),
                     title: Text('주문번호 ${order.id}',
                         style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(
@@ -402,6 +404,68 @@ class MyPageScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showOrderDetailSheet(
+      BuildContext context, Order order, NumberFormat priceFormat) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('주문번호 ${order.id}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text('${DateFormat('yyyy.MM.dd').format(order.date)} · ${order.status}',
+                  style: const TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              const Text('주문 상품',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: order.items.length,
+                itemBuilder: (context, index) {
+                  final item = order.items[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(item.product.title),
+                    subtitle: Text(
+                        '옵션: ${item.option ?? '기본'} · 수량: ${item.quantity}'),
+                    trailing: Text(
+                      '${priceFormat.format(item.unitPrice * item.quantity)}원',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  );
+                },
+              ),
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('총 결제금액',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text('${priceFormat.format(order.totalAmount)}원',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6342E8))),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
     );
   }
 

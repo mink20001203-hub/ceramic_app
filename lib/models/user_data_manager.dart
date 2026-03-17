@@ -62,6 +62,37 @@ class Order {
   });
 }
 
+// --- 2-2. 주소/결제수단 모델 ---
+class Address {
+  final String id;
+  final String label;
+  final String recipient;
+  final String addressLine;
+  final String phone;
+  final bool isDefault;
+
+  Address({
+    required this.id,
+    required this.label,
+    required this.recipient,
+    required this.addressLine,
+    required this.phone,
+    this.isDefault = false,
+  });
+}
+
+class PaymentMethod {
+  final String id;
+  final String label;
+  final String type; // 예: CARD/NAVER/KAKAO
+
+  PaymentMethod({
+    required this.id,
+    required this.label,
+    required this.type,
+  });
+}
+
 // --- 3. 통합 데이터 관리 클래스 ---
 class UserDataManager with ChangeNotifier {
   // [로그인 및 사용자 정보 관리]
@@ -74,6 +105,65 @@ class UserDataManager with ChangeNotifier {
   String get userName => _userName;
   int get mileage => _mileage;
   int get reviewCount => _reviewCount;
+
+  // 전체 상품 목록 (UI 공통 사용)
+  final List<Product> _products = [];
+  List<Product> get products => _products;
+
+  // 배송지/결제수단 데이터
+  final List<Address> _addresses = [
+    Address(
+      id: 'addr1',
+      label: '집',
+      recipient: '손님',
+      addressLine: '서울시 강남구 테헤란로 123',
+      phone: '010-1234-5678',
+      isDefault: true,
+    ),
+    Address(
+      id: 'addr2',
+      label: '회사',
+      recipient: '손님',
+      addressLine: '서울시 서초구 서초대로 45',
+      phone: '010-9876-5432',
+    ),
+  ];
+  final List<PaymentMethod> _paymentMethods = [
+    PaymentMethod(id: 'pm1', label: '신용카드', type: 'CARD'),
+    PaymentMethod(id: 'pm2', label: '네이버페이', type: 'NAVER'),
+    PaymentMethod(id: 'pm3', label: '카카오페이', type: 'KAKAO'),
+  ];
+  String _selectedAddressId = '';
+  String _selectedPaymentId = '';
+
+  UserDataManager() {
+    _products.addAll(dummyProducts);
+    if (_addresses.isNotEmpty) {
+      _selectedAddressId =
+          _addresses.firstWhere((a) => a.isDefault, orElse: () => _addresses.first).id;
+    }
+    if (_paymentMethods.isNotEmpty) {
+      _selectedPaymentId = _paymentMethods.first.id;
+    }
+  }
+
+  List<Address> get addresses => _addresses;
+  List<PaymentMethod> get paymentMethods => _paymentMethods;
+
+  Address? get selectedAddress =>
+      _addresses.firstWhere((a) => a.id == _selectedAddressId, orElse: () => _addresses.first);
+  PaymentMethod? get selectedPayment =>
+      _paymentMethods.firstWhere((p) => p.id == _selectedPaymentId, orElse: () => _paymentMethods.first);
+
+  void setSelectedAddress(String id) {
+    _selectedAddressId = id;
+    notifyListeners();
+  }
+
+  void setSelectedPayment(String id) {
+    _selectedPaymentId = id;
+    notifyListeners();
+  }
 
   void login() {
     // 서버 연동 없이 로그인 상태만 토글하는 데모 로직.
@@ -204,6 +294,11 @@ class UserDataManager with ChangeNotifier {
     return product.price;
   }
 
+  void _decreaseStock(Product product, int quantity) {
+    final newStock = product.stock - quantity;
+    product.stock = newStock < 0 ? 0 : newStock;
+  }
+
   // 장바구니 기반 주문 생성
   void placeOrderFromCart() {
     if (_cartWithQuantity.isEmpty) return;
@@ -219,6 +314,10 @@ class UserDataManager with ChangeNotifier {
 
     final total = items.fold<int>(
         0, (sum, item) => sum + item.unitPrice * item.quantity);
+
+    for (final item in items) {
+      _decreaseStock(item.product, item.quantity);
+    }
 
     _orders.add(Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -245,6 +344,8 @@ class UserDataManager with ChangeNotifier {
     ];
 
     final total = items.first.unitPrice;
+
+    _decreaseStock(product, 1);
 
     _orders.add(Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),

@@ -6,7 +6,7 @@ class Product {
   final int price; // ✅ 가격 (숫자 타입)
   final String? image; // ✅ 이미지 경로 (없을 수 있으므로 null 허용)
   final String category; // ✅ 카테고리 필드 추가
-  final int stock; // ✅ 재고 수량 (0이면 품절)
+  int stock; // ✅ 재고 수량 (0이면 품절)
   final bool isNew; // ✅ 신상품 뱃지 여부
   final bool isSale; // ✅ 세일 뱃지 여부
   final int? salePrice; // ✅ 세일가 (없으면 null)
