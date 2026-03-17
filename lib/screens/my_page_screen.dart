@@ -272,7 +272,7 @@ class MyPageScreen extends StatelessWidget {
                 Container(width: 1, height: 20, color: Colors.grey[300]),
                 _buildStatItem('나의 리뷰', '${userManager.reviewCount}'),
                 Container(width: 1, height: 20, color: Colors.grey[300]),
-                _buildStatItem('쿠폰', '3'),
+                _buildStatItem('쿠폰', '${userManager.availableCouponCount}'),
               ],
             ),
           ),

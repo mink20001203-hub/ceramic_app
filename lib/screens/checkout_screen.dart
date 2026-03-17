@@ -5,19 +5,51 @@ import '../models/user_data_manager.dart';
 import 'package:provider/provider.dart';
 
 // 결제 화면: 상품 요약과 결제 금액을 보여주고 구매를 확정한다.
-class CheckoutScreen extends StatelessWidget {
+class CheckoutScreen extends StatefulWidget {
   final Product product;
   final String? selectedOption;
   const CheckoutScreen({super.key, required this.product, this.selectedOption});
 
   @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  final TextEditingController _mileageController =
+      TextEditingController(text: '0');
+
+  @override
+  void dispose() {
+    _mileageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final priceFormat = NumberFormat('#,###', 'ko_KR');
     final deliveryFee = 2500;
+    final product = widget.product;
+    final selectedOption = widget.selectedOption;
     final hasSale = product.isSale && product.salePrice != null;
     final itemPrice = hasSale ? product.salePrice! : product.price;
     final totalPrice = itemPrice + deliveryFee;
     final userManager = Provider.of<UserDataManager>(context);
+    final selectedCoupon = userManager.selectedCoupon;
+    final couponDiscount = selectedCoupon == null ||
+            selectedCoupon.isUsed ||
+            itemPrice < selectedCoupon.minOrderAmount
+        ? 0
+        : selectedCoupon.discountAmount;
+    final requestedMileage =
+        int.tryParse(_mileageController.text.replaceAll(',', '')) ?? 0;
+    final maxMileage =
+        userManager.mileage < (itemPrice - couponDiscount)
+            ? userManager.mileage
+            : (itemPrice - couponDiscount);
+    final mileageToUse = requestedMileage > maxMileage
+        ? maxMileage
+        : (requestedMileage < 0 ? 0 : requestedMileage);
+    final finalTotal = (itemPrice + deliveryFee) - couponDiscount - mileageToUse;
 
     return Scaffold(
       appBar: AppBar(title: const Text('주문/결제'), centerTitle: true),
@@ -158,6 +190,72 @@ class CheckoutScreen extends StatelessWidget {
             ),
             const Divider(),
 
+            // 4. 쿠폰/마일리지
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('쿠폰/마일리지',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  RadioListTile<String?>(
+                    value: null,
+                    groupValue: userManager.selectedCoupon?.id,
+                    onChanged: (value) {
+                      userManager.setSelectedCoupon(null);
+                      setState(() {});
+                    },
+                    title: const Text('쿠폰 사용 안 함'),
+                    dense: true,
+                  ),
+                  ...userManager.coupons
+                      .where((c) => !c.isUsed)
+                      .map(
+                        (coupon) => RadioListTile<String?>(
+                          value: coupon.id,
+                          groupValue: userManager.selectedCoupon?.id,
+                          onChanged: (value) {
+                            userManager.setSelectedCoupon(value);
+                            setState(() {});
+                          },
+                          title: Text(coupon.title),
+                          subtitle: Text(
+                              '${priceFormat.format(coupon.discountAmount)}원 할인 · ${priceFormat.format(coupon.minOrderAmount)}원 이상'),
+                          dense: true,
+                        ),
+                      ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _mileageController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: '마일리지 사용',
+                            hintText: '보유 ${userManager.mileage}P',
+                            border: const OutlineInputBorder(),
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          _mileageController.text = maxMileage.toString();
+                          setState(() {});
+                        },
+                        child: const Text('최대 사용'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+
             // 4. 결제 정보 금액 요약
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -165,8 +263,12 @@ class CheckoutScreen extends StatelessWidget {
                 children: [
                   _buildPriceRow('상품금액', itemPrice, priceFormat),
                   _buildPriceRow('배송비', deliveryFee, priceFormat),
+                  if (couponDiscount > 0)
+                    _buildPriceRow('쿠폰 할인', -couponDiscount, priceFormat),
+                  if (mileageToUse > 0)
+                    _buildPriceRow('마일리지 사용', -mileageToUse, priceFormat),
                   const Divider(),
-                  _buildPriceRow('총 결제금액', totalPrice, priceFormat,
+                  _buildPriceRow('총 결제금액', finalTotal, priceFormat,
                       isTotal: true),
                 ],
               ),
@@ -206,9 +308,14 @@ class CheckoutScreen extends StatelessWidget {
             }
 
             // 1. 주문 목록에 추가
-            context
-                .read<UserDataManager>()
-                .placeSingleOrder(product, option: selectedOption);
+            context.read<UserDataManager>().placeSingleOrder(
+                  product,
+                  option: selectedOption,
+                  couponId: couponDiscount > 0
+                      ? userManager.selectedCoupon?.id
+                      : null,
+                  mileageUsed: mileageToUse,
+                );
 
             // 2. 만약 장바구니에 이 상품이 있다면 제거
             context

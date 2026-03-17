@@ -50,6 +50,9 @@ class Order {
   final String id;
   final List<OrderItem> items;
   final int totalAmount;
+  final int discountAmount;
+  final int mileageUsed;
+  final String? couponTitle;
   final DateTime date;
   String status; // 예: 결제완료/배송준비/배송중/배송완료
   final List<OrderStatusLog> statusLogs;
@@ -58,6 +61,9 @@ class Order {
     required this.id,
     required this.items,
     required this.totalAmount,
+    required this.discountAmount,
+    required this.mileageUsed,
+    this.couponTitle,
     required this.date,
     required this.status,
     required this.statusLogs,
@@ -67,8 +73,10 @@ class Order {
 class OrderStatusLog {
   final String status;
   final DateTime date;
+  final String actor; // 변경 주체(관리자/시스템)
 
-  OrderStatusLog({required this.status, required this.date});
+  OrderStatusLog(
+      {required this.status, required this.date, required this.actor});
 }
 
 // --- 2-2. 주소/결제수단 모델 ---
@@ -99,6 +107,23 @@ class PaymentMethod {
     required this.id,
     required this.label,
     required this.type,
+  });
+}
+
+// --- 2-3. 쿠폰 모델 ---
+class Coupon {
+  final String id;
+  final String title;
+  final int discountAmount;
+  final int minOrderAmount;
+  bool isUsed;
+
+  Coupon({
+    required this.id,
+    required this.title,
+    required this.discountAmount,
+    required this.minOrderAmount,
+    this.isUsed = false,
   });
 }
 
@@ -141,8 +166,21 @@ class UserDataManager with ChangeNotifier {
     PaymentMethod(id: 'pm2', label: '네이버페이', type: 'NAVER'),
     PaymentMethod(id: 'pm3', label: '카카오페이', type: 'KAKAO'),
   ];
+  final List<Coupon> _coupons = [
+    Coupon(
+        id: 'c1',
+        title: '웰컴 5,000원',
+        discountAmount: 5000,
+        minOrderAmount: 30000),
+    Coupon(
+        id: 'c2',
+        title: '세일 10,000원',
+        discountAmount: 10000,
+        minOrderAmount: 70000),
+  ];
   String _selectedAddressId = '';
   String _selectedPaymentId = '';
+  String? _selectedCouponId;
 
   // 앱 시작 시 더미 상품과 기본 선택값을 준비한다.
   UserDataManager() {
@@ -157,6 +195,8 @@ class UserDataManager with ChangeNotifier {
 
   List<Address> get addresses => _addresses;
   List<PaymentMethod> get paymentMethods => _paymentMethods;
+  List<Coupon> get coupons => _coupons;
+  int get availableCouponCount => _coupons.where((c) => !c.isUsed).length;
 
   // 현재 선택된 배송지/결제수단
   Address? get selectedAddress {
@@ -170,6 +210,12 @@ class UserDataManager with ChangeNotifier {
         orElse: () => _paymentMethods.first);
   }
 
+  Coupon? get selectedCoupon {
+    if (_selectedCouponId == null) return null;
+    return _coupons.firstWhere((c) => c.id == _selectedCouponId,
+        orElse: () => _coupons.first);
+  }
+
   // 배송지/결제수단 선택 변경
   void setSelectedAddress(String id) {
     _selectedAddressId = id;
@@ -178,6 +224,23 @@ class UserDataManager with ChangeNotifier {
 
   void setSelectedPayment(String id) {
     _selectedPaymentId = id;
+    notifyListeners();
+  }
+
+  // 쿠폰 선택/해제
+  void setSelectedCoupon(String? id) {
+    _selectedCouponId = id;
+    notifyListeners();
+  }
+
+  void useCoupon(String? id) {
+    if (id == null) return;
+    for (final coupon in _coupons) {
+      if (coupon.id == id) {
+        coupon.isUsed = true;
+        break;
+      }
+    }
     notifyListeners();
   }
 
@@ -386,6 +449,21 @@ class UserDataManager with ChangeNotifier {
     return product.price;
   }
 
+  // 쿠폰 할인 계산
+  int _calculateCouponDiscount(Coupon? coupon, int subtotal) {
+    if (coupon == null) return 0;
+    if (coupon.isUsed) return 0;
+    if (subtotal < coupon.minOrderAmount) return 0;
+    return coupon.discountAmount;
+  }
+
+  // 마일리지 사용 금액 계산
+  int _calculateMileageUsage(int requested, int subtotalAfterCoupon) {
+    final maxUsable =
+        _mileage < subtotalAfterCoupon ? _mileage : subtotalAfterCoupon;
+    return requested > maxUsable ? maxUsable : requested;
+  }
+
   // 주문 시 재고 차감
   void _decreaseStock(Product product, int quantity) {
     final newStock = product.stock - quantity;
@@ -393,7 +471,7 @@ class UserDataManager with ChangeNotifier {
   }
 
   // 장바구니 기반 주문 생성
-  void placeOrderFromCart() {
+  void placeOrderFromCart({String? couponId, int mileageUsed = 0}) {
     if (_cartWithQuantity.isEmpty) return;
 
     final items = _cartWithQuantity
@@ -405,8 +483,16 @@ class UserDataManager with ChangeNotifier {
             ))
         .toList();
 
-    final total = items.fold<int>(
+    final subtotal = items.fold<int>(
         0, (sum, item) => sum + item.unitPrice * item.quantity);
+    final coupon = couponId == null
+        ? null
+        : _coupons.firstWhere((c) => c.id == couponId,
+            orElse: () => _coupons.first);
+    final couponDiscount = _calculateCouponDiscount(coupon, subtotal);
+    final mileageToUse =
+        _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
+    final total = subtotal - couponDiscount - mileageToUse;
 
     for (final item in items) {
       _decreaseStock(item.product, item.quantity);
@@ -416,12 +502,23 @@ class UserDataManager with ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       items: items,
       totalAmount: total,
+      discountAmount: couponDiscount,
+      mileageUsed: mileageToUse,
+      couponTitle: couponDiscount > 0 ? coupon?.title : null,
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
-        OrderStatusLog(status: '결제완료', date: DateTime.now()),
+        OrderStatusLog(
+            status: '결제완료', date: DateTime.now(), actor: '시스템'),
       ],
     ));
+
+    if (couponDiscount > 0) {
+      useCoupon(couponId);
+    }
+    if (mileageToUse > 0) {
+      _mileage -= mileageToUse;
+    }
 
     _mileage += 500;
     clearCart();
@@ -429,7 +526,8 @@ class UserDataManager with ChangeNotifier {
   }
 
   // 단일 상품 즉시구매
-  void placeSingleOrder(Product product, {String? option}) {
+  void placeSingleOrder(Product product,
+      {String? option, String? couponId, int mileageUsed = 0}) {
     final items = [
       OrderItem(
         product: product,
@@ -439,7 +537,15 @@ class UserDataManager with ChangeNotifier {
       ),
     ];
 
-    final total = items.first.unitPrice;
+    final subtotal = items.first.unitPrice;
+    final coupon = couponId == null
+        ? null
+        : _coupons.firstWhere((c) => c.id == couponId,
+            orElse: () => _coupons.first);
+    final couponDiscount = _calculateCouponDiscount(coupon, subtotal);
+    final mileageToUse =
+        _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
+    final total = subtotal - couponDiscount - mileageToUse;
 
     _decreaseStock(product, 1);
 
@@ -447,12 +553,23 @@ class UserDataManager with ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       items: items,
       totalAmount: total,
+      discountAmount: couponDiscount,
+      mileageUsed: mileageToUse,
+      couponTitle: couponDiscount > 0 ? coupon?.title : null,
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
-        OrderStatusLog(status: '결제완료', date: DateTime.now()),
+        OrderStatusLog(
+            status: '결제완료', date: DateTime.now(), actor: '시스템'),
       ],
     ));
+
+    if (couponDiscount > 0) {
+      useCoupon(couponId);
+    }
+    if (mileageToUse > 0) {
+      _mileage -= mileageToUse;
+    }
 
     _mileage += 500;
     notifyListeners();
@@ -467,23 +584,25 @@ class UserDataManager with ChangeNotifier {
   ];
 
   // 주문 상태를 다음 단계로 진행 (관리자 UI에서 사용)
-  void advanceOrderStatus(String orderId) {
+  void advanceOrderStatus(String orderId, {String actor = '관리자'}) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     final currentIndex = _orderStatuses.indexOf(order.status);
     if (currentIndex >= 0 && currentIndex < _orderStatuses.length - 1) {
       final nextStatus = _orderStatuses[currentIndex + 1];
       order.status = nextStatus;
-      order.statusLogs.add(OrderStatusLog(status: nextStatus, date: DateTime.now()));
+      order.statusLogs.add(
+          OrderStatusLog(status: nextStatus, date: DateTime.now(), actor: actor));
       notifyListeners();
     }
   }
 
   // 주문 상태를 특정 값으로 변경 (확장용)
-  void setOrderStatus(String orderId, String status) {
+  void setOrderStatus(String orderId, String status, {String actor = '관리자'}) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     if (order.status != status) {
       order.status = status;
-      order.statusLogs.add(OrderStatusLog(status: status, date: DateTime.now()));
+      order.statusLogs.add(
+          OrderStatusLog(status: status, date: DateTime.now(), actor: actor));
       notifyListeners();
     }
   }

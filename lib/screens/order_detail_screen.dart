@@ -41,7 +41,7 @@ class OrderDetailScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 ...order.statusLogs.map(
                   (log) => Text(
-                    '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status}',
+                    '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status} · ${log.actor}',
                     style: const TextStyle(color: Colors.grey),
                   ),
                 ),
@@ -52,7 +52,8 @@ class OrderDetailScreen extends StatelessWidget {
                     child: OutlinedButton(
                       // 관리자만 주문 상태 변경 가능
                       onPressed: isAdmin
-                          ? () => manager.advanceOrderStatus(order.id)
+                          ? () => manager.advanceOrderStatus(order.id,
+                              actor: '관리자')
                           : null,
                       child: const Text('다음 상태로 변경(관리자)'),
                     ),
@@ -90,6 +91,43 @@ class OrderDetailScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF6342E8))),
                   ],
+                ),
+                if (order.discountAmount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text('할인: -${priceFormat.format(order.discountAmount)}원',
+                        style: const TextStyle(color: Colors.grey)),
+                  ),
+                if (order.couponTitle != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text('쿠폰: ${order.couponTitle}',
+                        style: const TextStyle(color: Colors.grey)),
+                  ),
+                if (order.mileageUsed > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('마일리지 사용: ${order.mileageUsed}P',
+                        style: const TextStyle(color: Colors.grey)),
+                  ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    // 주문 상품을 장바구니에 다시 담는다.
+                    onPressed: () {
+                      for (final item in order.items) {
+                        for (int i = 0; i < item.quantity; i++) {
+                          manager.addToCart(item.product,
+                              selectedOption: item.option);
+                        }
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('장바구니에 담았습니다.')),
+                      );
+                    },
+                    child: const Text('재주문(장바구니 담기)'),
+                  ),
                 ),
               ],
             ),

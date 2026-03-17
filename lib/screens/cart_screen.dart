@@ -11,6 +11,134 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
+    // 쿠폰/마일리지 적용 결제 시트
+    void _showPaymentSheet(
+        BuildContext context, UserDataManager userManager) {
+      String? selectedCouponId;
+      int mileageToUse = 0;
+
+      int subtotal = userManager.items.fold<int>(0, (sum, item) {
+        final unitPrice = (item.product.isSale && item.product.salePrice != null)
+            ? item.product.salePrice!
+            : item.product.price;
+        return sum + unitPrice * item.quantity;
+      });
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) {
+            final coupon = selectedCouponId == null
+                ? null
+                : userManager.coupons
+                    .firstWhere((c) => c.id == selectedCouponId);
+            final couponDiscount = (coupon == null ||
+                    coupon.isUsed ||
+                    subtotal < coupon.minOrderAmount)
+                ? 0
+                : coupon.discountAmount;
+            final maxMileage =
+                userManager.mileage < (subtotal - couponDiscount)
+                    ? userManager.mileage
+                    : (subtotal - couponDiscount);
+            final finalTotal = subtotal - couponDiscount - mileageToUse;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('쿠폰/마일리지 적용',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  RadioListTile<String?>(
+                    value: null,
+                    groupValue: selectedCouponId,
+                    onChanged: (_) => setState(() => selectedCouponId = null),
+                    title: const Text('쿠폰 사용 안 함'),
+                    dense: true,
+                  ),
+                  ...userManager.coupons
+                      .where((c) => !c.isUsed)
+                      .map(
+                        (coupon) => RadioListTile<String?>(
+                          value: coupon.id,
+                          groupValue: selectedCouponId,
+                          onChanged: (value) =>
+                              setState(() => selectedCouponId = value),
+                          title: Text(coupon.title),
+                          subtitle: Text(
+                              '${NumberFormat('#,###', 'ko_KR').format(coupon.discountAmount)}원 할인 · ${NumberFormat('#,###', 'ko_KR').format(coupon.minOrderAmount)}원 이상'),
+                          dense: true,
+                        ),
+                      ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: '마일리지 사용',
+                            hintText: '보유 ${userManager.mileage}P',
+                            border: const OutlineInputBorder(),
+                          ),
+                          onChanged: (value) {
+                            final parsed = int.tryParse(value) ?? 0;
+                            setState(() {
+                              mileageToUse =
+                                  parsed > maxMileage ? maxMileage : parsed;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => mileageToUse = maxMileage),
+                        child: const Text('최대 사용'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                      '최종 결제 금액: ${NumberFormat('#,###', 'ko_KR').format(finalTotal)}원'),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        userManager.placeOrderFromCart(
+                          couponId: couponDiscount > 0 ? selectedCouponId : null,
+                          mileageUsed: mileageToUse,
+                        );
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('주문이 완료되었습니다.')),
+                        );
+                      },
+                      child: const Text('결제하기'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      );
+    }
+
 // 주문 확인 팝업을 띄우는 함수
     void _showOrderConfirmDialog(
         BuildContext context, UserDataManager userManager) {
@@ -51,15 +179,10 @@ class CartScreen extends StatelessWidget {
                   // 1. 팝업 닫기
                   Navigator.of(context).pop();
 
-                  // 2. 실제 주문 로직 실행
-                  userManager.placeOrderFromCart();
+                  // 2. 결제 시트로 이동(쿠폰/마일리지 적용)
+                  _showPaymentSheet(context, userManager);
 
-                  // 3. 알림 메시지 표시
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('주문이 완료되었습니다! 마이페이지로 이동합니다.')),
-                  );
-
-                  // 4. 마이페이지 탭으로 이동
+                  // 3. 마이페이지 탭으로 이동
                   userManager.setTabIndex(3);
                 },
                 style: ElevatedButton.styleFrom(

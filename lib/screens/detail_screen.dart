@@ -208,6 +208,19 @@ class _DetailScreenState extends State<DetailScreen> {
                           style: TextStyle(
                               color: isSoldOut ? Colors.red : Colors.grey),
                         ),
+                        if (isSoldOut)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: OutlinedButton(
+                              onPressed: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('재입고 알림을 신청했습니다.')),
+                                );
+                              },
+                              child: const Text('재입고 알림 신청'),
+                            ),
+                          ),
                         if (product.options.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           const Text("옵션 선택",
