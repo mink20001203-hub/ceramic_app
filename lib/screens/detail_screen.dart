@@ -281,6 +281,12 @@ class _DetailScreenState extends State<DetailScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (isSoldOut) return;
+                      if (!userManager.isLoggedIn) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
+                        );
+                        return;
+                      }
                       Navigator.push(
                         context,
                         MaterialPageRoute(

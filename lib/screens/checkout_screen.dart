@@ -81,6 +81,22 @@ class CheckoutScreen extends StatelessWidget {
                         subtitle:
                             Text('${addr.addressLine} (${addr.phone})'),
                         dense: true,
+                        secondary: PopupMenuButton<String>(
+                          // 기본 설정/삭제를 위한 컨텍스트 메뉴
+                          onSelected: (value) {
+                            if (value == 'default') {
+                              userManager.setDefaultAddress(addr.id);
+                            } else if (value == 'delete') {
+                              userManager.removeAddress(addr.id);
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                                value: 'default', child: Text('기본으로 설정')),
+                            PopupMenuItem(
+                                value: 'delete', child: Text('삭제')),
+                          ],
+                        ),
                       ),
                     ),
                   )
@@ -119,6 +135,22 @@ class CheckoutScreen extends StatelessWidget {
                         },
                         title: Text(pm.label),
                         dense: true,
+                        secondary: PopupMenuButton<String>(
+                          // 기본 설정/삭제를 위한 컨텍스트 메뉴
+                          onSelected: (value) {
+                            if (value == 'default') {
+                              userManager.setDefaultPayment(pm.id);
+                            } else if (value == 'delete') {
+                              userManager.removePaymentMethod(pm.id);
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                                value: 'default', child: Text('기본으로 설정')),
+                            PopupMenuItem(
+                                value: 'delete', child: Text('삭제')),
+                          ],
+                        ),
                       ),
                     ),
                   )
@@ -162,6 +194,13 @@ class CheckoutScreen extends StatelessWidget {
             if (product.stock == 0) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('품절 상품입니다.')),
+              );
+              return;
+            }
+            // 로그인하지 않으면 결제 불가
+            if (!userManager.isLoggedIn) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
               );
               return;
             }
@@ -291,7 +330,6 @@ class CheckoutScreen extends StatelessWidget {
                   recipient: nameController.text.trim(),
                   addressLine: addressController.text.trim(),
                   phone: phoneController.text.trim(),
-                  isDefault: existing.isDefault,
                 ));
               }
               Navigator.pop(context);

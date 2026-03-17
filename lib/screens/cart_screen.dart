@@ -30,6 +30,12 @@ class CartScreen extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {
+                  if (!userManager.isLoggedIn) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
+                    );
+                    return;
+                  }
                   final hasSoldOut = userManager.items
                       .any((item) => item.product.stock == 0);
                   final overStock = userManager.items.any(
@@ -70,6 +76,13 @@ class CartScreen extends StatelessWidget {
     return Consumer<UserDataManager>(
       builder: (context, userManager, child) {
         final cartItems = userManager.items;
+        // 재고 변경이 발생했을 때 장바구니 수량을 자동 보정한다.
+        for (final item in cartItems) {
+          if (item.product.stock == 0) continue;
+          if (item.quantity > item.product.stock) {
+            item.quantity = item.product.stock;
+          }
+        }
 
         return Scaffold(
           appBar: AppBar(

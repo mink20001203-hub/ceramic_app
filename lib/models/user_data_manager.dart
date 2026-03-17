@@ -127,7 +127,6 @@ class UserDataManager with ChangeNotifier {
       recipient: '손님',
       addressLine: '서울시 강남구 테헤란로 123',
       phone: '010-1234-5678',
-      isDefault: true,
     ),
     Address(
       id: 'addr2',
@@ -145,11 +144,11 @@ class UserDataManager with ChangeNotifier {
   String _selectedAddressId = '';
   String _selectedPaymentId = '';
 
+  // 앱 시작 시 더미 상품과 기본 선택값을 준비한다.
   UserDataManager() {
     _products.addAll(dummyProducts);
     if (_addresses.isNotEmpty) {
-      _selectedAddressId =
-          _addresses.firstWhere((a) => a.isDefault, orElse: () => _addresses.first).id;
+      _selectedAddressId = _addresses.first.id;
     }
     if (_paymentMethods.isNotEmpty) {
       _selectedPaymentId = _paymentMethods.first.id;
@@ -159,11 +158,19 @@ class UserDataManager with ChangeNotifier {
   List<Address> get addresses => _addresses;
   List<PaymentMethod> get paymentMethods => _paymentMethods;
 
-  Address? get selectedAddress =>
-      _addresses.firstWhere((a) => a.id == _selectedAddressId, orElse: () => _addresses.first);
-  PaymentMethod? get selectedPayment =>
-      _paymentMethods.firstWhere((p) => p.id == _selectedPaymentId, orElse: () => _paymentMethods.first);
+  // 현재 선택된 배송지/결제수단
+  Address? get selectedAddress {
+    if (_addresses.isEmpty) return null;
+    return _addresses.firstWhere((a) => a.id == _selectedAddressId,
+        orElse: () => _addresses.first);
+  }
+  PaymentMethod? get selectedPayment {
+    if (_paymentMethods.isEmpty) return null;
+    return _paymentMethods.firstWhere((p) => p.id == _selectedPaymentId,
+        orElse: () => _paymentMethods.first);
+  }
 
+  // 배송지/결제수단 선택 변경
   void setSelectedAddress(String id) {
     _selectedAddressId = id;
     notifyListeners();
@@ -174,12 +181,36 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  // 배송지 삭제
+  void removeAddress(String id) {
+    _addresses.removeWhere((a) => a.id == id);
+    if (_addresses.isEmpty) {
+      _selectedAddressId = '';
+    } else if (_selectedAddressId == id) {
+      _selectedAddressId = _addresses.first.id;
+    }
+    notifyListeners();
+  }
+
+  // 결제수단 삭제
+  void removePaymentMethod(String id) {
+    _paymentMethods.removeWhere((p) => p.id == id);
+    if (_paymentMethods.isEmpty) {
+      _selectedPaymentId = '';
+    } else if (_selectedPaymentId == id) {
+      _selectedPaymentId = _paymentMethods.first.id;
+    }
+    notifyListeners();
+  }
+
+  // 배송지 추가
   void addAddress(Address address) {
     _addresses.add(address);
     _selectedAddressId = address.id;
     notifyListeners();
   }
 
+  // 배송지 수정
   void updateAddress(Address updated) {
     final index = _addresses.indexWhere((a) => a.id == updated.id);
     if (index != -1) {
@@ -188,16 +219,34 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
+  // 기본 배송지 변경
+  void setDefaultAddress(String id) {
+    if (_addresses.any((a) => a.id == id)) {
+      _selectedAddressId = id;
+      notifyListeners();
+    }
+  }
+
+  // 결제수단 추가
   void addPaymentMethod(PaymentMethod method) {
     _paymentMethods.add(method);
     _selectedPaymentId = method.id;
     notifyListeners();
   }
 
+  // 결제수단 수정
   void updatePaymentMethod(PaymentMethod method) {
     final index = _paymentMethods.indexWhere((p) => p.id == method.id);
     if (index != -1) {
       _paymentMethods[index] = method;
+      notifyListeners();
+    }
+  }
+
+  // 기본 결제수단 변경
+  void setDefaultPayment(String id) {
+    if (_paymentMethods.any((p) => p.id == id)) {
+      _selectedPaymentId = id;
       notifyListeners();
     }
   }
@@ -262,6 +311,7 @@ class UserDataManager with ChangeNotifier {
   final List<CartItem> _cartWithQuantity = [];
   List<CartItem> get items => _cartWithQuantity;
 
+  // 장바구니 담기: 품절/재고 초과 방지
   void addToCart(Product product, {String? selectedOption}) {
     if (product.stock == 0) return;
     // 이미 담긴 상품이면 수량만 증가시켜 중복을 방지한다.
@@ -285,6 +335,7 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  // 수량 증가: 재고 초과 방지
   void incrementQuantity(String productId, String? option) {
     for (var item in _cartWithQuantity) {
       if (item.product.id == productId && item.option == option) {
@@ -327,6 +378,7 @@ class UserDataManager with ChangeNotifier {
     return total;
   }
 
+  // 세일가가 있으면 세일가를 사용한다.
   int _getEffectivePrice(Product product) {
     if (product.isSale && product.salePrice != null) {
       return product.salePrice!;
@@ -334,6 +386,7 @@ class UserDataManager with ChangeNotifier {
     return product.price;
   }
 
+  // 주문 시 재고 차감
   void _decreaseStock(Product product, int quantity) {
     final newStock = product.stock - quantity;
     product.stock = newStock < 0 ? 0 : newStock;
@@ -413,6 +466,7 @@ class UserDataManager with ChangeNotifier {
     '배송완료',
   ];
 
+  // 주문 상태를 다음 단계로 진행 (관리자 UI에서 사용)
   void advanceOrderStatus(String orderId) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     final currentIndex = _orderStatuses.indexOf(order.status);
@@ -424,6 +478,7 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
+  // 주문 상태를 특정 값으로 변경 (확장용)
   void setOrderStatus(String orderId, String status) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     if (order.status != status) {
