@@ -22,8 +22,20 @@ class ReviewManageScreen extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(review.productName),
-                    subtitle: Text(review.comment,
-                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(review.comment,
+                            maxLines: 2, overflow: TextOverflow.ellipsis),
+                        const SizedBox(height: 4),
+                        Text(
+                          manager.getLatestOrderForProduct(review.productId) != null
+                              ? '주문일: ${manager.getLatestOrderForProduct(review.productId)!.date.toString().substring(0, 10)}'
+                              : '주문 정보 없음',
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ],
+                    ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () {

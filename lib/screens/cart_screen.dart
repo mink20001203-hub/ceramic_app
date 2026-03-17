@@ -109,6 +109,27 @@ class CartScreen extends StatelessWidget {
                           subtitle: Text(
                               '${NumberFormat('#,###', 'ko_KR').format(coupon.discountAmount)}원 할인 · ${NumberFormat('#,###', 'ko_KR').format(coupon.minOrderAmount)}원 이상'),
                           dense: true,
+                          secondary: IconButton(
+                            icon: const Icon(Icons.info_outline),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('쿠폰 적용 조건'),
+                                  content: Text(
+                                    '카테고리: ${coupon.allowedCategories.isEmpty ? '전체' : coupon.allowedCategories.join(', ')}\n'
+                                    '상품: ${coupon.allowedProductIds.isEmpty ? '전체' : coupon.allowedProductIds.join(', ')}\n'
+                                    '최소 주문: ${NumberFormat('#,###', 'ko_KR').format(coupon.minOrderAmount)}원',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('확인')),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                           enabled: (coupon.allowedCategories.isEmpty ||
                                   userManager.items.any((item) =>
                                       coupon.allowedCategories

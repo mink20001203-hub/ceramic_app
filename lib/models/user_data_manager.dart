@@ -86,6 +86,7 @@ class Address {
   final String recipient;
   final String addressLine;
   final String phone;
+  final String requestNote;
   final bool isDefault;
 
   Address({
@@ -94,6 +95,7 @@ class Address {
     required this.recipient,
     required this.addressLine,
     required this.phone,
+    this.requestNote = '',
     this.isDefault = false,
   });
 }
@@ -156,6 +158,7 @@ class UserDataManager with ChangeNotifier {
       recipient: '손님',
       addressLine: '서울시 강남구 테헤란로 123',
       phone: '010-1234-5678',
+      requestNote: '문 앞에 두고 연락주세요',
     ),
     Address(
       id: 'addr2',
@@ -163,6 +166,7 @@ class UserDataManager with ChangeNotifier {
       recipient: '손님',
       addressLine: '서울시 서초구 서초대로 45',
       phone: '010-9876-5432',
+      requestNote: '경비실에 맡겨주세요',
     ),
   ];
   final List<PaymentMethod> _paymentMethods = [
@@ -651,6 +655,21 @@ class UserDataManager with ChangeNotifier {
     } catch (e) {
       return null;
     }
+  }
+
+  // 리뷰에 연결된 최근 주문 찾기
+  Order? getLatestOrderForProduct(String productId) {
+    Order? latest;
+    for (final order in _orders) {
+      final hasProduct =
+          order.items.any((item) => item.product.id == productId);
+      if (hasProduct) {
+        if (latest == null || order.date.isAfter(latest.date)) {
+          latest = order;
+        }
+      }
+    }
+    return latest;
   }
 
   // ✅ 3. 리뷰 추가 (imagePath 파라미터 추가)

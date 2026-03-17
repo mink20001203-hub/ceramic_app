@@ -18,6 +18,7 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final TextEditingController _mileageController =
       TextEditingController(text: '0');
+  bool _isAgreementChecked = false;
 
   @override
   void dispose() {
@@ -110,9 +111,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             userManager.setSelectedAddress(value);
                           }
                         },
-                        title: Text('${addr.label} · ${addr.recipient}'),
-                        subtitle:
-                            Text('${addr.addressLine} (${addr.phone})'),
+                        title: Text('${addr.label}'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${addr.recipient} | ${addr.phone}'),
+                            Text(addr.addressLine),
+                            if (addr.requestNote.isNotEmpty)
+                              Text('요청사항: ${addr.requestNote}'),
+                          ],
+                        ),
                         dense: true,
                         secondary: PopupMenuButton<String>(
                           // 기본 설정/삭제를 위한 컨텍스트 메뉴
@@ -246,6 +254,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           subtitle: Text(
                               '${priceFormat.format(coupon.discountAmount)}원 할인 · ${priceFormat.format(coupon.minOrderAmount)}원 이상'),
                           dense: true,
+                          secondary: IconButton(
+                            icon: const Icon(Icons.info_outline),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('쿠폰 적용 조건'),
+                                  content: Text(
+                                    '카테고리: ${coupon.allowedCategories.isEmpty ? '전체' : coupon.allowedCategories.join(', ')}\n'
+                                    '상품: ${coupon.allowedProductIds.isEmpty ? '전체' : coupon.allowedProductIds.join(', ')}\n'
+                                    '최소 주문: ${priceFormat.format(coupon.minOrderAmount)}원',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('확인')),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                           enabled: (coupon.allowedCategories.isEmpty ||
                                   coupon.allowedCategories
                                       .contains(product.category)) &&
@@ -315,6 +344,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: _isAgreementChecked,
+                    onChanged: (value) =>
+                        setState(() => _isAgreementChecked = value ?? false),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      '구매동의(필수)\n구매동의 약관 - 전자상거래법 제 8조 2항',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -330,25 +377,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     );
                     return;
                   }
-            if (userManager.selectedPayment == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('결제수단을 선택해 주세요.')),
-              );
-              return;
-            }
-            if (product.stock == 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('품절 상품입니다.')),
-              );
-              return;
-            }
-            // 로그인하지 않으면 결제 불가
-            if (!userManager.isLoggedIn) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
-              );
-              return;
-            }
+                  if (userManager.selectedPayment == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('결제수단을 선택해 주세요.')),
+                    );
+                    return;
+                  }
+                  if (product.stock == 0) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('품절 상품입니다.')),
+                    );
+                    return;
+                  }
+                  // 로그인하지 않으면 결제 불가
+                  if (!userManager.isLoggedIn) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
+                    );
+                    return;
+                  }
+                  if (!_isAgreementChecked) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('구매동의가 필요합니다.')),
+                    );
+                    return;
+                  }
 
                   // 1. 주문 목록에 추가
                   context.read<UserDataManager>().placeSingleOrder(
@@ -432,72 +485,124 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         TextEditingController(text: existing != null ? existing.addressLine : '');
     final phoneController =
         TextEditingController(text: existing != null ? existing.phone : '');
+    final requestController =
+        TextEditingController(text: existing != null ? existing.requestNote : '');
+    bool setAsDefault = existing != null
+        ? (context.read<UserDataManager>().selectedAddress?.id == existing.id)
+        : true;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(existing == null ? '배송지 추가' : '배송지 수정'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: labelController,
-                decoration: const InputDecoration(labelText: '라벨(예: 집/회사)'),
-              ),
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '수령인'),
-              ),
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(labelText: '주소'),
-              ),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(labelText: '연락처'),
-              ),
-            ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(existing == null ? '배송지 추가' : '배송지 수정'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: '이름'),
+                ),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: '휴대폰'),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: addressController,
+                        decoration: const InputDecoration(labelText: '주소'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('주소찾기 기능은 추후 연결됩니다.')),
+                        );
+                      },
+                      child: const Text('주소찾기'),
+                    ),
+                  ],
+                ),
+                TextField(
+                  controller: labelController,
+                  decoration: const InputDecoration(labelText: '상세정보'),
+                ),
+                TextField(
+                  controller: requestController,
+                  decoration: const InputDecoration(labelText: '배송요청사항'),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: setAsDefault,
+                      onChanged: (value) =>
+                          setState(() => setAsDefault = value ?? false),
+                    ),
+                    const Text('기본 배송지로 저장'),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('취소')),
-          ElevatedButton(
-            onPressed: () {
-              if (labelController.text.trim().isEmpty ||
-                  nameController.text.trim().isEmpty ||
-                  addressController.text.trim().isEmpty ||
-                  phoneController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('모든 정보를 입력해 주세요.')),
-                );
-                return;
-              }
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소')),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.trim().isEmpty ||
+                    phoneController.text.trim().isEmpty ||
+                    addressController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('필수 정보를 입력해 주세요.')),
+                  );
+                  return;
+                }
 
-              final manager = context.read<UserDataManager>();
-              if (existing == null) {
-                manager.addAddress(Address(
-                  id: 'addr_${DateTime.now().millisecondsSinceEpoch}',
-                  label: labelController.text.trim(),
-                  recipient: nameController.text.trim(),
-                  addressLine: addressController.text.trim(),
-                  phone: phoneController.text.trim(),
-                ));
-              } else {
-                manager.updateAddress(Address(
-                  id: existing.id,
-                  label: labelController.text.trim(),
-                  recipient: nameController.text.trim(),
-                  addressLine: addressController.text.trim(),
-                  phone: phoneController.text.trim(),
-                ));
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('저장'),
-          ),
-        ],
+                final manager = context.read<UserDataManager>();
+                if (existing == null) {
+                  final newId =
+                      'addr_${DateTime.now().millisecondsSinceEpoch}';
+                  manager.addAddress(Address(
+                    id: newId,
+                    label: labelController.text.trim().isEmpty
+                        ? '기본'
+                        : labelController.text.trim(),
+                    recipient: nameController.text.trim(),
+                    addressLine: addressController.text.trim(),
+                    phone: phoneController.text.trim(),
+                    requestNote: requestController.text.trim(),
+                  ));
+                  if (setAsDefault) {
+                    manager.setDefaultAddress(newId);
+                  }
+                } else {
+                  manager.updateAddress(Address(
+                    id: existing.id,
+                    label: labelController.text.trim().isEmpty
+                        ? existing.label
+                        : labelController.text.trim(),
+                    recipient: nameController.text.trim(),
+                    addressLine: addressController.text.trim(),
+                    phone: phoneController.text.trim(),
+                    requestNote: requestController.text.trim(),
+                    isDefault: existing.isDefault,
+                  ));
+                  if (setAsDefault) {
+                    manager.setDefaultAddress(existing.id);
+                  }
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('저장'),
+            ),
+          ],
+        ),
       ),
     );
   }

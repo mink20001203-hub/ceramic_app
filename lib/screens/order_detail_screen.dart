@@ -110,6 +110,22 @@ class OrderDetailScreen extends StatelessWidget {
                     child: Text('마일리지 사용: ${order.mileageUsed}P',
                         style: const TextStyle(color: Colors.grey)),
                   ),
+                const SizedBox(height: 8),
+                const Text('혜택 이력',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(
+                  order.couponTitle != null
+                      ? '쿠폰 적용: ${order.couponTitle}'
+                      : '쿠폰 적용 없음',
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                Text(
+                  order.mileageUsed > 0
+                      ? '마일리지 사용: ${order.mileageUsed}P'
+                      : '마일리지 사용 없음',
+                  style: const TextStyle(color: Colors.grey),
+                ),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
