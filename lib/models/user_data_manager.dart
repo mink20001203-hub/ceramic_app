@@ -51,7 +51,8 @@ class Order {
   final List<OrderItem> items;
   final int totalAmount;
   final DateTime date;
-  final String status; // 예: 결제완료/배송준비/배송중/배송완료
+  String status; // 예: 결제완료/배송준비/배송중/배송완료
+  final List<OrderStatusLog> statusLogs;
 
   Order({
     required this.id,
@@ -59,7 +60,15 @@ class Order {
     required this.totalAmount,
     required this.date,
     required this.status,
+    required this.statusLogs,
   });
+}
+
+class OrderStatusLog {
+  final String status;
+  final DateTime date;
+
+  OrderStatusLog({required this.status, required this.date});
 }
 
 // --- 2-2. 주소/결제수단 모델 ---
@@ -165,6 +174,34 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  void addAddress(Address address) {
+    _addresses.add(address);
+    _selectedAddressId = address.id;
+    notifyListeners();
+  }
+
+  void updateAddress(Address updated) {
+    final index = _addresses.indexWhere((a) => a.id == updated.id);
+    if (index != -1) {
+      _addresses[index] = updated;
+      notifyListeners();
+    }
+  }
+
+  void addPaymentMethod(PaymentMethod method) {
+    _paymentMethods.add(method);
+    _selectedPaymentId = method.id;
+    notifyListeners();
+  }
+
+  void updatePaymentMethod(PaymentMethod method) {
+    final index = _paymentMethods.indexWhere((p) => p.id == method.id);
+    if (index != -1) {
+      _paymentMethods[index] = method;
+      notifyListeners();
+    }
+  }
+
   void login() {
     // 서버 연동 없이 로그인 상태만 토글하는 데모 로직.
     _isLoggedIn = true;
@@ -226,10 +263,12 @@ class UserDataManager with ChangeNotifier {
   List<CartItem> get items => _cartWithQuantity;
 
   void addToCart(Product product, {String? selectedOption}) {
+    if (product.stock == 0) return;
     // 이미 담긴 상품이면 수량만 증가시켜 중복을 방지한다.
     for (var item in _cartWithQuantity) {
       if (item.product.id == product.id &&
           item.option == (selectedOption ?? item.option)) {
+        if (item.quantity >= product.stock) return;
         item.quantity++;
         notifyListeners();
         return;
@@ -249,6 +288,7 @@ class UserDataManager with ChangeNotifier {
   void incrementQuantity(String productId, String? option) {
     for (var item in _cartWithQuantity) {
       if (item.product.id == productId && item.option == option) {
+        if (item.quantity >= item.product.stock) return;
         item.quantity++;
         notifyListeners();
         return;
@@ -325,6 +365,9 @@ class UserDataManager with ChangeNotifier {
       totalAmount: total,
       date: DateTime.now(),
       status: '결제완료',
+      statusLogs: [
+        OrderStatusLog(status: '결제완료', date: DateTime.now()),
+      ],
     ));
 
     _mileage += 500;
@@ -353,10 +396,41 @@ class UserDataManager with ChangeNotifier {
       totalAmount: total,
       date: DateTime.now(),
       status: '결제완료',
+      statusLogs: [
+        OrderStatusLog(status: '결제완료', date: DateTime.now()),
+      ],
     ));
 
     _mileage += 500;
     notifyListeners();
+  }
+
+  // 주문 상태 전환
+  static const List<String> _orderStatuses = [
+    '결제완료',
+    '배송준비',
+    '배송중',
+    '배송완료',
+  ];
+
+  void advanceOrderStatus(String orderId) {
+    final order = _orders.firstWhere((o) => o.id == orderId);
+    final currentIndex = _orderStatuses.indexOf(order.status);
+    if (currentIndex >= 0 && currentIndex < _orderStatuses.length - 1) {
+      final nextStatus = _orderStatuses[currentIndex + 1];
+      order.status = nextStatus;
+      order.statusLogs.add(OrderStatusLog(status: nextStatus, date: DateTime.now()));
+      notifyListeners();
+    }
+  }
+
+  void setOrderStatus(String orderId, String status) {
+    final order = _orders.firstWhere((o) => o.id == orderId);
+    if (order.status != status) {
+      order.status = status;
+      order.statusLogs.add(OrderStatusLog(status: status, date: DateTime.now()));
+      notifyListeners();
+    }
   }
 
   // --- 리뷰 로직 (수정 및 1회 제한 기능 추가) ---

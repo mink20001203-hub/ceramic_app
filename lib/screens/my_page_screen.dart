@@ -415,55 +415,82 @@ class MyPageScreen extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('주문번호 ${order.id}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 6),
-              Text('${DateFormat('yyyy.MM.dd').format(order.date)} · ${order.status}',
-                  style: const TextStyle(color: Colors.grey)),
-              const SizedBox(height: 16),
-              const Text('주문 상품',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: order.items.length,
-                itemBuilder: (context, index) {
-                  final item = order.items[index];
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(item.product.title),
-                    subtitle: Text(
-                        '옵션: ${item.option ?? '기본'} · 수량: ${item.quantity}'),
-                    trailing: Text(
-                      '${priceFormat.format(item.unitPrice * item.quantity)}원',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  );
-                },
-              ),
-              const Divider(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Consumer<UserDataManager>(
+          builder: (context, manager, child) {
+            final freshOrder =
+                manager.orders.firstWhere((o) => o.id == order.id);
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('총 결제금액',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text('${priceFormat.format(order.totalAmount)}원',
+                  Text('주문번호 ${freshOrder.id}',
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF6342E8))),
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  Text(
+                      '${DateFormat('yyyy.MM.dd').format(freshOrder.date)} · ${freshOrder.status}',
+                      style: const TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 12),
+                  const Text('상태 로그',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  ...freshOrder.statusLogs.map(
+                    (log) => Text(
+                      '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (freshOrder.status != '배송완료')
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () =>
+                            manager.advanceOrderStatus(freshOrder.id),
+                        child: const Text('다음 상태로 변경'),
+                      ),
+                    ),
+                  const Divider(),
+                  const Text('주문 상품',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: freshOrder.items.length,
+                    itemBuilder: (context, index) {
+                      final item = freshOrder.items[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(item.product.title),
+                        subtitle: Text(
+                            '옵션: ${item.option ?? '기본'} · 수량: ${item.quantity}'),
+                        trailing: Text(
+                          '${priceFormat.format(item.unitPrice * item.quantity)}원',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('총 결제금액',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text('${priceFormat.format(freshOrder.totalAmount)}원',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6342E8))),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                 ],
               ),
-              const SizedBox(height: 12),
-            ],
-          ),
+            );
+          },
         );
       },
     );

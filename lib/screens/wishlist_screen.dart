@@ -36,6 +36,7 @@ class WishlistScreen extends StatelessWidget {
               itemCount: wishlist.length,
               itemBuilder: (context, index) {
                 final product = wishlist[index];
+                final isSoldOut = product.stock == 0;
                 return Card(
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -62,7 +63,10 @@ class WishlistScreen extends StatelessWidget {
                       product.title,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: product.isSale && product.salePrice != null
+                    subtitle: isSoldOut
+                        ? const Text('품절',
+                            style: TextStyle(color: Colors.red))
+                        : product.isSale && product.salePrice != null
                         ? Row(
                             children: [
                               Text(
@@ -93,6 +97,13 @@ class WishlistScreen extends StatelessWidget {
                           icon: const Icon(Icons.shopping_cart_outlined),
                           onPressed: () {
                             // 장바구니에 상품 추가
+                            if (isSoldOut) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('품절 상품은 담을 수 없습니다.')),
+                              );
+                              return;
+                            }
                             userManager.addToCart(
                               product,
                               selectedOption: product.options.isNotEmpty

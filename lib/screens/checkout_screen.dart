@@ -49,22 +49,39 @@ class CheckoutScreen extends StatelessWidget {
             const Divider(),
 
             // 2. 배송지 정보
-            _buildSectionTitle('배송지 정보'),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Text('배송지 정보',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => _showAddressDialog(context),
+                    child: const Text('추가'),
+                  ),
+                ],
+              ),
+            ),
             Column(
               children: userManager.addresses
                   .map(
-                    (addr) => RadioListTile<String>(
-                      value: addr.id,
-                      groupValue: userManager.selectedAddress?.id,
-                      onChanged: (value) {
-                        if (value != null) {
-                          userManager.setSelectedAddress(value);
-                        }
-                      },
-                      title: Text('${addr.label} · ${addr.recipient}'),
-                      subtitle:
-                          Text('${addr.addressLine} (${addr.phone})'),
-                      dense: true,
+                    (addr) => GestureDetector(
+                      onLongPress: () => _showAddressDialog(context, existing: addr),
+                      child: RadioListTile<String>(
+                        value: addr.id,
+                        groupValue: userManager.selectedAddress?.id,
+                        onChanged: (value) {
+                          if (value != null) {
+                            userManager.setSelectedAddress(value);
+                          }
+                        },
+                        title: Text('${addr.label} · ${addr.recipient}'),
+                        subtitle:
+                            Text('${addr.addressLine} (${addr.phone})'),
+                        dense: true,
+                      ),
                     ),
                   )
                   .toList(),
@@ -72,20 +89,37 @@ class CheckoutScreen extends StatelessWidget {
             const Divider(),
 
             // 3. 결제 수단
-            _buildSectionTitle('결제수단'),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  const Text('결제수단',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => _showPaymentDialog(context),
+                    child: const Text('추가'),
+                  ),
+                ],
+              ),
+            ),
             Column(
               children: userManager.paymentMethods
                   .map(
-                    (pm) => RadioListTile<String>(
-                      value: pm.id,
-                      groupValue: userManager.selectedPayment?.id,
-                      onChanged: (value) {
-                        if (value != null) {
-                          userManager.setSelectedPayment(value);
-                        }
-                      },
-                      title: Text(pm.label),
-                      dense: true,
+                    (pm) => GestureDetector(
+                      onLongPress: () => _showPaymentDialog(context, existing: pm),
+                      child: RadioListTile<String>(
+                        value: pm.id,
+                        groupValue: userManager.selectedPayment?.id,
+                        onChanged: (value) {
+                          if (value != null) {
+                            userManager.setSelectedPayment(value);
+                          }
+                        },
+                        title: Text(pm.label),
+                        dense: true,
+                      ),
                     ),
                   )
                   .toList(),
@@ -113,6 +147,25 @@ class CheckoutScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: ElevatedButton(
           onPressed: () {
+            if (userManager.selectedAddress == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('배송지를 선택해 주세요.')),
+              );
+              return;
+            }
+            if (userManager.selectedPayment == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('결제수단을 선택해 주세요.')),
+              );
+              return;
+            }
+            if (product.stock == 0) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('품절 상품입니다.')),
+              );
+              return;
+            }
+
             // 1. 주문 목록에 추가
             context
                 .read<UserDataManager>()
@@ -166,6 +219,157 @@ class CheckoutScreen extends StatelessWidget {
                   fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
                   fontSize: isTotal ? 20 : 14)),
         ],
+      ),
+    );
+  }
+
+  void _showAddressDialog(BuildContext context, {Address? existing}) {
+    final labelController =
+        TextEditingController(text: existing != null ? existing.label : '');
+    final nameController =
+        TextEditingController(text: existing != null ? existing.recipient : '');
+    final addressController =
+        TextEditingController(text: existing != null ? existing.addressLine : '');
+    final phoneController =
+        TextEditingController(text: existing != null ? existing.phone : '');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(existing == null ? '배송지 추가' : '배송지 수정'),
+        content: SingleChildScrollView(
+          child: Column(
+            children: [
+              TextField(
+                controller: labelController,
+                decoration: const InputDecoration(labelText: '라벨(예: 집/회사)'),
+              ),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: '수령인'),
+              ),
+              TextField(
+                controller: addressController,
+                decoration: const InputDecoration(labelText: '주소'),
+              ),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(labelText: '연락처'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소')),
+          ElevatedButton(
+            onPressed: () {
+              if (labelController.text.trim().isEmpty ||
+                  nameController.text.trim().isEmpty ||
+                  addressController.text.trim().isEmpty ||
+                  phoneController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('모든 정보를 입력해 주세요.')),
+                );
+                return;
+              }
+
+              final manager = context.read<UserDataManager>();
+              if (existing == null) {
+                manager.addAddress(Address(
+                  id: 'addr_${DateTime.now().millisecondsSinceEpoch}',
+                  label: labelController.text.trim(),
+                  recipient: nameController.text.trim(),
+                  addressLine: addressController.text.trim(),
+                  phone: phoneController.text.trim(),
+                ));
+              } else {
+                manager.updateAddress(Address(
+                  id: existing.id,
+                  label: labelController.text.trim(),
+                  recipient: nameController.text.trim(),
+                  addressLine: addressController.text.trim(),
+                  phone: phoneController.text.trim(),
+                  isDefault: existing.isDefault,
+                ));
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPaymentDialog(BuildContext context, {PaymentMethod? existing}) {
+    final labelController =
+        TextEditingController(text: existing != null ? existing.label : '');
+    String selectedType = existing != null ? existing.type : 'CARD';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(existing == null ? '결제수단 추가' : '결제수단 수정'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: labelController,
+                decoration: const InputDecoration(labelText: '표시 이름'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                decoration: const InputDecoration(labelText: '유형'),
+                items: const [
+                  DropdownMenuItem(value: 'CARD', child: Text('신용카드')),
+                  DropdownMenuItem(value: 'NAVER', child: Text('네이버페이')),
+                  DropdownMenuItem(value: 'KAKAO', child: Text('카카오페이')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => selectedType = value);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('취소')),
+            ElevatedButton(
+              onPressed: () {
+                if (labelController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('결제수단 이름을 입력해 주세요.')),
+                  );
+                  return;
+                }
+
+                final manager = context.read<UserDataManager>();
+                if (existing == null) {
+                  manager.addPaymentMethod(PaymentMethod(
+                    id: 'pm_${DateTime.now().millisecondsSinceEpoch}',
+                    label: labelController.text.trim(),
+                    type: selectedType,
+                  ));
+                } else {
+                  manager.updatePaymentMethod(PaymentMethod(
+                    id: existing.id,
+                    label: labelController.text.trim(),
+                    type: selectedType,
+                  ));
+                }
+                Navigator.pop(context);
+              },
+              child: const Text('저장'),
+            ),
+          ],
+        ),
       ),
     );
   }

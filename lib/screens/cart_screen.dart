@@ -30,6 +30,18 @@ class CartScreen extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {
+                  final hasSoldOut = userManager.items
+                      .any((item) => item.product.stock == 0);
+                  final overStock = userManager.items.any(
+                      (item) => item.quantity > item.product.stock);
+                  if (hasSoldOut || overStock) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('재고를 확인해 주세요. 품절/수량 초과 항목이 있습니다.')),
+                    );
+                    return;
+                  }
+
                   // 1. 팝업 닫기
                   Navigator.of(context).pop();
 
@@ -114,6 +126,13 @@ class CartScreen extends StatelessWidget {
                                 subtitle: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    if (item.product.stock == 0)
+                                      const Text('품절',
+                                          style: TextStyle(color: Colors.red)),
+                                    if (item.product.stock > 0 &&
+                                        item.quantity > item.product.stock)
+                                      const Text('재고 부족',
+                                          style: TextStyle(color: Colors.red)),
                                     if (item.option != null)
                                       Text('옵션: ${item.option}'),
                                     Text(
