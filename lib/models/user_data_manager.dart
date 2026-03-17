@@ -632,6 +632,13 @@ class UserDataManager with ChangeNotifier {
   final List<Review> _reviews = [];
   List<Review> get reviews => _reviews;
 
+  // 리뷰 삭제
+  void removeReviewAt(int index) {
+    _reviews.removeAt(index);
+    if (_reviewCount > 0) _reviewCount--;
+    notifyListeners();
+  }
+
   // ✅ 1. 특정 상품 리뷰 존재 여부 확인 (hasReview 에러 해결)
   bool hasReview(String productId) {
     return _reviews.any((r) => r.productId == productId);

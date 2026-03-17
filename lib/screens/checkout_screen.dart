@@ -230,6 +230,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           value: coupon.id,
                           groupValue: userManager.selectedCoupon?.id,
                           onChanged: (value) {
+                            final isApplicable =
+                                (coupon.allowedCategories.isEmpty ||
+                                        coupon.allowedCategories
+                                            .contains(product.category)) &&
+                                    (coupon.allowedProductIds.isEmpty ||
+                                        coupon.allowedProductIds
+                                            .contains(product.id)) &&
+                                    itemPrice >= coupon.minOrderAmount;
+                            if (!isApplicable) return;
                             userManager.setSelectedCoupon(value);
                             setState(() {});
                           },
@@ -237,6 +246,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           subtitle: Text(
                               '${priceFormat.format(coupon.discountAmount)}원 할인 · ${priceFormat.format(coupon.minOrderAmount)}원 이상'),
                           dense: true,
+                          enabled: (coupon.allowedCategories.isEmpty ||
+                                  coupon.allowedCategories
+                                      .contains(product.category)) &&
+                              (coupon.allowedProductIds.isEmpty ||
+                                  coupon.allowedProductIds
+                                      .contains(product.id)) &&
+                              itemPrice >= coupon.minOrderAmount,
                         ),
                       ),
                   const SizedBox(height: 8),
@@ -361,11 +377,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     style: const TextStyle(fontSize: 18, color: Colors.white)),
               )
             : OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const LoginScreen()),
                   );
+                  if (!mounted) return;
+                  setState(() {});
                 },
                 child: const Text('로그인 후 결제하기'),
               ),

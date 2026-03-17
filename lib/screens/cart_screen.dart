@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
+import 'login_screen.dart';
 
 // 장바구니 화면: 수량 변경, 삭제, 주문 확정까지 처리한다.
 class CartScreen extends StatelessWidget {
@@ -90,12 +91,33 @@ class CartScreen extends StatelessWidget {
                         (coupon) => RadioListTile<String?>(
                           value: coupon.id,
                           groupValue: selectedCouponId,
-                          onChanged: (value) =>
-                              setState(() => selectedCouponId = value),
+                          onChanged: (value) {
+                            final isApplicable =
+                                (coupon.allowedCategories.isEmpty ||
+                                        userManager.items.any((item) =>
+                                            coupon.allowedCategories
+                                                .contains(item.product.category))) &&
+                                    (coupon.allowedProductIds.isEmpty ||
+                                        userManager.items.any((item) =>
+                                            coupon.allowedProductIds
+                                                .contains(item.product.id))) &&
+                                    subtotal >= coupon.minOrderAmount;
+                            if (!isApplicable) return;
+                            setState(() => selectedCouponId = value);
+                          },
                           title: Text(coupon.title),
                           subtitle: Text(
                               '${NumberFormat('#,###', 'ko_KR').format(coupon.discountAmount)}원 할인 · ${NumberFormat('#,###', 'ko_KR').format(coupon.minOrderAmount)}원 이상'),
                           dense: true,
+                          enabled: (coupon.allowedCategories.isEmpty ||
+                                  userManager.items.any((item) =>
+                                      coupon.allowedCategories
+                                          .contains(item.product.category))) &&
+                              (coupon.allowedProductIds.isEmpty ||
+                                  userManager.items.any((item) =>
+                                      coupon.allowedProductIds
+                                          .contains(item.product.id))) &&
+                              subtotal >= coupon.minOrderAmount,
                         ),
                       ),
                   const SizedBox(height: 8),
@@ -138,24 +160,55 @@ class CartScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F7F7),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                            '상품합계: ${NumberFormat('#,###', 'ko_KR').format(subtotal)}원'),
+                        Text(
+                            '쿠폰할인: -${NumberFormat('#,###', 'ko_KR').format(couponDiscount)}원'),
+                        Text(
+                            '마일리지사용: -${NumberFormat('#,###', 'ko_KR').format(mileageToUse)}원'),
+                      ],
+                    ),
+                  ),
                   Text(
                       '최종 결제 금액: ${NumberFormat('#,###', 'ko_KR').format(finalTotal)}원'),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        userManager.placeOrderFromCart(
-                          couponId: couponDiscount > 0 ? selectedCouponId : null,
-                          mileageUsed: mileageToUse,
-                        );
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('주문이 완료되었습니다.')),
-                        );
-                      },
-                      child: const Text('결제하기'),
-                    ),
+                    child: userManager.isLoggedIn
+                        ? ElevatedButton(
+                            onPressed: () {
+                              userManager.placeOrderFromCart(
+                                couponId:
+                                    couponDiscount > 0 ? selectedCouponId : null,
+                                mileageUsed: mileageToUse,
+                              );
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('주문이 완료되었습니다.')),
+                              );
+                            },
+                            child: const Text('결제하기'),
+                          )
+                        : OutlinedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const LoginScreen()),
+                              );
+                            },
+                            child: const Text('로그인 후 결제하기'),
+                          ),
                   ),
                 ],
               ),

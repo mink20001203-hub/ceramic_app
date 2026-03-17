@@ -5,6 +5,8 @@ import '../models/user_data_manager.dart';
 import '../models/product.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
+import 'coupon_list_screen.dart';
+import 'review_manage_screen.dart';
 
 // 마이페이지: 로그인 상태, 구매 내역, 리뷰 작성/수정을 관리한다.
 class MyPageScreen extends StatelessWidget {
@@ -82,6 +84,8 @@ class MyPageScreen extends StatelessWidget {
           _buildProfileSection(context, userManager),
           const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
           _buildOrderSection(orders, priceFormat),
+          const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
+          _buildBenefitSection(context, userManager),
           const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -170,6 +174,98 @@ class MyPageScreen extends StatelessWidget {
                     );
                   },
                 ),
+        ],
+      ),
+    );
+  }
+
+  // --- 2-2. 혜택(쿠폰/마일리지) 섹션 ---
+  Widget _buildBenefitSection(
+      BuildContext context, UserDataManager userManager) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.card_giftcard_outlined,
+                  color: Color(0xFF6342E8)),
+              const SizedBox(width: 8),
+              const Text('혜택',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text('쿠폰 ${userManager.availableCouponCount}개',
+                  style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F7F7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('마일리지',
+                          style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 6),
+                      Text('${userManager.mileage}P',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6342E8))),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF7F7F7),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text('쿠폰',
+                          style: TextStyle(color: Colors.grey)),
+                      const SizedBox(height: 6),
+                      Text('${userManager.availableCouponCount}개',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF6342E8))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CouponListScreen()),
+              ),
+              child: const Text('쿠폰 목록 확인'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ReviewManageScreen()),
+              ),
+              child: const Text('내 리뷰 관리'),
+            ),
+          ),
         ],
       ),
     );
