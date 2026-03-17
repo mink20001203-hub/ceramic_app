@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../models/user_data_manager.dart';
 import 'package:provider/provider.dart';
+import 'login_screen.dart';
 
 // 결제 화면: 상품 요약과 결제 금액을 보여주고 구매를 확정한다.
 class CheckoutScreen extends StatefulWidget {
@@ -200,6 +201,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
+                  if (selectedCoupon != null &&
+                      ((selectedCoupon.allowedCategories.isNotEmpty &&
+                              !selectedCoupon.allowedCategories
+                                  .contains(product.category)) ||
+                          (selectedCoupon.allowedProductIds.isNotEmpty &&
+                              !selectedCoupon.allowedProductIds
+                                  .contains(product.id))))
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 8),
+                      child: Text('선택한 쿠폰은 현재 상품에 적용할 수 없습니다.',
+                          style: TextStyle(color: Colors.red)),
+                    ),
                   RadioListTile<String?>(
                     value: null,
                     groupValue: userManager.selectedCoupon?.id,
@@ -238,7 +251,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             hintText: '보유 ${userManager.mileage}P',
                             border: const OutlineInputBorder(),
                           ),
-                          onChanged: (_) => setState(() {}),
+                          onChanged: (value) {
+                            final raw = value.replaceAll(',', '');
+                            final parsed = int.tryParse(raw) ?? 0;
+                            final clamped =
+                                parsed < 0 ? 0 : (parsed > maxMileage ? maxMileage : parsed);
+                            final formatted =
+                                NumberFormat('#,###', 'ko_KR').format(clamped);
+                            _mileageController.value = TextEditingValue(
+                              text: formatted,
+                              selection:
+                                  TextSelection.collapsed(offset: formatted.length),
+                            );
+                            setState(() {});
+                          },
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -279,14 +305,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // 최종 결제하기 버튼
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () {
-            if (userManager.selectedAddress == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('배송지를 선택해 주세요.')),
-              );
-              return;
-            }
+        child: userManager.isLoggedIn
+            ? ElevatedButton(
+                onPressed: () {
+                  if (userManager.selectedAddress == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('배송지를 선택해 주세요.')),
+                    );
+                    return;
+                  }
             if (userManager.selectedPayment == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('결제수단을 선택해 주세요.')),
@@ -307,32 +334,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               return;
             }
 
-            // 1. 주문 목록에 추가
-            context.read<UserDataManager>().placeSingleOrder(
-                  product,
-                  option: selectedOption,
-                  couponId: couponDiscount > 0
-                      ? userManager.selectedCoupon?.id
-                      : null,
-                  mileageUsed: mileageToUse,
-                );
+                  // 1. 주문 목록에 추가
+                  context.read<UserDataManager>().placeSingleOrder(
+                        product,
+                        option: selectedOption,
+                        couponId: couponDiscount > 0
+                            ? userManager.selectedCoupon?.id
+                            : null,
+                        mileageUsed: mileageToUse,
+                      );
 
             // 2. 만약 장바구니에 이 상품이 있다면 제거
-            context
-                .read<UserDataManager>()
-                .removeFromCart(product, option: selectedOption);
+                  context
+                      .read<UserDataManager>()
+                      .removeFromCart(product, option: selectedOption);
 
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                 content: Text('주문이 완료되었습니다! 장바구니에서 상품을 비웠습니다.')));
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            minimumSize: const Size(double.infinity, 55),
-          ),
-          child: Text('${priceFormat.format(totalPrice)}원 결제하기',
-              style: const TextStyle(fontSize: 18, color: Colors.white)),
-        ),
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  minimumSize: const Size(double.infinity, 55),
+                ),
+                child: Text('${priceFormat.format(finalTotal)}원 결제하기',
+                    style: const TextStyle(fontSize: 18, color: Colors.white)),
+              )
+            : OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
+                child: const Text('로그인 후 결제하기'),
+              ),
       ),
     );
   }

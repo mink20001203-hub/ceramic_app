@@ -116,6 +116,8 @@ class Coupon {
   final String title;
   final int discountAmount;
   final int minOrderAmount;
+  final List<String> allowedCategories; // 적용 가능한 카테고리
+  final List<String> allowedProductIds; // 적용 가능한 상품 ID
   bool isUsed;
 
   Coupon({
@@ -123,6 +125,8 @@ class Coupon {
     required this.title,
     required this.discountAmount,
     required this.minOrderAmount,
+    this.allowedCategories = const [],
+    this.allowedProductIds = const [],
     this.isUsed = false,
   });
 }
@@ -171,12 +175,14 @@ class UserDataManager with ChangeNotifier {
         id: 'c1',
         title: '웰컴 5,000원',
         discountAmount: 5000,
-        minOrderAmount: 30000),
+        minOrderAmount: 30000,
+        allowedCategories: ['컵', '접시']),
     Coupon(
         id: 'c2',
         title: '세일 10,000원',
         discountAmount: 10000,
-        minOrderAmount: 70000),
+        minOrderAmount: 70000,
+        allowedProductIds: ['p9', 'p10']),
   ];
   String _selectedAddressId = '';
   String _selectedPaymentId = '';
@@ -450,10 +456,25 @@ class UserDataManager with ChangeNotifier {
   }
 
   // 쿠폰 할인 계산
-  int _calculateCouponDiscount(Coupon? coupon, int subtotal) {
+  bool _isCouponApplicable(Coupon coupon, List<OrderItem> items, int subtotal) {
+    if (coupon.isUsed) return false;
+    if (subtotal < coupon.minOrderAmount) return false;
+    if (coupon.allowedCategories.isNotEmpty) {
+      final hasCategory = items.any(
+          (item) => coupon.allowedCategories.contains(item.product.category));
+      if (!hasCategory) return false;
+    }
+    if (coupon.allowedProductIds.isNotEmpty) {
+      final hasProduct = items.any(
+          (item) => coupon.allowedProductIds.contains(item.product.id));
+      if (!hasProduct) return false;
+    }
+    return true;
+  }
+
+  int _calculateCouponDiscount(Coupon? coupon, int subtotal, List<OrderItem> items) {
     if (coupon == null) return 0;
-    if (coupon.isUsed) return 0;
-    if (subtotal < coupon.minOrderAmount) return 0;
+    if (!_isCouponApplicable(coupon, items, subtotal)) return 0;
     return coupon.discountAmount;
   }
 
@@ -489,7 +510,7 @@ class UserDataManager with ChangeNotifier {
         ? null
         : _coupons.firstWhere((c) => c.id == couponId,
             orElse: () => _coupons.first);
-    final couponDiscount = _calculateCouponDiscount(coupon, subtotal);
+    final couponDiscount = _calculateCouponDiscount(coupon, subtotal, items);
     final mileageToUse =
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
     final total = subtotal - couponDiscount - mileageToUse;
@@ -542,7 +563,7 @@ class UserDataManager with ChangeNotifier {
         ? null
         : _coupons.firstWhere((c) => c.id == couponId,
             orElse: () => _coupons.first);
-    final couponDiscount = _calculateCouponDiscount(coupon, subtotal);
+    final couponDiscount = _calculateCouponDiscount(coupon, subtotal, items);
     final mileageToUse =
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
     final total = subtotal - couponDiscount - mileageToUse;

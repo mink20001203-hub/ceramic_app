@@ -16,6 +16,7 @@ class CartScreen extends StatelessWidget {
         BuildContext context, UserDataManager userManager) {
       String? selectedCouponId;
       int mileageToUse = 0;
+      final mileageController = TextEditingController(text: '0');
 
       int subtotal = userManager.items.fold<int>(0, (sum, item) {
         final unitPrice = (item.product.isSale && item.product.salePrice != null)
@@ -47,21 +48,35 @@ class CartScreen extends StatelessWidget {
                     : (subtotal - couponDiscount);
             final finalTotal = subtotal - couponDiscount - mileageToUse;
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('쿠폰/마일리지 적용',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
+                return Padding(
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('쿠폰/마일리지 적용',
+                          style:
+                              TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      if (coupon != null &&
+                          ((coupon.allowedCategories.isNotEmpty &&
+                                  !userManager.items.any((item) =>
+                                      coupon.allowedCategories
+                                          .contains(item.product.category))) ||
+                              (coupon.allowedProductIds.isNotEmpty &&
+                                  !userManager.items.any((item) =>
+                                      coupon.allowedProductIds
+                                          .contains(item.product.id)))))
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 8),
+                          child: Text('선택한 쿠폰은 현재 장바구니에 적용할 수 없습니다.',
+                              style: TextStyle(color: Colors.red)),
+                        ),
                   RadioListTile<String?>(
                     value: null,
                     groupValue: selectedCouponId,
@@ -88,6 +103,7 @@ class CartScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: TextField(
+                          controller: mileageController,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: '마일리지 사용',
@@ -95,10 +111,20 @@ class CartScreen extends StatelessWidget {
                             border: const OutlineInputBorder(),
                           ),
                           onChanged: (value) {
-                            final parsed = int.tryParse(value) ?? 0;
+                            final raw = value.replaceAll(',', '');
+                            final parsed = int.tryParse(raw) ?? 0;
+                            final clamped = parsed < 0
+                                ? 0
+                                : (parsed > maxMileage ? maxMileage : parsed);
+                            final formatted =
+                                NumberFormat('#,###', 'ko_KR').format(clamped);
+                            mileageController.value = TextEditingValue(
+                              text: formatted,
+                              selection: TextSelection.collapsed(
+                                  offset: formatted.length),
+                            );
                             setState(() {
-                              mileageToUse =
-                                  parsed > maxMileage ? maxMileage : parsed;
+                              mileageToUse = clamped;
                             });
                           },
                         ),
