@@ -7,18 +7,15 @@ import 'package:provider/provider.dart';
 import 'models/user_data_manager.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_page_screen.dart';
-import 'screens/search_screen.dart';
-import 'models/cart_provider.dart';
 import 'screens/cart_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/search_screen.dart';
-import 'screens/splash_screen.dart';
 
+// 앱 시작점. Provider를 최상단에 등록해서 전역 상태를 관리한다.
 void main() {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => UserDataManager()),
       ],
       child: const MyApp(),
@@ -63,23 +60,24 @@ class MyApp extends StatelessWidget {
 class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
 
+  // 빌드마다 위젯을 다시 생성하지 않도록 화면 리스트를 고정한다.
+  static const List<Widget> _screens = [
+    HomeScreen(),
+    CategoryScreen(),
+    CartScreen(),
+    MyPageScreen(),
+  ];
+
   // ⚠️ 기존의 리스트 방식을 build 안으로 옮기거나, 직접 인덱스로 접근하게 수정합니다.
   @override
   Widget build(BuildContext context) {
-    // Provider로부터 userManager를 가져옵니다.
-    final userManager = Provider.of<UserDataManager>(context);
-
-    // 표시할 화면들을 리스트로 정의 (build 안에 두어야 상태 변경 시 확실히 인지합니다)
-    final List<Widget> screens = [
-      const HomeScreen(),
-      const CategoryScreen(),
-      const CartScreen(),
-      const MyPageScreen(),
-    ];
+    // 탭 인덱스 변경 시에만 화면이 다시 빌드되도록 선택적으로 구독한다.
+    final currentTabIndex =
+        context.select((UserDataManager m) => m.currentTabIndex);
 
     return Scaffold(
       // 1. 홈 탭(0번)일 때만 앱바를 표시하는 기존 로직 유지
-      appBar: userManager.currentTabIndex == 0
+      appBar: currentTabIndex == 0
           ? AppBar(
               title: const Text('도자기 스튜디오'),
               actions: [
@@ -99,13 +97,14 @@ class MainScreen extends StatelessWidget {
           : null,
 
       // 2. 현재 인덱스에 맞는 화면 표시
-      body: screens[userManager.currentTabIndex],
+      body: _screens[currentTabIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: userManager.currentTabIndex,
+        currentIndex: currentTabIndex,
         onTap: (index) {
-          userManager.setTabIndex(index); // 탭 클릭 시 변경
+          // 탭 인덱스만 변경해서 불필요한 리빌드를 줄인다.
+          context.read<UserDataManager>().setTabIndex(index);
         },
         items: [
           const BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
@@ -114,9 +113,9 @@ class MainScreen extends StatelessWidget {
 
           // --- 장바구니 아이콘 (애니메이션 포함) ---
           BottomNavigationBarItem(
-            icon: Consumer<UserDataManager>(
-              builder: (context, userManager, child) {
-                int count = userManager.items.length;
+            icon: Selector<UserDataManager, int>(
+              selector: (_, manager) => manager.items.length,
+              builder: (context, count, child) {
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [

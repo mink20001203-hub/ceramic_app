@@ -5,12 +5,14 @@ import '../models/user_data_manager.dart';
 import '../models/product.dart';
 import 'login_screen.dart';
 
+// 마이페이지: 로그인 상태, 구매 내역, 리뷰 작성/수정을 관리한다.
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final userManager = Provider.of<UserDataManager>(context);
+    final orders = userManager.orders;
     final purchasedItems = userManager.purchasedProducts;
     final priceFormat = NumberFormat('#,###', 'ko_KR');
 
@@ -32,7 +34,8 @@ class MyPageScreen extends StatelessWidget {
         ],
       ),
       body: userManager.isLoggedIn
-          ? _buildFullMyPage(context, userManager, purchasedItems, priceFormat)
+          ? _buildFullMyPage(
+              context, userManager, orders, purchasedItems, priceFormat)
           : _buildLoginPrompt(context),
     );
   }
@@ -66,12 +69,18 @@ class MyPageScreen extends StatelessWidget {
   }
 
   // --- 2. 로그인 후 전체 UI ---
-  Widget _buildFullMyPage(BuildContext context, UserDataManager userManager,
-      List<Product> purchasedItems, NumberFormat priceFormat) {
+  Widget _buildFullMyPage(
+      BuildContext context,
+      UserDataManager userManager,
+      List<Order> orders,
+      List<Product> purchasedItems,
+      NumberFormat priceFormat) {
     return SingleChildScrollView(
       child: Column(
         children: [
           _buildProfileSection(context, userManager),
+          const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
+          _buildOrderSection(orders, priceFormat),
           const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -128,7 +137,8 @@ class MyPageScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
-                            Text('${priceFormat.format(product.price)}원',
+                            Text(
+                                '${priceFormat.format((product.isSale && product.salePrice != null) ? product.salePrice! : product.price)}원',
                                 style: const TextStyle(color: Colors.grey)),
                             const SizedBox(height: 12),
                             ElevatedButton(
@@ -159,6 +169,66 @@ class MyPageScreen extends StatelessWidget {
                     );
                   },
                 ),
+        ],
+      ),
+    );
+  }
+
+  // --- 2-1. 주문 내역 섹션 ---
+  Widget _buildOrderSection(List<Order> orders, NumberFormat priceFormat) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.receipt_long_outlined, color: Color(0xFF6342E8)),
+              const SizedBox(width: 8),
+              const Text('주문 내역',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text('총 ${orders.length}건',
+                  style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (orders.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text('주문 내역이 없습니다.',
+                  style: TextStyle(color: Colors.grey)),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: orders.length,
+              itemBuilder: (context, index) {
+                final order = orders[orders.length - 1 - index];
+                return Card(
+                  elevation: 0,
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  child: ListTile(
+                    title: Text('주문번호 ${order.id}',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                      '${DateFormat('yyyy.MM.dd').format(order.date)} · ${order.status}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    trailing: Text(
+                      '${priceFormat.format(order.totalAmount)}원',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6342E8)),
+                    ),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

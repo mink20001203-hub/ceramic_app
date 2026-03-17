@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/user_data_manager.dart';
 import 'signup_screen.dart';
 
+// 로그인 화면: 데모 로그인 상태를 true로 바꾸고 이전 화면으로 돌아간다.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 

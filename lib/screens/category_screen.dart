@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'category_result_screen.dart'; // ✅ 결과 화면 파일 임포트
 
+// 카테고리 목록 화면: 카테고리를 선택하면 결과 화면으로 이동한다.
 class CategoryScreen extends StatelessWidget {
   const CategoryScreen({super.key});
 
@@ -9,7 +10,7 @@ class CategoryScreen extends StatelessWidget {
     // 🎨 카테고리 이름과 아이콘을 매칭한 데이터 리스트
     final List<Map<String, dynamic>> categories = [
       {'name': '컵', 'icon': Icons.coffee_outlined},
-      {'name': '그릇', 'icon': Icons.flatware_outlined},
+      {'name': '접시', 'icon': Icons.flatware_outlined},
       // ✅ Adb_outlined 대신 정교한 느낌의 가구/오브제 아이콘으로 변경
       {'name': '오브제', 'icon': Icons.category_outlined},
       {'name': '화병', 'icon': Icons.local_florist_outlined},

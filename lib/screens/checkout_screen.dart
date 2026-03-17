@@ -4,15 +4,19 @@ import '../models/product.dart';
 import '../models/user_data_manager.dart';
 import 'package:provider/provider.dart';
 
+// 결제 화면: 상품 요약과 결제 금액을 보여주고 구매를 확정한다.
 class CheckoutScreen extends StatelessWidget {
   final Product product;
-  const CheckoutScreen({super.key, required this.product});
+  final String? selectedOption;
+  const CheckoutScreen({super.key, required this.product, this.selectedOption});
 
   @override
   Widget build(BuildContext context) {
     final priceFormat = NumberFormat('#,###', 'ko_KR');
     final deliveryFee = 2500;
-    final totalPrice = product.price + deliveryFee;
+    final hasSale = product.isSale && product.salePrice != null;
+    final itemPrice = hasSale ? product.salePrice! : product.price;
+    final totalPrice = itemPrice + deliveryFee;
 
     return Scaffold(
       appBar: AppBar(title: const Text('주문/결제'), centerTitle: true),
@@ -22,10 +26,24 @@ class CheckoutScreen extends StatelessWidget {
             // 1. 주문 상품 섹션
             _buildSectionTitle('주문상품'),
             ListTile(
-              leading: Image.asset(product.image!,
-                  width: 60, height: 60, fit: BoxFit.cover),
+              leading: product.image != null
+                  ? Image.asset(product.image!,
+                      width: 60, height: 60, fit: BoxFit.cover)
+                  : Container(
+                      width: 60,
+                      height: 60,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported),
+                    ),
               title: Text(product.title),
-              subtitle: Text('${priceFormat.format(product.price)}원'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (selectedOption != null)
+                    Text('옵션: $selectedOption'),
+                  Text('${priceFormat.format(itemPrice)}원'),
+                ],
+              ),
             ),
             const Divider(),
 
@@ -58,7 +76,7 @@ class CheckoutScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  _buildPriceRow('상품금액', product.price, priceFormat),
+                  _buildPriceRow('상품금액', itemPrice, priceFormat),
                   _buildPriceRow('배송비', deliveryFee, priceFormat),
                   const Divider(),
                   _buildPriceRow('총 결제금액', totalPrice, priceFormat,
@@ -78,10 +96,10 @@ class CheckoutScreen extends StatelessWidget {
                 Provider.of<UserDataManager>(context, listen: false);
 
             // 1. 주문 목록에 추가
-            userManager.addPurchase([product]);
+            userManager.placeSingleOrder(product, option: selectedOption);
 
-            // 2. 만약 장바구니에 이 상품이 있다면 제거 (새로 추가할 로직)
-            userManager.removeFromCart(product);
+            // 2. 만약 장바구니에 이 상품이 있다면 제거
+            userManager.removeFromCart(product, option: selectedOption);
 
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

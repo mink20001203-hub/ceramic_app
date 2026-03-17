@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
 
+// 위시리스트 화면: 찜한 상품 목록을 보여준다.
 class WishlistScreen extends StatelessWidget {
   const WishlistScreen({super.key});
 
@@ -61,10 +62,29 @@ class WishlistScreen extends StatelessWidget {
                       product.title,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: Text(
-                      '${priceFormat.format(product.price)}원',
-                      style: const TextStyle(color: Colors.deepPurple),
-                    ),
+                    subtitle: product.isSale && product.salePrice != null
+                        ? Row(
+                            children: [
+                              Text(
+                                '${priceFormat.format(product.salePrice)}원',
+                                style: const TextStyle(
+                                    color: Colors.deepPurple,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${priceFormat.format(product.price)}원',
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Text(
+                            '${priceFormat.format(product.price)}원',
+                            style: const TextStyle(color: Colors.deepPurple),
+                          ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -73,7 +93,12 @@ class WishlistScreen extends StatelessWidget {
                           icon: const Icon(Icons.shopping_cart_outlined),
                           onPressed: () {
                             // 장바구니에 상품 추가
-                            userManager.addToCart(product);
+                            userManager.addToCart(
+                              product,
+                              selectedOption: product.options.isNotEmpty
+                                  ? product.options.first
+                                  : null,
+                            );
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(

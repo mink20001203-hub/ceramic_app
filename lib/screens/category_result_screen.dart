@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
 
+// 선택한 카테고리의 상품만 보여주는 결과 화면.
 class CategoryResultScreen extends StatelessWidget {
   final String category;
 

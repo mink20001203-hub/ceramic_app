@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../main.dart'; // ✅ main_screen.dart 대신 프로젝트의 메인 파일을 불러옵니다.
 
+// 스플래시 화면: 잠깐 노출 후 메인 화면으로 이동한다.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 

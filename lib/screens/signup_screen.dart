@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_data_manager.dart';
 
+// 회원가입 화면: 입력값을 받아 데모 사용자 이름을 저장한다.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 

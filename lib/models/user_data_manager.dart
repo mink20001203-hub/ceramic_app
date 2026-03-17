@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'product.dart';
 
+// 사용자/세션 상태를 한 곳에서 관리하는 클래스.
+// 화면에 필요한 데이터를 라우트마다 넘기지 않도록 중앙 집중화한다.
+
 // --- 1. 장바구니 아이템 모델 (기존 유지) ---
 class CartItem {
   final Product product;
+  final String? option;
   int quantity;
-  CartItem({required this.product, this.quantity = 1});
+  CartItem({required this.product, this.option, this.quantity = 1});
 }
 
 // --- 2. 리뷰 데이터 모델 (사진 경로 및 업데이트 대응) ---
@@ -27,6 +31,37 @@ class Review {
   });
 }
 
+// --- 2-1. 주문 아이템/주문 모델 ---
+class OrderItem {
+  final Product product;
+  final String? option;
+  final int quantity;
+  final int unitPrice;
+
+  OrderItem({
+    required this.product,
+    required this.quantity,
+    required this.unitPrice,
+    this.option,
+  });
+}
+
+class Order {
+  final String id;
+  final List<OrderItem> items;
+  final int totalAmount;
+  final DateTime date;
+  final String status; // 예: 결제완료/배송준비/배송중/배송완료
+
+  Order({
+    required this.id,
+    required this.items,
+    required this.totalAmount,
+    required this.date,
+    required this.status,
+  });
+}
+
 // --- 3. 통합 데이터 관리 클래스 ---
 class UserDataManager with ChangeNotifier {
   // [로그인 및 사용자 정보 관리]
@@ -41,11 +76,13 @@ class UserDataManager with ChangeNotifier {
   int get reviewCount => _reviewCount;
 
   void login() {
+    // 서버 연동 없이 로그인 상태만 토글하는 데모 로직.
     _isLoggedIn = true;
     notifyListeners();
   }
 
   void logout() {
+    // 로그아웃 시 기본 사용자 상태로 되돌린다.
     _isLoggedIn = false;
     _userName = "손님";
     notifyListeners();
@@ -60,18 +97,24 @@ class UserDataManager with ChangeNotifier {
   int _currentTabIndex = 0;
   int get currentTabIndex => _currentTabIndex;
   void setTabIndex(int index) {
+    // 네비게이션 상태를 한 곳에서 관리해 화면을 단순화한다.
     _currentTabIndex = index;
     notifyListeners();
   }
 
-  // 구매 목록
-  final List<Product> _purchasedProducts = [];
-  List<Product> get purchasedProducts => _purchasedProducts;
+  // 주문 목록
+  final List<Order> _orders = [];
+  List<Order> get orders => _orders;
 
-  void addPurchase(List<Product> products) {
-    _purchasedProducts.addAll(products);
-    _mileage += 500;
-    notifyListeners();
+  // 주문 목록에서 구매된 상품을 추출 (리뷰/마이페이지 표시용)
+  List<Product> get purchasedProducts {
+    final Map<String, Product> map = {};
+    for (final order in _orders) {
+      for (final item in order.items) {
+        map[item.product.id] = item.product;
+      }
+    }
+    return map.values.toList();
   }
 
   // 찜하기(위시리스트)
@@ -79,6 +122,7 @@ class UserDataManager with ChangeNotifier {
   List<Product> get wishlist => _wishlist;
 
   void toggleWishlist(Product product) {
+    // 즐겨찾기 토글로 즉시 UI 피드백을 제공한다.
     _wishlist.contains(product)
         ? _wishlist.remove(product)
         : _wishlist.add(product);
@@ -91,26 +135,30 @@ class UserDataManager with ChangeNotifier {
   final List<CartItem> _cartWithQuantity = [];
   List<CartItem> get items => _cartWithQuantity;
 
-  void addToCart(Product product) {
+  void addToCart(Product product, {String? selectedOption}) {
+    // 이미 담긴 상품이면 수량만 증가시켜 중복을 방지한다.
     for (var item in _cartWithQuantity) {
-      if (item.product.id == product.id) {
+      if (item.product.id == product.id &&
+          item.option == (selectedOption ?? item.option)) {
         item.quantity++;
         notifyListeners();
         return;
       }
     }
-    _cartWithQuantity.add(CartItem(product: product));
+    _cartWithQuantity.add(
+        CartItem(product: product, option: selectedOption, quantity: 1));
     notifyListeners();
   }
 
-  void removeFromCart(Product product) {
-    _cartWithQuantity.removeWhere((item) => item.product.id == product.id);
+  void removeFromCart(Product product, {String? option}) {
+    _cartWithQuantity.removeWhere(
+        (item) => item.product.id == product.id && item.option == option);
     notifyListeners();
   }
 
-  void incrementQuantity(String productId) {
+  void incrementQuantity(String productId, String? option) {
     for (var item in _cartWithQuantity) {
-      if (item.product.id == productId) {
+      if (item.product.id == productId && item.option == option) {
         item.quantity++;
         notifyListeners();
         return;
@@ -118,9 +166,11 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  void decrementQuantity(String productId) {
+  void decrementQuantity(String productId, String? option) {
     for (var item in _cartWithQuantity) {
-      if (item.product.id == productId && item.quantity > 1) {
+      if (item.product.id == productId &&
+          item.option == option &&
+          item.quantity > 1) {
         item.quantity--;
         notifyListeners();
         return;
@@ -128,8 +178,9 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  void removeSingleItem(String productId) {
-    _cartWithQuantity.removeWhere((item) => item.product.id == productId);
+  void removeSingleItem(String productId, String? option) {
+    _cartWithQuantity
+        .removeWhere((item) => item.product.id == productId && item.option == option);
     notifyListeners();
   }
 
@@ -141,9 +192,70 @@ class UserDataManager with ChangeNotifier {
   int get totalAmount {
     int total = 0;
     for (var item in _cartWithQuantity) {
-      total += item.product.price * item.quantity;
+      total += _getEffectivePrice(item.product) * item.quantity;
     }
     return total;
+  }
+
+  int _getEffectivePrice(Product product) {
+    if (product.isSale && product.salePrice != null) {
+      return product.salePrice!;
+    }
+    return product.price;
+  }
+
+  // 장바구니 기반 주문 생성
+  void placeOrderFromCart() {
+    if (_cartWithQuantity.isEmpty) return;
+
+    final items = _cartWithQuantity
+        .map((item) => OrderItem(
+              product: item.product,
+              option: item.option,
+              quantity: item.quantity,
+              unitPrice: _getEffectivePrice(item.product),
+            ))
+        .toList();
+
+    final total = items.fold<int>(
+        0, (sum, item) => sum + item.unitPrice * item.quantity);
+
+    _orders.add(Order(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      items: items,
+      totalAmount: total,
+      date: DateTime.now(),
+      status: '결제완료',
+    ));
+
+    _mileage += 500;
+    clearCart();
+    notifyListeners();
+  }
+
+  // 단일 상품 즉시구매
+  void placeSingleOrder(Product product, {String? option}) {
+    final items = [
+      OrderItem(
+        product: product,
+        option: option,
+        quantity: 1,
+        unitPrice: _getEffectivePrice(product),
+      ),
+    ];
+
+    final total = items.first.unitPrice;
+
+    _orders.add(Order(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      items: items,
+      totalAmount: total,
+      date: DateTime.now(),
+      status: '결제완료',
+    ));
+
+    _mileage += 500;
+    notifyListeners();
   }
 
   // --- 리뷰 로직 (수정 및 1회 제한 기능 추가) ---
@@ -168,6 +280,7 @@ class UserDataManager with ChangeNotifier {
   void addReview(
       String productId, String productName, double rating, String comment,
       {String? imagePath}) {
+    // 데모이므로 업로드 없이 이미지 경로만 보관한다.
     _reviews.add(Review(
       productId: productId,
       productName: productName,

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
 
+// 장바구니 화면: 수량 변경, 삭제, 주문 확정까지 처리한다.
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
 
@@ -33,10 +34,7 @@ class CartScreen extends StatelessWidget {
                   Navigator.of(context).pop();
 
                   // 2. 실제 주문 로직 실행
-                  final productsToBuy =
-                      userManager.items.map((e) => e.product).toList();
-                  userManager.addPurchase(productsToBuy);
-                  userManager.clearCart();
+                  userManager.placeOrderFromCart();
 
                   // 3. 알림 메시지 표시
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -96,17 +94,33 @@ class CartScreen extends StatelessWidget {
                               padding:
                                   const EdgeInsets.symmetric(vertical: 8.0),
                               child: ListTile(
-                                leading: Image.asset(
-                                  item.product.image!,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                ),
+                                leading: item.product.image != null
+                                    ? Image.asset(
+                                        item.product.image!,
+                                        width: 60,
+                                        height: 60,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Container(
+                                        width: 60,
+                                        height: 60,
+                                        color: Colors.grey[200],
+                                        child: const Icon(
+                                            Icons.image_not_supported),
+                                      ),
                                 title: Text(item.product.title,
                                     style: const TextStyle(
                                         fontWeight: FontWeight.bold)),
-                                subtitle: Text(
-                                    '${priceFormat.format(item.product.price * item.quantity)}원'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (item.option != null)
+                                      Text('옵션: ${item.option}'),
+                                    Text(
+                                      '${priceFormat.format(((item.product.isSale && item.product.salePrice != null) ? item.product.salePrice! : item.product.price) * item.quantity)}원',
+                                    ),
+                                  ],
+                                ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -114,7 +128,8 @@ class CartScreen extends StatelessWidget {
                                       icon: const Icon(
                                           Icons.remove_circle_outline),
                                       onPressed: () => userManager
-                                          .decrementQuantity(item.product.id),
+                                          .decrementQuantity(
+                                              item.product.id, item.option),
                                     ),
                                     Text('${item.quantity}',
                                         style: const TextStyle(
@@ -124,14 +139,16 @@ class CartScreen extends StatelessWidget {
                                       icon:
                                           const Icon(Icons.add_circle_outline),
                                       onPressed: () => userManager
-                                          .incrementQuantity(item.product.id),
+                                          .incrementQuantity(
+                                              item.product.id, item.option),
                                     ),
                                     const SizedBox(width: 4),
                                     IconButton(
                                       icon: const Icon(Icons.delete_outline,
                                           color: Colors.grey),
                                       onPressed: () => userManager
-                                          .removeSingleItem(item.product.id),
+                                          .removeSingleItem(
+                                              item.product.id, item.option),
                                     ),
                                   ],
                                 ),

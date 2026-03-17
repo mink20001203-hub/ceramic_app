@@ -1,4 +1,4 @@
-// lib/product.dart 파일 전체 코드 (최종 구조 통일)
+// 상품 데이터 모델. 화면 표시와 장바구니 로직에서 공통 사용한다.
 class Product {
   final String id; // ✅ 장바구니 삭제 시 필요한 고유 식별자
   final String title; // ✅ 상품명 (기존 name에서 변경됨)
@@ -6,6 +6,11 @@ class Product {
   final int price; // ✅ 가격 (숫자 타입)
   final String? image; // ✅ 이미지 경로 (없을 수 있으므로 null 허용)
   final String category; // ✅ 카테고리 필드 추가
+  final int stock; // ✅ 재고 수량 (0이면 품절)
+  final bool isNew; // ✅ 신상품 뱃지 여부
+  final bool isSale; // ✅ 세일 뱃지 여부
+  final int? salePrice; // ✅ 세일가 (없으면 null)
+  final List<String> options; // ✅ 옵션 목록 (사이즈/색상 등)
 
   Product({
     required this.id,
@@ -14,10 +19,16 @@ class Product {
     required this.price,
     this.image,
     required this.category,
+    this.stock = 10,
+    this.isNew = false,
+    this.isSale = false,
+    this.salePrice,
+    this.options = const [],
   });
 }
 
 // ✅ 테스트를 위한 샘플 데이터 (필요에 따라 수정해서 사용하세요)
+// 로컬 에셋 경로를 사용해 초기 로딩을 빠르게 유지한다.
 List<Product> dummyProducts = [
   Product(
       id: 'p1',
@@ -25,19 +36,193 @@ List<Product> dummyProducts = [
       subTitle: '감성 티타임',
       price: 45000,
       image: 'assets/images/cup.jpg',
-      category: '컵'),
+      category: '컵',
+      stock: 12,
+      isNew: true,
+      options: const ['S', 'M', 'L']),
   Product(
       id: 'p2',
       title: '모던 플레이트',
       subTitle: '미니멀 접시',
       price: 68000,
       image: 'assets/images/plate.jpg',
-      category: '접시'),
+      category: '접시',
+      stock: 6,
+      options: const ['21cm', '26cm']),
   Product(
       id: 'p3',
       title: '흙 톤 머그잔',
       subTitle: '따뜻한 질감',
       price: 32000,
       image: 'assets/images/mug.jpg',
-      category: '컵'),
+      category: '컵',
+      stock: 0,
+      isSale: true,
+      salePrice: 28000,
+      options: const ['350ml', '420ml']),
+  Product(
+      id: 'p4',
+      title: '유약 라인 머그',
+      subTitle: '은은한 광택',
+      price: 39000,
+      image: 'assets/images/mug.jpg',
+      category: '컵',
+      stock: 9,
+      isNew: true,
+      options: const ['화이트', '오프화이트']),
+  Product(
+      id: 'p5',
+      title: '모노 플랫 접시',
+      subTitle: '테이블 베이직',
+      price: 52000,
+      image: 'assets/images/plate.jpg',
+      category: '접시',
+      stock: 3,
+      isSale: true,
+      salePrice: 46000,
+      options: const ['24cm']),
+  Product(
+      id: 'p6',
+      title: '올드 팟 오브제',
+      subTitle: '공간 포인트',
+      price: 87000,
+      image: 'assets/images/plate.jpg',
+      category: '오브제',
+      stock: 5,
+      options: const ['브라운', '오프화이트']),
+  Product(
+      id: 'p7',
+      title: '라인 화병',
+      subTitle: '긴 줄기 전용',
+      price: 76000,
+      image: 'assets/images/cup.jpg',
+      category: '화병',
+      stock: 2,
+      isNew: true,
+      options: const ['S', 'M']),
+  Product(
+      id: 'p8',
+      title: '슬림 화병',
+      subTitle: '미니멀 실루엣',
+      price: 69000,
+      image: 'assets/images/mug.jpg',
+      category: '화병',
+      stock: 7,
+      options: const ['오프화이트']),
+  Product(
+      id: 'p9',
+      title: '스톤 티컵 세트',
+      subTitle: '잔+소서 구성',
+      price: 98000,
+      image: 'assets/images/cup.jpg',
+      category: '컵',
+      stock: 4,
+      isSale: true,
+      salePrice: 88000,
+      options: const ['2인', '4인']),
+  Product(
+      id: 'p10',
+      title: '매트 플레이트',
+      subTitle: '파스타 전용',
+      price: 64000,
+      image: 'assets/images/plate.jpg',
+      category: '접시',
+      stock: 8,
+      options: const ['26cm']),
+  Product(
+      id: 'p11',
+      title: '라운드 보울',
+      subTitle: '간식 접시',
+      price: 41000,
+      image: 'assets/images/plate.jpg',
+      category: '접시',
+      stock: 11,
+      options: const ['소', '중']),
+  Product(
+      id: 'p12',
+      title: '시그니처 머그',
+      subTitle: '손잡이 그립',
+      price: 36000,
+      image: 'assets/images/mug.jpg',
+      category: '컵',
+      stock: 10,
+      options: const ['화이트', '그레이']),
+  Product(
+      id: 'p13',
+      title: '테라 코스터',
+      subTitle: '세트 할인',
+      price: 19000,
+      image: 'assets/images/plate.jpg',
+      category: '세일',
+      stock: 20,
+      isSale: true,
+      salePrice: 15000,
+      options: const ['2개', '4개']),
+  Product(
+      id: 'p14',
+      title: '뉴 시즌 컵',
+      subTitle: '2026 컬렉션',
+      price: 42000,
+      image: 'assets/images/cup.jpg',
+      category: '신상품',
+      stock: 14,
+      isNew: true,
+      options: const ['S', 'M']),
+  Product(
+      id: 'p15',
+      title: '뉴 시즌 플레이트',
+      subTitle: '2026 컬렉션',
+      price: 72000,
+      image: 'assets/images/plate.jpg',
+      category: '신상품',
+      stock: 5,
+      isNew: true,
+      options: const ['24cm', '28cm']),
+  Product(
+      id: 'p16',
+      title: '클래식 볼',
+      subTitle: '깊이 있는 라인',
+      price: 54000,
+      image: 'assets/images/plate.jpg',
+      category: '접시',
+      stock: 6,
+      options: const ['중', '대']),
+  Product(
+      id: 'p17',
+      title: '미니 오브제',
+      subTitle: '책장 장식',
+      price: 33000,
+      image: null,
+      category: '오브제',
+      stock: 1,
+      options: const ['오프화이트']),
+  Product(
+      id: 'p18',
+      title: '리미티드 머그',
+      subTitle: '한정 수량',
+      price: 59000,
+      image: 'assets/images/mug.jpg',
+      category: '세일',
+      stock: 0,
+      isSale: true,
+      salePrice: 49000,
+      options: const ['450ml']),
+  Product(
+      id: 'p19',
+      title: '프리미엄 화병',
+      subTitle: '대형 플라워',
+      price: 120000,
+      image: null,
+      category: '화병',
+      stock: 2,
+      options: const ['대형']),
+  Product(
+      id: 'p20',
+      title: '데일리 티컵',
+      subTitle: '가벼운 데일리',
+      price: 28000,
+      image: 'assets/images/cup.jpg',
+      category: '컵',
+      stock: 16,
+      options: const ['S', 'M']),
 ];

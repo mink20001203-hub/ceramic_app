@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
 
+// 홈 랜딩 화면. 초기 로딩 속도를 위해 로컬 에셋 기반의 단순한 히어로를 사용한다.
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -20,8 +22,8 @@ class HomeScreen extends StatelessWidget {
               width: double.infinity,
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image:
-                      AssetImage('assets/images/hero_pottery.jpg'), // 고화질 사진 권장
+                  // 실제 존재하는 에셋을 사용해 누락 에러를 방지한다.
+                  image: AssetImage('assets/images/mug.jpg'), // 고화질 사진 권장
                   fit: BoxFit.cover,
                 ),
               ),
@@ -77,7 +79,25 @@ class HomeScreen extends StatelessWidget {
               child: Text('오늘의 추천 도자기',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
-            // ... 기존 GridView 코드 ...
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.68,
+                  crossAxisSpacing: 15,
+                  mainAxisSpacing: 15,
+                ),
+                itemCount: dummyProducts.length,
+                itemBuilder: (context, index) {
+                  return ProductCard(product: dummyProducts[index]);
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

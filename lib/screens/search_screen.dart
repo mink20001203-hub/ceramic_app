@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
 
+// 검색 화면: 더미 상품 목록에서 제목 기준으로 필터링한다.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
