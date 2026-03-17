@@ -53,6 +53,10 @@ class Order {
   final int discountAmount;
   final int mileageUsed;
   final String? couponTitle;
+  final String addressSummary;
+  final String paymentMethodLabel;
+  final String paymentStatus; // 결제대기/결제완료/결제실패
+  final bool agreementAccepted;
   final DateTime date;
   String status; // 예: 결제완료/배송준비/배송중/배송완료
   final List<OrderStatusLog> statusLogs;
@@ -64,6 +68,10 @@ class Order {
     required this.discountAmount,
     required this.mileageUsed,
     this.couponTitle,
+    required this.addressSummary,
+    required this.paymentMethodLabel,
+    required this.paymentStatus,
+    required this.agreementAccepted,
     required this.date,
     required this.status,
     required this.statusLogs,
@@ -496,7 +504,12 @@ class UserDataManager with ChangeNotifier {
   }
 
   // 장바구니 기반 주문 생성
-  void placeOrderFromCart({String? couponId, int mileageUsed = 0}) {
+  void placeOrderFromCart(
+      {String? couponId,
+      int mileageUsed = 0,
+      Address? address,
+      PaymentMethod? payment,
+      bool agreementAccepted = false}) {
     if (_cartWithQuantity.isEmpty) return;
 
     final items = _cartWithQuantity
@@ -530,6 +543,12 @@ class UserDataManager with ChangeNotifier {
       discountAmount: couponDiscount,
       mileageUsed: mileageToUse,
       couponTitle: couponDiscount > 0 ? coupon?.title : null,
+      addressSummary: address == null
+          ? '배송지 없음'
+          : '${address.recipient} | ${address.phone}\n${address.addressLine}',
+      paymentMethodLabel: payment?.label ?? '결제수단 없음',
+      paymentStatus: '결제완료',
+      agreementAccepted: agreementAccepted,
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
@@ -552,7 +571,12 @@ class UserDataManager with ChangeNotifier {
 
   // 단일 상품 즉시구매
   void placeSingleOrder(Product product,
-      {String? option, String? couponId, int mileageUsed = 0}) {
+      {String? option,
+      String? couponId,
+      int mileageUsed = 0,
+      Address? address,
+      PaymentMethod? payment,
+      bool agreementAccepted = false}) {
     final items = [
       OrderItem(
         product: product,
@@ -581,6 +605,12 @@ class UserDataManager with ChangeNotifier {
       discountAmount: couponDiscount,
       mileageUsed: mileageToUse,
       couponTitle: couponDiscount > 0 ? coupon?.title : null,
+      addressSummary: address == null
+          ? '배송지 없음'
+          : '${address.recipient} | ${address.phone}\n${address.addressLine}',
+      paymentMethodLabel: payment?.label ?? '결제수단 없음',
+      paymentStatus: '결제완료',
+      agreementAccepted: agreementAccepted,
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [

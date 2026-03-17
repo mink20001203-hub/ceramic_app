@@ -18,6 +18,8 @@ class CartScreen extends StatelessWidget {
       String? selectedCouponId;
       int mileageToUse = 0;
       final mileageController = TextEditingController(text: '0');
+      String? selectedAddressId = userManager.selectedAddress?.id;
+      String? selectedPaymentId = userManager.selectedPayment?.id;
 
       int subtotal = userManager.items.fold<int>(0, (sum, item) {
         final unitPrice = (item.product.isSale && item.product.salePrice != null)
@@ -142,6 +144,35 @@ class CartScreen extends StatelessWidget {
                         ),
                       ),
                   const SizedBox(height: 8),
+                  const Text('배송지 선택',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  DropdownButtonFormField<String>(
+                    value: selectedAddressId,
+                    items: userManager.addresses
+                        .map((a) => DropdownMenuItem(
+                              value: a.id,
+                              child: Text('${a.recipient} | ${a.phone}'),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => selectedAddressId = value),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('결제수단 선택',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  DropdownButtonFormField<String>(
+                    value: selectedPaymentId,
+                    items: userManager.paymentMethods
+                        .map((p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.label),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => selectedPaymentId = value),
+                  ),
                   Row(
                     children: [
                       Expanded(
@@ -207,10 +238,20 @@ class CartScreen extends StatelessWidget {
                     child: userManager.isLoggedIn
                         ? ElevatedButton(
                             onPressed: () {
+                              final address = userManager.addresses.firstWhere(
+                                  (a) => a.id == selectedAddressId,
+                                  orElse: () => userManager.addresses.first);
+                              final payment = userManager.paymentMethods
+                                  .firstWhere((p) => p.id == selectedPaymentId,
+                                      orElse: () =>
+                                          userManager.paymentMethods.first);
                               userManager.placeOrderFromCart(
                                 couponId:
                                     couponDiscount > 0 ? selectedCouponId : null,
                                 mileageUsed: mileageToUse,
+                                address: address,
+                                payment: payment,
+                                agreementAccepted: true,
                               );
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -220,13 +261,14 @@ class CartScreen extends StatelessWidget {
                             child: const Text('결제하기'),
                           )
                         : OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) =>
                                         const LoginScreen()),
                               );
+                              setState(() {});
                             },
                             child: const Text('로그인 후 결제하기'),
                           ),

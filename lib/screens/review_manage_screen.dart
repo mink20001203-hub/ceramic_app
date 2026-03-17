@@ -30,10 +30,17 @@ class ReviewManageScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           manager.getLatestOrderForProduct(review.productId) != null
-                              ? '주문일: ${manager.getLatestOrderForProduct(review.productId)!.date.toString().substring(0, 10)}'
+                              ? '주문번호: ${manager.getLatestOrderForProduct(review.productId)!.id}'
                               : '주문 정보 없음',
                           style: const TextStyle(color: Colors.grey, fontSize: 12),
                         ),
+                        if (manager.getLatestOrderForProduct(review.productId) !=
+                            null)
+                          Text(
+                            '주문일: ${manager.getLatestOrderForProduct(review.productId)!.date.toString().substring(0, 10)}',
+                            style:
+                                const TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
                       ],
                     ),
                     trailing: IconButton(

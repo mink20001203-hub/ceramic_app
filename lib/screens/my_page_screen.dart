@@ -78,102 +78,138 @@ class MyPageScreen extends StatelessWidget {
       List<Order> orders,
       List<Product> purchasedItems,
       NumberFormat priceFormat) {
-    return SingleChildScrollView(
+    return DefaultTabController(
+      length: 2,
       child: Column(
         children: [
           _buildProfileSection(context, userManager),
-          const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
-          _buildOrderSection(orders, priceFormat),
-          const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
-          _buildBenefitSection(context, userManager),
-          const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(Icons.shopping_bag_outlined,
-                    color: Color(0xFF6342E8)),
-                const SizedBox(width: 8),
-                const Text('최근 구매 내역',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                Text('총 ${purchasedItems.length}건',
-                    style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
+          const TabBar(
+            labelColor: Color(0xFF6342E8),
+            unselectedLabelColor: Colors.grey,
+            tabs: [
+              Tab(text: '구매/리뷰'),
+              Tab(text: '혜택'),
+            ],
           ),
-          purchasedItems.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 60),
-                  child: Center(child: Text('구매한 상품이 없습니다.')),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: purchasedItems.length,
-                  itemBuilder: (context, index) {
-                    final product = purchasedItems[index];
-                    final bool hasReview = userManager.hasReview(product.id);
-
-                    return Card(
-                      color: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: Colors.grey.shade200),
-                      ),
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(12),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: product.image != null
-                              ? Image.asset(product.image!,
-                                  width: 70, height: 70, fit: BoxFit.cover)
-                              : Container(
-                                  width: 70, height: 70, color: Colors.grey),
-                        ),
-                        title: Text(product.title,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: TabBarView(
+              children: [
+                SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildOrderSection(orders, priceFormat),
+                      const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
                           children: [
-                            const SizedBox(height: 4),
-                            Text(
-                                '${priceFormat.format((product.isSale && product.salePrice != null) ? product.salePrice! : product.price)}원',
+                            const Icon(Icons.shopping_bag_outlined,
+                                color: Color(0xFF6342E8)),
+                            const SizedBox(width: 8),
+                            const Text('최근 구매 내역',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold)),
+                            const Spacer(),
+                            Text('총 ${purchasedItems.length}건',
                                 style: const TextStyle(color: Colors.grey)),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () => _showReviewDialog(
-                                  context, product,
-                                  existingReview:
-                                      userManager.getReview(product.id)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: hasReview
-                                    ? Colors.white
-                                    : const Color(0xFF6342E8),
-                                foregroundColor: hasReview
-                                    ? const Color(0xFF6342E8)
-                                    : Colors.white,
-                                side:
-                                    const BorderSide(color: Color(0xFF6342E8)),
-                                elevation: 0,
-                                minimumSize: const Size(100, 36),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)),
-                              ),
-                              child: Text(hasReview ? '리뷰 수정하기' : '리뷰 쓰기',
-                                  style: const TextStyle(fontSize: 13)),
-                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
+                      purchasedItems.isEmpty
+                          ? const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 60),
+                              child: Center(child: Text('구매한 상품이 없습니다.')),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: purchasedItems.length,
+                              itemBuilder: (context, index) {
+                                final product = purchasedItems[index];
+                                final bool hasReview =
+                                    userManager.hasReview(product.id);
+
+                                return Card(
+                                  color: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(color: Colors.grey.shade200),
+                                  ),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  child: ListTile(
+                                    contentPadding: const EdgeInsets.all(12),
+                                    leading: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: product.image != null
+                                          ? Image.asset(product.image!,
+                                              width: 70,
+                                              height: 70,
+                                              fit: BoxFit.cover)
+                                          : Container(
+                                              width: 70,
+                                              height: 70,
+                                              color: Colors.grey),
+                                    ),
+                                    title: Text(product.title,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.bold)),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 4),
+                                        Text(
+                                            '${priceFormat.format((product.isSale && product.salePrice != null) ? product.salePrice! : product.price)}원',
+                                            style: const TextStyle(
+                                                color: Colors.grey)),
+                                        const SizedBox(height: 12),
+                                        ElevatedButton(
+                                          onPressed: () => _showReviewDialog(
+                                              context, product,
+                                              existingReview: userManager
+                                                  .getReview(product.id)),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: hasReview
+                                                ? Colors.white
+                                                : const Color(0xFF6342E8),
+                                            foregroundColor: hasReview
+                                                ? const Color(0xFF6342E8)
+                                                : Colors.white,
+                                            side: const BorderSide(
+                                                color: Color(0xFF6342E8)),
+                                            elevation: 0,
+                                            minimumSize: const Size(100, 36),
+                                            shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8)),
+                                          ),
+                                          child: Text(
+                                              hasReview ? '리뷰 수정하기' : '리뷰 쓰기',
+                                              style:
+                                                  const TextStyle(fontSize: 13)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ],
+                  ),
                 ),
+                SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildBenefitSection(context, userManager),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

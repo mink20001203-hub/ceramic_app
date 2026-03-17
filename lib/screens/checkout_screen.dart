@@ -111,7 +111,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             userManager.setSelectedAddress(value);
                           }
                         },
-                        title: Text('${addr.label}'),
+                        title: Text('${addr.recipient} | ${addr.phone}'),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -411,6 +411,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ? userManager.selectedCoupon?.id
                             : null,
                         mileageUsed: mileageToUse,
+                        address: userManager.selectedAddress,
+                        payment: userManager.selectedPayment,
+                        agreementAccepted: _isAgreementChecked,
                       );
 
             // 2. 만약 장바구니에 이 상품이 있다면 제거
@@ -487,6 +490,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         TextEditingController(text: existing != null ? existing.phone : '');
     final requestController =
         TextEditingController(text: existing != null ? existing.requestNote : '');
+    String requestOption = existing != null && existing.requestNote.isNotEmpty
+        ? existing.requestNote
+        : '문 앞에 놓아주세요';
     bool setAsDefault = existing != null
         ? (context.read<UserDataManager>().selectedAddress?.id == existing.id)
         : true;
@@ -531,10 +537,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   controller: labelController,
                   decoration: const InputDecoration(labelText: '상세정보'),
                 ),
-                TextField(
-                  controller: requestController,
-                  decoration: const InputDecoration(labelText: '배송요청사항'),
+                DropdownButtonFormField<String>(
+                  value: requestOption,
+                  decoration: const InputDecoration(labelText: '배송요청사항 선택'),
+                  items: const [
+                    DropdownMenuItem(
+                        value: '문 앞에 놓아주세요', child: Text('문 앞에 놓아주세요')),
+                    DropdownMenuItem(
+                        value: '경비실에 맡겨주세요', child: Text('경비실에 맡겨주세요')),
+                    DropdownMenuItem(
+                        value: '배송 전 연락주세요', child: Text('배송 전 연락주세요')),
+                    DropdownMenuItem(value: '직접 입력', child: Text('직접 입력')),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() => requestOption = value);
+                  },
                 ),
+                if (requestOption == '직접 입력')
+                  TextField(
+                    controller: requestController,
+                    decoration:
+                        const InputDecoration(labelText: '요청사항 직접 입력'),
+                  ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -576,7 +601,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     recipient: nameController.text.trim(),
                     addressLine: addressController.text.trim(),
                     phone: phoneController.text.trim(),
-                    requestNote: requestController.text.trim(),
+                    requestNote: requestOption == '직접 입력'
+                        ? requestController.text.trim()
+                        : requestOption,
                   ));
                   if (setAsDefault) {
                     manager.setDefaultAddress(newId);
@@ -590,7 +617,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     recipient: nameController.text.trim(),
                     addressLine: addressController.text.trim(),
                     phone: phoneController.text.trim(),
-                    requestNote: requestController.text.trim(),
+                    requestNote: requestOption == '직접 입력'
+                        ? requestController.text.trim()
+                        : requestOption,
                     isDefault: existing.isDefault,
                   ));
                   if (setAsDefault) {
