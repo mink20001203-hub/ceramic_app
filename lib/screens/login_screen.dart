@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_data_manager.dart';
 import 'signup_screen.dart';
 
-// ë¡œê·¸ì¸ í™”ë©´: ë°ëª¨ ë¡œê·¸ì¸ ìƒíƒœë¥¼ trueë¡œ ë°”ê¾¸ê³  ì´ì „ í™”ë©´ìœ¼ë¡œ ëŒì•„ê°„ë‹¤.
+// ·Î±×ÀÎ È­¸é: ÀÌ¸ŞÀÏ/ºñ¹Ğ¹øÈ£·Î ·Î±×ÀÎÇÏ°í, ½ÇÆĞ ½Ã Áï½Ã ¿¡·¯¸¦ º¸¿©ÁØ´Ù.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,10 +17,43 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _messageForAuthCode(String code) {
+    switch (code) {
+      case 'invalid-credential':
+      case 'wrong-password':
+        return 'ÀÌ¸ŞÀÏ ¶Ç´Â ºñ¹Ğ¹øÈ£°¡ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.';
+      case 'user-not-found':
+        return '°¡ÀÔµÇÁö ¾ÊÀº °èÁ¤ÀÔ´Ï´Ù. È¸¿ø°¡ÀÔ ÈÄ ÀÌ¿ëÇØÁÖ¼¼¿ä.';
+      case 'invalid-email':
+        return 'ÀÌ¸ŞÀÏ Çü½ÄÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.';
+      case 'operation-not-allowed':
+        return 'ÀÌ¸ŞÀÏ/ºñ¹Ğ¹øÈ£ ·Î±×ÀÎÀÌ ºñÈ°¼ºÈ­µÇ¾î ÀÖ½À´Ï´Ù.';
+      case 'too-many-requests':
+        return '¿äÃ»ÀÌ ¸¹½À´Ï´Ù. Àá½Ã ÈÄ ´Ù½Ã ½ÃµµÇØÁÖ¼¼¿ä.';
+      default:
+        return '·Î±×ÀÎ¿¡ ½ÇÆĞÇß½À´Ï´Ù. (${code})';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          backgroundColor: Colors.transparent, elevation: 0), // ë’¤ë¡œê°€ê¸° ë²„íŠ¼ì„ ìœ„í•´ ì¶”ê°€
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -35,45 +69,58 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: 'ì´ë©”ì¼',
+                labelText: 'ÀÌ¸ŞÀÏ',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.email),
               ),
+              keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'ë¹„ë°€ë²ˆí˜¸',
+                labelText: 'ºñ¹Ğ¹øÈ£',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lock),
               ),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () {
-                // âœ… ì¤‘ìš”: ì‹¤ì œ ë¡œê·¸ì¸ ìƒíƒœë¥¼ trueë¡œ ë°”ê¿”ì£¼ëŠ” ì½”ë“œì…ë‹ˆë‹¤.
-                Provider.of<UserDataManager>(context, listen: false).login();
+              onPressed: () async {
+                final email = _emailController.text.trim();
+                final password = _passwordController.text;
 
-                print('ë¡œê·¸ì¸ ì„±ê³µ: ${_emailController.text}');
-                Navigator.pop(context); // ë¡œê·¸ì¸ í›„ ë§ˆì´í˜ì´ì§€ë¡œ ëŒì•„ê°
+                if (email.isEmpty || password.isEmpty) {
+                  _showMessage('ÀÌ¸ŞÀÏ°ú ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.');
+                  return;
+                }
+
+                try {
+                  await Provider.of<UserDataManager>(context, listen: false)
+                      .login(email: email, password: password);
+                  Navigator.pop(context);
+                } on FirebaseAuthException catch (e) {
+                  _showMessage('·Î±×ÀÎ ½ÇÆĞ: ${_messageForAuthCode(e.code)}');
+                } catch (_) {
+                  _showMessage('·Î±×ÀÎ¿¡ ½ÇÆĞÇß½À´Ï´Ù.');
+                }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: Colors.deepPurple,
               ),
-              child: const Text('ë¡œê·¸ì¸', style: TextStyle(color: Colors.white)),
+              child: const Text('·Î±×ÀÎ',
+                  style: TextStyle(color: Colors.white)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                      builder: (context) => SignUpScreen()), // âœ… const ì œê±° í™•ì¸
+                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
                 );
               },
-              child: const Text('ê³„ì •ì´ ì—†ìœ¼ì‹ ê°€ìš”? íšŒì›ê°€ì…'),
+              child: const Text('°èÁ¤ÀÌ ¾øÀ¸½Å°¡¿ä? È¸¿ø°¡ÀÔ'),
             ),
           ],
         ),

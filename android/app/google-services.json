@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "659699596437",
+    "project_id": "ceramic-app-aadcb",
+    "storage_bucket": "ceramic-app-aadcb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659699596437:android:76905183da9fcbec472f9c",
+        "android_client_info": {
+          "package_name": "com.example.ceramic_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA089QiROh-Rodm09aKMjRitDDwoZ1pCb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

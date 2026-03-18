@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 // ✅ 분리된 파일 임포트: 모두 lib 폴더를 기준으로 경로 지정
 import 'models/user_data_manager.dart';
@@ -12,11 +14,24 @@ import 'screens/category_screen.dart';
 import 'screens/search_screen.dart';
 
 // 앱 시작점. Provider를 최상단에 등록해서 전역 상태를 관리한다.
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  bool firebaseReady = false;
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    firebaseReady = true;
+  } catch (_) {
+    // Firebase 설정이 없으면 로컬 모드로 실행한다.
+    firebaseReady = false;
+  }
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => UserDataManager()),
+        ChangeNotifierProvider(
+            create: (_) => UserDataManager(firebaseReady: firebaseReady)),
       ],
       child: const MyApp(),
     ),

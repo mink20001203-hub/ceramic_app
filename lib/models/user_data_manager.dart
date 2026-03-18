@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'product.dart';
 
 // 사용자/세션 상태를 한 곳에서 관리하는 클래스.
 // 화면에 필요한 데이터를 라우트마다 넘기지 않도록 중앙 집중화한다.
+
+// 사용자 권한 구분 (관리자/일반 사용자)
+enum UserRole { user, admin }
 
 // --- 1. 장바구니 아이템 모델 (기존 유지) ---
 class CartItem {
@@ -145,11 +150,19 @@ class Coupon {
 class UserDataManager with ChangeNotifier {
   // [로그인 및 사용자 정보 관리]
   bool _isLoggedIn = false;
+  String? _userId;
+  UserRole _role = UserRole.user;
   String _userName = "손님";
   int _mileage = 1500;
   int _reviewCount = 2;
+  final bool _firebaseReady;
+  FirebaseAuth? _auth;
+  FirebaseFirestore? _db;
 
   bool get isLoggedIn => _isLoggedIn;
+  String? get userId => _userId;
+  UserRole get role => _role;
+  bool get isAdmin => _role == UserRole.admin;
   String get userName => _userName;
   int get mileage => _mileage;
   int get reviewCount => _reviewCount;
@@ -201,7 +214,12 @@ class UserDataManager with ChangeNotifier {
   String? _selectedCouponId;
 
   // 앱 시작 시 더미 상품과 기본 선택값을 준비한다.
-  UserDataManager() {
+  UserDataManager({bool firebaseReady = false})
+      : _firebaseReady = firebaseReady {
+    if (_firebaseReady) {
+      _auth = FirebaseAuth.instance;
+      _db = FirebaseFirestore.instance;
+    }
     _products.addAll(dummyProducts);
     if (_addresses.isNotEmpty) {
       _selectedAddressId = _addresses.first.id;
@@ -237,17 +255,20 @@ class UserDataManager with ChangeNotifier {
   // 배송지/결제수단 선택 변경
   void setSelectedAddress(String id) {
     _selectedAddressId = id;
+    _persist();
     notifyListeners();
   }
 
   void setSelectedPayment(String id) {
     _selectedPaymentId = id;
+    _persist();
     notifyListeners();
   }
 
   // 쿠폰 선택/해제
   void setSelectedCoupon(String? id) {
     _selectedCouponId = id;
+    _persist();
     notifyListeners();
   }
 
@@ -259,6 +280,7 @@ class UserDataManager with ChangeNotifier {
         break;
       }
     }
+    _persist();
     notifyListeners();
   }
 
@@ -270,6 +292,7 @@ class UserDataManager with ChangeNotifier {
     } else if (_selectedAddressId == id) {
       _selectedAddressId = _addresses.first.id;
     }
+    _persist();
     notifyListeners();
   }
 
@@ -281,6 +304,7 @@ class UserDataManager with ChangeNotifier {
     } else if (_selectedPaymentId == id) {
       _selectedPaymentId = _paymentMethods.first.id;
     }
+    _persist();
     notifyListeners();
   }
 
@@ -288,6 +312,7 @@ class UserDataManager with ChangeNotifier {
   void addAddress(Address address) {
     _addresses.add(address);
     _selectedAddressId = address.id;
+    _persist();
     notifyListeners();
   }
 
@@ -296,6 +321,7 @@ class UserDataManager with ChangeNotifier {
     final index = _addresses.indexWhere((a) => a.id == updated.id);
     if (index != -1) {
       _addresses[index] = updated;
+      _persist();
       notifyListeners();
     }
   }
@@ -304,6 +330,7 @@ class UserDataManager with ChangeNotifier {
   void setDefaultAddress(String id) {
     if (_addresses.any((a) => a.id == id)) {
       _selectedAddressId = id;
+      _persist();
       notifyListeners();
     }
   }
@@ -312,6 +339,7 @@ class UserDataManager with ChangeNotifier {
   void addPaymentMethod(PaymentMethod method) {
     _paymentMethods.add(method);
     _selectedPaymentId = method.id;
+    _persist();
     notifyListeners();
   }
 
@@ -320,6 +348,7 @@ class UserDataManager with ChangeNotifier {
     final index = _paymentMethods.indexWhere((p) => p.id == method.id);
     if (index != -1) {
       _paymentMethods[index] = method;
+      _persist();
       notifyListeners();
     }
   }
@@ -328,25 +357,82 @@ class UserDataManager with ChangeNotifier {
   void setDefaultPayment(String id) {
     if (_paymentMethods.any((p) => p.id == id)) {
       _selectedPaymentId = id;
+      _persist();
       notifyListeners();
     }
   }
 
-  void login() {
-    // 서버 연동 없이 로그인 상태만 토글하는 데모 로직.
+  // 회원가입: Firebase Auth 계정 생성 + 사용자 데이터 초기 저장
+  Future<void> register({
+    required String email,
+    required String password,
+    required String name,
+  }) async {
+    if (!_firebaseReady) {
+      _isLoggedIn = true;
+      _userId = email;
+      _userName = name;
+      _role = email.toLowerCase() == 'admin@ceramic.com'
+          ? UserRole.admin
+          : UserRole.user;
+      notifyListeners();
+      return;
+    }
+
+    final cred = await _auth!.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
     _isLoggedIn = true;
+    _userId = cred.user?.uid;
+    _userName = name;
+    _role = email.toLowerCase() == 'admin@ceramic.com'
+        ? UserRole.admin
+        : UserRole.user;
+    await _persist();
+    notifyListeners();
+  }
+
+  Future<void> login({required String email, required String password}) async {
+    // Firebase 연결이 없으면 로컬 모드로 로그인한다.
+    if (!_firebaseReady) {
+      _isLoggedIn = true;
+      _userId = email;
+      _role = email.toLowerCase() == 'admin@ceramic.com'
+          ? UserRole.admin
+          : UserRole.user;
+      notifyListeners();
+      return;
+    }
+
+    await _auth!.signInWithEmailAndPassword(email: email, password: password);
+
+    _isLoggedIn = true;
+    _userId = _auth!.currentUser?.uid;
+    _role = email.toLowerCase() == 'admin@ceramic.com'
+        ? UserRole.admin
+        : UserRole.user;
+    await _loadFromBackend();
+    await _persist();
     notifyListeners();
   }
 
   void logout() {
     // 로그아웃 시 기본 사용자 상태로 되돌린다.
     _isLoggedIn = false;
+    _userId = null;
+    _role = UserRole.user;
     _userName = "손님";
+    if (_firebaseReady) {
+      _auth?.signOut();
+    }
     notifyListeners();
   }
 
   void setUserName(String name) {
     _userName = name;
+    _persist();
     notifyListeners();
   }
 
@@ -383,6 +469,7 @@ class UserDataManager with ChangeNotifier {
     _wishlist.contains(product)
         ? _wishlist.remove(product)
         : _wishlist.add(product);
+    _persist();
     notifyListeners();
   }
 
@@ -401,18 +488,21 @@ class UserDataManager with ChangeNotifier {
           item.option == (selectedOption ?? item.option)) {
         if (item.quantity >= product.stock) return;
         item.quantity++;
+        _persist();
         notifyListeners();
         return;
       }
     }
     _cartWithQuantity.add(
         CartItem(product: product, option: selectedOption, quantity: 1));
+    _persist();
     notifyListeners();
   }
 
   void removeFromCart(Product product, {String? option}) {
     _cartWithQuantity.removeWhere(
         (item) => item.product.id == product.id && item.option == option);
+    _persist();
     notifyListeners();
   }
 
@@ -422,6 +512,7 @@ class UserDataManager with ChangeNotifier {
       if (item.product.id == productId && item.option == option) {
         if (item.quantity >= item.product.stock) return;
         item.quantity++;
+        _persist();
         notifyListeners();
         return;
       }
@@ -434,6 +525,7 @@ class UserDataManager with ChangeNotifier {
           item.option == option &&
           item.quantity > 1) {
         item.quantity--;
+        _persist();
         notifyListeners();
         return;
       }
@@ -443,11 +535,13 @@ class UserDataManager with ChangeNotifier {
   void removeSingleItem(String productId, String? option) {
     _cartWithQuantity
         .removeWhere((item) => item.product.id == productId && item.option == option);
+    _persist();
     notifyListeners();
   }
 
   void clearCart() {
     _cartWithQuantity.clear();
+    _persist();
     notifyListeners();
   }
 
@@ -566,6 +660,7 @@ class UserDataManager with ChangeNotifier {
 
     _mileage += 500;
     clearCart();
+    _persist();
     notifyListeners();
   }
 
@@ -627,6 +722,7 @@ class UserDataManager with ChangeNotifier {
     }
 
     _mileage += 500;
+    _persist();
     notifyListeners();
   }
 
@@ -647,6 +743,7 @@ class UserDataManager with ChangeNotifier {
       order.status = nextStatus;
       order.statusLogs.add(
           OrderStatusLog(status: nextStatus, date: DateTime.now(), actor: actor));
+      _persist();
       notifyListeners();
     }
   }
@@ -658,6 +755,7 @@ class UserDataManager with ChangeNotifier {
       order.status = status;
       order.statusLogs.add(
           OrderStatusLog(status: status, date: DateTime.now(), actor: actor));
+      _persist();
       notifyListeners();
     }
   }
@@ -670,6 +768,7 @@ class UserDataManager with ChangeNotifier {
   void removeReviewAt(int index) {
     _reviews.removeAt(index);
     if (_reviewCount > 0) _reviewCount--;
+    _persist();
     notifyListeners();
   }
 
@@ -718,6 +817,7 @@ class UserDataManager with ChangeNotifier {
 
     _mileage += 100;
     _reviewCount++;
+    _persist();
     notifyListeners();
   }
 
@@ -734,7 +834,190 @@ class UserDataManager with ChangeNotifier {
         date: DateTime.now(), // 수정일 기준 갱신
         imagePath: imagePath,
       );
+      _persist();
       notifyListeners();
     }
   }
+
+  Future<void> _loadFromBackend() async {
+    if (!_firebaseReady || _userId == null) return;
+    final doc = await _db!.collection('users').doc(_userId).get();
+    if (!doc.exists) return;
+    final data = doc.data()!;
+    _userName = data['userName'] ?? _userName;
+    _mileage = data['mileage'] ?? _mileage;
+    _reviewCount = data['reviewCount'] ?? _reviewCount;
+    final roleStr = data['role'] as String? ?? 'user';
+    _role = roleStr == 'admin' ? UserRole.admin : UserRole.user;
+
+    _addresses
+      ..clear()
+      ..addAll((data['addresses'] as List<dynamic>? ?? [])
+          .map((e) => _addressFromMap(Map<String, dynamic>.from(e))));
+    _paymentMethods
+      ..clear()
+      ..addAll((data['paymentMethods'] as List<dynamic>? ?? [])
+          .map((e) => _paymentFromMap(Map<String, dynamic>.from(e))));
+    _reviews
+      ..clear()
+      ..addAll((data['reviews'] as List<dynamic>? ?? [])
+          .map((e) => _reviewFromMap(Map<String, dynamic>.from(e))));
+    _orders
+      ..clear()
+      ..addAll((data['orders'] as List<dynamic>? ?? [])
+          .map((e) => _orderFromMap(Map<String, dynamic>.from(e))));
+
+    final usedCoupons = (data['usedCoupons'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .toSet();
+    for (final c in _coupons) {
+      c.isUsed = usedCoupons.contains(c.id);
+    }
+  }
+
+  Future<void> _persist() async {
+    if (!_firebaseReady || _userId == null) return;
+    final data = {
+      'userName': _userName,
+      'mileage': _mileage,
+      'reviewCount': _reviewCount,
+      'role': _role == UserRole.admin ? 'admin' : 'user',
+      'addresses': _addresses.map(_addressToMap).toList(),
+      'paymentMethods': _paymentMethods.map(_paymentToMap).toList(),
+      'reviews': _reviews.map(_reviewToMap).toList(),
+      'orders': _orders.map(_orderToMap).toList(),
+      'usedCoupons': _coupons.where((c) => c.isUsed).map((c) => c.id).toList(),
+    };
+    await _db!.collection('users').doc(_userId).set(data, SetOptions(merge: true));
+  }
+
+  Map<String, dynamic> _addressToMap(Address a) => {
+        'id': a.id,
+        'label': a.label,
+        'recipient': a.recipient,
+        'addressLine': a.addressLine,
+        'phone': a.phone,
+        'requestNote': a.requestNote,
+      };
+
+  Address _addressFromMap(Map<String, dynamic> m) => Address(
+        id: m['id'],
+        label: m['label'],
+        recipient: m['recipient'],
+        addressLine: m['addressLine'],
+        phone: m['phone'],
+        requestNote: m['requestNote'] ?? '',
+      );
+
+  Map<String, dynamic> _paymentToMap(PaymentMethod p) => {
+        'id': p.id,
+        'label': p.label,
+        'type': p.type,
+      };
+
+  PaymentMethod _paymentFromMap(Map<String, dynamic> m) => PaymentMethod(
+        id: m['id'],
+        label: m['label'],
+        type: m['type'],
+      );
+
+  Map<String, dynamic> _reviewToMap(Review r) => {
+        'productId': r.productId,
+        'productName': r.productName,
+        'rating': r.rating,
+        'comment': r.comment,
+        'date': r.date.toIso8601String(),
+        'imagePath': r.imagePath,
+      };
+
+  Review _reviewFromMap(Map<String, dynamic> m) => Review(
+        productId: m['productId'],
+        productName: m['productName'],
+        rating: (m['rating'] as num).toDouble(),
+        comment: m['comment'],
+        date: DateTime.parse(m['date']),
+        imagePath: m['imagePath'],
+      );
+
+  Map<String, dynamic> _orderItemToMap(OrderItem i) => {
+        'product': _productToMap(i.product),
+        'option': i.option,
+        'quantity': i.quantity,
+        'unitPrice': i.unitPrice,
+      };
+
+  OrderItem _orderItemFromMap(Map<String, dynamic> m) => OrderItem(
+        product: _productFromMap(Map<String, dynamic>.from(m['product'])),
+        option: m['option'],
+        quantity: m['quantity'],
+        unitPrice: m['unitPrice'],
+      );
+
+  Map<String, dynamic> _orderToMap(Order o) => {
+        'id': o.id,
+        'items': o.items.map(_orderItemToMap).toList(),
+        'totalAmount': o.totalAmount,
+        'discountAmount': o.discountAmount,
+        'mileageUsed': o.mileageUsed,
+        'couponTitle': o.couponTitle,
+        'addressSummary': o.addressSummary,
+        'paymentMethodLabel': o.paymentMethodLabel,
+        'paymentStatus': o.paymentStatus,
+        'agreementAccepted': o.agreementAccepted,
+        'date': o.date.toIso8601String(),
+        'status': o.status,
+        'statusLogs': o.statusLogs.map(_orderLogToMap).toList(),
+      };
+
+  Order _orderFromMap(Map<String, dynamic> m) => Order(
+        id: m['id'],
+        items: (m['items'] as List<dynamic>)
+            .map((e) => _orderItemFromMap(Map<String, dynamic>.from(e)))
+            .toList(),
+        totalAmount: m['totalAmount'],
+        discountAmount: m['discountAmount'],
+        mileageUsed: m['mileageUsed'],
+        couponTitle: m['couponTitle'],
+        addressSummary: m['addressSummary'],
+        paymentMethodLabel: m['paymentMethodLabel'],
+        paymentStatus: m['paymentStatus'],
+        agreementAccepted: m['agreementAccepted'] ?? false,
+        date: DateTime.parse(m['date']),
+        status: m['status'],
+        statusLogs: (m['statusLogs'] as List<dynamic>)
+            .map((e) => _orderLogFromMap(Map<String, dynamic>.from(e)))
+            .toList(),
+      );
+
+  Map<String, dynamic> _orderLogToMap(OrderStatusLog l) => {
+        'status': l.status,
+        'date': l.date.toIso8601String(),
+        'actor': l.actor,
+      };
+
+  OrderStatusLog _orderLogFromMap(Map<String, dynamic> m) => OrderStatusLog(
+        status: m['status'],
+        date: DateTime.parse(m['date']),
+        actor: m['actor'],
+      );
+
+  Map<String, dynamic> _productToMap(Product p) => {
+        'id': p.id,
+        'title': p.title,
+        'subTitle': p.subTitle,
+        'price': p.price,
+        'image': p.image,
+        'category': p.category,
+        'salePrice': p.salePrice,
+      };
+
+  Product _productFromMap(Map<String, dynamic> m) => Product(
+        id: m['id'],
+        title: m['title'],
+        subTitle: m['subTitle'],
+        price: m['price'],
+        image: m['image'],
+        category: m['category'],
+        salePrice: m['salePrice'],
+      );
 }

@@ -15,7 +15,7 @@ class OrderDetailScreen extends StatelessWidget {
     return Consumer<UserDataManager>(
       builder: (context, manager, child) {
         final order = manager.orders.firstWhere((o) => o.id == orderId);
-        final isAdmin = manager.isLoggedIn && manager.userName == '관리자';
+        final isAdmin = manager.isLoggedIn && manager.isAdmin;
 
         return Scaffold(
           appBar: AppBar(

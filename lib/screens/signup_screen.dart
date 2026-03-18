@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_data_manager.dart';
 
-// íšŒì›ê°€ì… í™”ë©´: ì…ë ¥ê°’ì„ ë°›ì•„ ë°ëª¨ ì‚¬ìš©ì ì´ë¦„ì„ ì €ì¥í•œë‹¤.
+// È¸¿ø°¡ÀÔ È­¸é: ÀÔ·Â°ªÀ» È®ÀÎÇÏ°í Firebase Auth °èÁ¤À» »ı¼ºÇÑ´Ù.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -15,110 +16,156 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
-  bool _isAgreed = false; // ì•½ê´€ ë™ì˜ ìƒíƒœ
+  bool _isAgreed = false; // ¾à°ü µ¿ÀÇ »óÅÂ
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _messageForAuthCode(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'ÀÌ¹Ì °¡ÀÔµÈ ÀÌ¸ŞÀÏÀÔ´Ï´Ù.';
+      case 'invalid-email':
+        return 'ÀÌ¸ŞÀÏ Çü½ÄÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.';
+      case 'weak-password':
+        return 'ºñ¹Ğ¹øÈ£´Â 6ÀÚ¸® ÀÌ»óÀÌ¾î¾ß ÇÕ´Ï´Ù.';
+      case 'operation-not-allowed':
+        return 'ÀÌ¸ŞÀÏ/ºñ¹Ğ¹øÈ£ È¸¿ø°¡ÀÔÀÌ ºñÈ°¼ºÈ­µÇ¾î ÀÖ½À´Ï´Ù.';
+      default:
+        return 'È¸¿ø°¡ÀÔ¿¡ ½ÇÆĞÇß½À´Ï´Ù. (${code})';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('íšŒì›ê°€ì…'), centerTitle: true),
+      appBar: AppBar(title: const Text('È¸¿ø°¡ÀÔ'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'ìƒˆë¡œìš´ ê³„ì •ì„\në§Œë“¤ì–´ë³´ì„¸ìš”!',
+              '»õ·Î¿î °èÁ¤À» ¸¸µé¾îº¸¼¼¿ä!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
 
-            // ì´ë¦„(ë‹‰ë„¤ì„) ì…ë ¥
+            // ÀÌ¸§(´Ğ³×ÀÓ) ÀÔ·Â
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
-                  labelText: 'ì´ë¦„', border: OutlineInputBorder()),
+                labelText: 'ÀÌ¸§',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 16),
 
-            // ì´ë©”ì¼ ì…ë ¥
+            // ÀÌ¸ŞÀÏ ÀÔ·Â
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                  labelText: 'ì´ë©”ì¼', border: OutlineInputBorder()),
+                labelText: 'ÀÌ¸ŞÀÏ',
+                border: OutlineInputBorder(),
+              ),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
 
-            // ë¹„ë°€ë²ˆí˜¸ ì…ë ¥
+            // ºñ¹Ğ¹øÈ£ ÀÔ·Â
             TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: 'ë¹„ë°€ë²ˆí˜¸', border: OutlineInputBorder()),
+                labelText: 'ºñ¹Ğ¹øÈ£',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 16),
 
-            // ë¹„ë°€ë²ˆí˜¸ í™•ì¸
+            // ºñ¹Ğ¹øÈ£ È®ÀÎ
             TextField(
               controller: _confirmPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: 'ë¹„ë°€ë²ˆí˜¸ í™•ì¸', border: OutlineInputBorder()),
+                labelText: 'ºñ¹Ğ¹øÈ£ È®ÀÎ',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 20),
 
-            // ì´ìš©ì•½ê´€ ë™ì˜ ì²´í¬ë°•ìŠ¤
+            // ÀÌ¿ë¾à°ü µ¿ÀÇ Ã¼Å©¹Ú½º
             CheckboxListTile(
-              title: const Text('ì´ìš©ì•½ê´€ ë° ê°œì¸ì •ë³´ ì²˜ë¦¬ë°©ì¹¨ì— ë™ì˜í•©ë‹ˆë‹¤.'),
+              title: const Text('ÀÌ¿ë¾à°ü ¹× °³ÀÎÁ¤º¸ Ã³¸®¹æÄ§¿¡ µ¿ÀÇÇÕ´Ï´Ù.'),
               value: _isAgreed,
-              onChanged: (value) => setState(() => _isAgreed = value!),
+              onChanged: (value) => setState(() => _isAgreed = value ?? false),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
 
             const SizedBox(height: 20),
 
-            // ê°€ì…í•˜ê¸° ë²„íŠ¼
+            // °¡ÀÔÇÏ±â ¹öÆ°
             ElevatedButton(
               onPressed: _isAgreed
-                  ? () {
-                      // 1. í•„ìˆ˜ ì •ë³´ ì…ë ¥ í™•ì¸
-                      if (_nameController.text.isEmpty ||
-                          _emailController.text.isEmpty ||
-                          _passwordController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('ëª¨ë“  ì •ë³´ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.')),
-                        );
+                  ? () async {
+                      final name = _nameController.text.trim();
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text;
+                      final confirm = _confirmPasswordController.text;
+
+                      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+                        _showMessage('¸ğµç Á¤º¸¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.');
                         return;
                       }
 
-                      // 2. ë¹„ë°€ë²ˆí˜¸ ì¼ì¹˜ í™•ì¸
-                      if (_passwordController.text !=
-                          _confirmPasswordController.text) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('ë¹„ë°€ë²ˆí˜¸ê°€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.')),
-                        );
+                      if (password.length < 6) {
+                        _showMessage('ºñ¹Ğ¹øÈ£´Â 6ÀÚ¸® ÀÌ»óÀÌ¾î¾ß ÇÕ´Ï´Ù.');
                         return;
                       }
 
-                      // 3. ëª¨ë“  ê²€ì¦ í†µê³¼ ì‹œ ì´ë¦„ ì €ì¥ ë° ê°€ì… ì™„ë£Œ ì²˜ë¦¬
-                      Provider.of<UserDataManager>(context, listen: false)
-                          .setUserName(_nameController.text);
+                      if (password != confirm) {
+                        _showMessage('ºñ¹Ğ¹øÈ£°¡ ÀÏÄ¡ÇÏÁö ¾Ê½À´Ï´Ù.');
+                        return;
+                      }
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('íšŒì›ê°€ì…ì´ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤! ë¡œê·¸ì¸ì„ ì§„í–‰í•´ì£¼ì„¸ìš”.')),
-                      );
+                      try {
+                        await Provider.of<UserDataManager>(context, listen: false)
+                            .register(
+                          email: email,
+                          password: password,
+                          name: name,
+                        );
 
-                      Navigator.pop(context); // ê°€ì… ì™„ë£Œ í›„ ë¡œê·¸ì¸ ì°½ìœ¼ë¡œ ëŒì•„ê°€ê¸°
+                        _showMessage('È¸¿ø°¡ÀÔÀÌ ¿Ï·áµÇ¾ú½À´Ï´Ù! ·Î±×ÀÎÇØÁÖ¼¼¿ä.');
+                        Navigator.pop(context);
+                      } on FirebaseAuthException catch (e) {
+                        _showMessage('È¸¿ø°¡ÀÔ ½ÇÆĞ: ${_messageForAuthCode(e.code)}');
+                      } catch (_) {
+                        _showMessage('È¸¿ø°¡ÀÔ¿¡ ½ÇÆĞÇß½À´Ï´Ù.');
+                      }
                     }
-                  : null, // ì•½ê´€ ë™ì˜ ì•ˆ í•˜ë©´ ë²„íŠ¼ ë¹„í™œì„±í™”
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('ê°€ì… ì™„ë£Œ',
-                  style: TextStyle(color: Colors.white, fontSize: 16)),
+              child: const Text(
+                '°¡ÀÔÇÏ±â',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
           ],
         ),
