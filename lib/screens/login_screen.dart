@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+ï»¿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_data_manager.dart';
 import 'signup_screen.dart';
 
-// ·Î±×ÀÎ È­¸é: ÀÌ¸ŞÀÏ/ºñ¹Ğ¹øÈ£·Î ·Î±×ÀÎÇÏ°í, ½ÇÆĞ ½Ã Áï½Ã ¿¡·¯¸¦ º¸¿©ÁØ´Ù.
+// ë¡œê·¸ì¸ í™”ë©´: ì´ë©”ì¼/ë¹„ë°€ë²ˆí˜¸ë¡œ ë¡œê·¸ì¸í•˜ê³ , ì‹¤íŒ¨ ì‹œ ì¦‰ì‹œ ì—ëŸ¬ë¥¼ ë³´ì—¬ì¤€ë‹¤.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -33,17 +33,17 @@ class _LoginScreenState extends State<LoginScreen> {
     switch (code) {
       case 'invalid-credential':
       case 'wrong-password':
-        return 'ÀÌ¸ŞÀÏ ¶Ç´Â ºñ¹Ğ¹øÈ£°¡ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.';
+        return 'ì´ë©”ì¼ ë˜ëŠ” ë¹„ë°€ë²ˆí˜¸ê°€ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.';
       case 'user-not-found':
-        return '°¡ÀÔµÇÁö ¾ÊÀº °èÁ¤ÀÔ´Ï´Ù. È¸¿ø°¡ÀÔ ÈÄ ÀÌ¿ëÇØÁÖ¼¼¿ä.';
+        return 'ê°€ì…ë˜ì§€ ì•Šì€ ê³„ì •ì…ë‹ˆë‹¤. íšŒì›ê°€ì… í›„ ì´ìš©í•´ì£¼ì„¸ìš”.';
       case 'invalid-email':
-        return 'ÀÌ¸ŞÀÏ Çü½ÄÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.';
+        return 'ì´ë©”ì¼ í˜•ì‹ì´ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.';
       case 'operation-not-allowed':
-        return 'ÀÌ¸ŞÀÏ/ºñ¹Ğ¹øÈ£ ·Î±×ÀÎÀÌ ºñÈ°¼ºÈ­µÇ¾î ÀÖ½À´Ï´Ù.';
+        return 'ì´ë©”ì¼/ë¹„ë°€ë²ˆí˜¸ ë¡œê·¸ì¸ì´ ë¹„í™œì„±í™”ë˜ì–´ ìˆìŠµë‹ˆë‹¤.';
       case 'too-many-requests':
-        return '¿äÃ»ÀÌ ¸¹½À´Ï´Ù. Àá½Ã ÈÄ ´Ù½Ã ½ÃµµÇØÁÖ¼¼¿ä.';
+        return 'ìš”ì²­ì´ ë§ìŠµë‹ˆë‹¤. ì ì‹œ í›„ ë‹¤ì‹œ ì‹œë„í•´ì£¼ì„¸ìš”.';
       default:
-        return '·Î±×ÀÎ¿¡ ½ÇÆĞÇß½À´Ï´Ù. (${code})';
+        return 'ë¡œê·¸ì¸ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤. (${code})';
     }
   }
 
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: 'ÀÌ¸ŞÀÏ',
+                labelText: 'ì´ë©”ì¼',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.email),
               ),
@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'ºñ¹Ğ¹øÈ£',
+                labelText: 'ë¹„ë°€ë²ˆí˜¸',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.lock),
               ),
@@ -92,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 final password = _passwordController.text;
 
                 if (email.isEmpty || password.isEmpty) {
-                  _showMessage('ÀÌ¸ŞÀÏ°ú ºñ¹Ğ¹øÈ£¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.');
+                  _showMessage('ì´ë©”ì¼ê³¼ ë¹„ë°€ë²ˆí˜¸ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.');
                   return;
                 }
 
@@ -101,16 +101,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       .login(email: email, password: password);
                   Navigator.pop(context);
                 } on FirebaseAuthException catch (e) {
-                  _showMessage('·Î±×ÀÎ ½ÇÆĞ: ${_messageForAuthCode(e.code)}');
-                } catch (_) {
-                  _showMessage('·Î±×ÀÎ¿¡ ½ÇÆĞÇß½À´Ï´Ù.');
+                  final detail = e.message ?? e.code;
+                  _showMessage('ë¡œê·¸ì¸ ì‹¤íŒ¨: ${_messageForAuthCode(e.code)} ($detail)');
+                } on FirebaseException catch (e) {
+                  final detail = e.message ?? e.code;
+                  _showMessage('ë¡œê·¸ì¸ ì‹¤íŒ¨: $detail');
+                } catch (e) {
+                  _showMessage('ë¡œê·¸ì¸ ì‹¤íŒ¨: ${e.toString()}');
                 }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 backgroundColor: Colors.deepPurple,
               ),
-              child: const Text('·Î±×ÀÎ',
+              child: const Text('ë¡œê·¸ì¸',
                   style: TextStyle(color: Colors.white)),
             ),
             TextButton(
@@ -120,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   MaterialPageRoute(builder: (context) => const SignUpScreen()),
                 );
               },
-              child: const Text('°èÁ¤ÀÌ ¾øÀ¸½Å°¡¿ä? È¸¿ø°¡ÀÔ'),
+              child: const Text('ê³„ì •ì´ ì—†ìœ¼ì‹ ê°€ìš”? íšŒì›ê°€ì…'),
             ),
           ],
         ),

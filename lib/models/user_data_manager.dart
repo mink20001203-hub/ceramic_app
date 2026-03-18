@@ -390,7 +390,11 @@ class UserDataManager with ChangeNotifier {
     _role = email.toLowerCase() == 'admin@ceramic.com'
         ? UserRole.admin
         : UserRole.user;
-    await _persist();
+    try {
+      await _persist();
+    } catch (_) {
+      // 네트워크/Firestore 오류가 있어도 로그인/회원가입 자체는 유지한다.
+    }
     notifyListeners();
   }
 
@@ -413,8 +417,12 @@ class UserDataManager with ChangeNotifier {
     _role = email.toLowerCase() == 'admin@ceramic.com'
         ? UserRole.admin
         : UserRole.user;
-    await _loadFromBackend();
-    await _persist();
+    try {
+      await _loadFromBackend();
+      await _persist();
+    } catch (_) {
+      // Firestore 오프라인 등으로 실패해도 로그인은 성공 처리
+    }
     notifyListeners();
   }
 

@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+ï»¿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_data_manager.dart';
 
-// È¸¿ø°¡ÀÔ È­¸é: ÀÔ·Â°ªÀ» È®ÀÎÇÏ°í Firebase Auth °èÁ¤À» »ı¼ºÇÑ´Ù.
+// íšŒì›ê°€ì… í™”ë©´: ì…ë ¥ê°’ì„ í™•ì¸í•˜ê³  Firebase Auth ê³„ì •ì„ ìƒì„±í•œë‹¤.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -16,7 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
-  bool _isAgreed = false; // ¾à°ü µ¿ÀÇ »óÅÂ
+  bool _isAgreed = false; // ì•½ê´€ ë™ì˜ ìƒíƒœ
 
   @override
   void dispose() {
@@ -36,79 +36,79 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _messageForAuthCode(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'ÀÌ¹Ì °¡ÀÔµÈ ÀÌ¸ŞÀÏÀÔ´Ï´Ù.';
+        return 'ì´ë¯¸ ê°€ì…ëœ ì´ë©”ì¼ì…ë‹ˆë‹¤.';
       case 'invalid-email':
-        return 'ÀÌ¸ŞÀÏ Çü½ÄÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.';
+        return 'ì´ë©”ì¼ í˜•ì‹ì´ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.';
       case 'weak-password':
-        return 'ºñ¹Ğ¹øÈ£´Â 6ÀÚ¸® ÀÌ»óÀÌ¾î¾ß ÇÕ´Ï´Ù.';
+        return 'ë¹„ë°€ë²ˆí˜¸ëŠ” 6ìë¦¬ ì´ìƒì´ì–´ì•¼ í•©ë‹ˆë‹¤.';
       case 'operation-not-allowed':
-        return 'ÀÌ¸ŞÀÏ/ºñ¹Ğ¹øÈ£ È¸¿ø°¡ÀÔÀÌ ºñÈ°¼ºÈ­µÇ¾î ÀÖ½À´Ï´Ù.';
+        return 'ì´ë©”ì¼/ë¹„ë°€ë²ˆí˜¸ íšŒì›ê°€ì…ì´ ë¹„í™œì„±í™”ë˜ì–´ ìˆìŠµë‹ˆë‹¤.';
       default:
-        return 'È¸¿ø°¡ÀÔ¿¡ ½ÇÆĞÇß½À´Ï´Ù. (${code})';
+        return 'íšŒì›ê°€ì…ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤. (${code})';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('È¸¿ø°¡ÀÔ'), centerTitle: true),
+      appBar: AppBar(title: const Text('íšŒì›ê°€ì…'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              '»õ·Î¿î °èÁ¤À» ¸¸µé¾îº¸¼¼¿ä!',
+              'ìƒˆë¡œìš´ ê³„ì •ì„ ë§Œë“¤ì–´ë³´ì„¸ìš”!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
 
-            // ÀÌ¸§(´Ğ³×ÀÓ) ÀÔ·Â
+            // ì´ë¦„(ë‹‰ë„¤ì„) ì…ë ¥
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
-                labelText: 'ÀÌ¸§',
+                labelText: 'ì´ë¦„',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
 
-            // ÀÌ¸ŞÀÏ ÀÔ·Â
+            // ì´ë©”ì¼ ì…ë ¥
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                labelText: 'ÀÌ¸ŞÀÏ',
+                labelText: 'ì´ë©”ì¼',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
 
-            // ºñ¹Ğ¹øÈ£ ÀÔ·Â
+            // ë¹„ë°€ë²ˆí˜¸ ì…ë ¥
             TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'ºñ¹Ğ¹øÈ£',
+                labelText: 'ë¹„ë°€ë²ˆí˜¸',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
 
-            // ºñ¹Ğ¹øÈ£ È®ÀÎ
+            // ë¹„ë°€ë²ˆí˜¸ í™•ì¸
             TextField(
               controller: _confirmPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
-                labelText: 'ºñ¹Ğ¹øÈ£ È®ÀÎ',
+                labelText: 'ë¹„ë°€ë²ˆí˜¸ í™•ì¸',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
 
-            // ÀÌ¿ë¾à°ü µ¿ÀÇ Ã¼Å©¹Ú½º
+            // ì´ìš©ì•½ê´€ ë™ì˜ ì²´í¬ë°•ìŠ¤
             CheckboxListTile(
-              title: const Text('ÀÌ¿ë¾à°ü ¹× °³ÀÎÁ¤º¸ Ã³¸®¹æÄ§¿¡ µ¿ÀÇÇÕ´Ï´Ù.'),
+              title: const Text('ì´ìš©ì•½ê´€ ë° ê°œì¸ì •ë³´ ì²˜ë¦¬ë°©ì¹¨ì— ë™ì˜í•©ë‹ˆë‹¤.'),
               value: _isAgreed,
               onChanged: (value) => setState(() => _isAgreed = value ?? false),
               controlAffinity: ListTileControlAffinity.leading,
@@ -117,7 +117,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
             const SizedBox(height: 20),
 
-            // °¡ÀÔÇÏ±â ¹öÆ°
+            // ê°€ì…í•˜ê¸° ë²„íŠ¼
             ElevatedButton(
               onPressed: _isAgreed
                   ? () async {
@@ -127,17 +127,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       final confirm = _confirmPasswordController.text;
 
                       if (name.isEmpty || email.isEmpty || password.isEmpty) {
-                        _showMessage('¸ğµç Á¤º¸¸¦ ÀÔ·ÂÇØÁÖ¼¼¿ä.');
+                        _showMessage('ëª¨ë“  ì •ë³´ë¥¼ ì…ë ¥í•´ì£¼ì„¸ìš”.');
                         return;
                       }
 
                       if (password.length < 6) {
-                        _showMessage('ºñ¹Ğ¹øÈ£´Â 6ÀÚ¸® ÀÌ»óÀÌ¾î¾ß ÇÕ´Ï´Ù.');
+                        _showMessage('ë¹„ë°€ë²ˆí˜¸ëŠ” 6ìë¦¬ ì´ìƒì´ì–´ì•¼ í•©ë‹ˆë‹¤.');
                         return;
                       }
 
                       if (password != confirm) {
-                        _showMessage('ºñ¹Ğ¹øÈ£°¡ ÀÏÄ¡ÇÏÁö ¾Ê½À´Ï´Ù.');
+                        _showMessage('ë¹„ë°€ë²ˆí˜¸ê°€ ì¼ì¹˜í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.');
                         return;
                       }
 
@@ -149,12 +149,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           name: name,
                         );
 
-                        _showMessage('È¸¿ø°¡ÀÔÀÌ ¿Ï·áµÇ¾ú½À´Ï´Ù! ·Î±×ÀÎÇØÁÖ¼¼¿ä.');
+                        _showMessage('íšŒì›ê°€ì…ì´ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤! ë¡œê·¸ì¸í•´ì£¼ì„¸ìš”.');
                         Navigator.pop(context);
                       } on FirebaseAuthException catch (e) {
-                        _showMessage('È¸¿ø°¡ÀÔ ½ÇÆĞ: ${_messageForAuthCode(e.code)}');
+                        _showMessage('íšŒì›ê°€ì… ì‹¤íŒ¨: ${_messageForAuthCode(e.code)}');
                       } catch (_) {
-                        _showMessage('È¸¿ø°¡ÀÔ¿¡ ½ÇÆĞÇß½À´Ï´Ù.');
+                        _showMessage('íšŒì›ê°€ì…ì— ì‹¤íŒ¨í–ˆìŠµë‹ˆë‹¤.');
                       }
                     }
                   : null,
@@ -163,7 +163,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: const Text(
-                '°¡ÀÔÇÏ±â',
+                'ê°€ì…í•˜ê¸°',
                 style: TextStyle(color: Colors.white, fontSize: 16),
               ),
             ),
