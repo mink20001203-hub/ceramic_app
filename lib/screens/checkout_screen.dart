@@ -12,19 +12,23 @@ class CheckoutScreen extends StatefulWidget {
   final CheckoutMode mode;
   final Product? product;
   final String? selectedOption;
+  final int quantity;
 
   const CheckoutScreen.single({
     super.key,
     required Product product,
     String? selectedOption,
+    int quantity = 1,
   })  : mode = CheckoutMode.single,
         product = product,
-        selectedOption = selectedOption;
+        selectedOption = selectedOption,
+        quantity = quantity;
 
   const CheckoutScreen.cart({super.key})
       : mode = CheckoutMode.cart,
         product = null,
-        selectedOption = null;
+        selectedOption = null,
+        quantity = 1;
 
   @override
   State<CheckoutScreen> createState() => _CheckoutScreenState();
@@ -66,7 +70,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         : [
             _CheckoutItem(
               product: widget.product!,
-              quantity: 1,
+              quantity: widget.quantity,
               option: widget.selectedOption,
             )
           ];
@@ -96,16 +100,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             orElse: () => manager.coupons.first,
           );
 
-    final couponApplicable = coupon == null
-        ? false
-        : (!coupon.isUsed &&
-            subtotal >= coupon.minOrderAmount &&
-            (coupon.allowedCategories.isEmpty ||
-                items.any((i) =>
-                    coupon.allowedCategories.contains(i.product.category))) &&
-            (coupon.allowedProductIds.isEmpty ||
-                items.any(
-                    (i) => coupon.allowedProductIds.contains(i.product.id))));
+    bool _isCouponApplicable(Coupon c) {
+      if (c.isUsed) return false;
+      if (subtotal < c.minOrderAmount) return false;
+      final categoryOk = c.allowedCategories.isEmpty ||
+          items.any((i) => c.allowedCategories.contains(i.product.category));
+      final productOk = c.allowedProductIds.isEmpty ||
+          items.any((i) => c.allowedProductIds.contains(i.product.id));
+      return categoryOk && productOk;
+    }
+
+    final couponApplicable = coupon == null ? false : _isCouponApplicable(coupon);
 
     final couponDiscount = couponApplicable ? coupon!.discountAmount : 0;
     final requestedMileage =
@@ -191,6 +196,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const Divider(height: 32),
             const Text('쿠폰',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            if (coupon != null && !couponApplicable)
+              const Padding(
+                padding: EdgeInsets.only(top: 6, bottom: 4),
+                child: Text(
+                  '선택한 쿠폰은 현재 주문에 적용할 수 없습니다.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
             RadioListTile<String?>(
               value: null,
               groupValue: _selectedCouponId,
@@ -198,11 +211,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               title: const Text('쿠폰 사용 안 함'),
               dense: true,
             ),
+            if (manager.coupons.where((c) => !c.isUsed).isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(top: 4, bottom: 8),
+                child: Text(
+                  '사용 가능한 쿠폰이 없습니다.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
             ...manager.coupons.where((c) => !c.isUsed).map(
                   (c) => RadioListTile<String?>(
                     value: c.id,
                     groupValue: _selectedCouponId,
-                    onChanged: (value) => setState(() => _selectedCouponId = value),
+                    onChanged:
+                        _isCouponApplicable(c) ? (value) => setState(() => _selectedCouponId = value) : null,
                     title: Text(c.title),
                     subtitle: Text(
                         '${format.format(c.discountAmount)}원 할인 · ${format.format(c.minOrderAmount)}원 이상'),
@@ -336,6 +358,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             manager.placeSingleOrder(
                               widget.product!,
                               option: widget.selectedOption,
+                              quantity: widget.quantity,
                               couponId:
                                   couponDiscount > 0 ? _selectedCouponId : null,
                               mileageUsed: mileageToUse,

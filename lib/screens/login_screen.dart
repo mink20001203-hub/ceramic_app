@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_data_manager.dart';
 import 'signup_screen.dart';
 
@@ -15,12 +16,46 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _rememberEmail = false;
+  bool _autoLogin = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final remember = prefs.getBool('rememberEmail') ?? false;
+    final savedEmail = prefs.getString('savedEmail') ?? '';
+    final autoLogin = prefs.getBool('autoLoginEnabled') ?? true;
+    if (!mounted) return;
+    setState(() {
+      _rememberEmail = remember;
+      _autoLogin = autoLogin;
+      if (remember && savedEmail.isNotEmpty) {
+        _emailController.text = savedEmail;
+      }
+    });
+  }
+
+  Future<void> _savePrefs({required String email}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('rememberEmail', _rememberEmail);
+    await prefs.setBool('autoLoginEnabled', _autoLogin);
+    if (_rememberEmail) {
+      await prefs.setString('savedEmail', email);
+    } else {
+      await prefs.remove('savedEmail');
+    }
   }
 
   void _showMessage(String message) {
@@ -85,6 +120,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 prefixIcon: Icon(Icons.lock),
               ),
             ),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _rememberEmail,
+              onChanged: (value) async {
+                setState(() => _rememberEmail = value ?? false);
+                await _savePrefs(email: _emailController.text.trim());
+              },
+              title: const Text('아이디 저장'),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _autoLogin,
+              onChanged: (value) async {
+                setState(() => _autoLogin = value ?? true);
+                await _savePrefs(email: _emailController.text.trim());
+              },
+              title: const Text('자동 로그인'),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () async {
@@ -99,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 try {
                   await Provider.of<UserDataManager>(context, listen: false)
                       .login(email: email, password: password);
+                  await _savePrefs(email: email);
                   Navigator.pop(context);
                 } on FirebaseAuthException catch (e) {
                   final detail = e.message ?? e.code;

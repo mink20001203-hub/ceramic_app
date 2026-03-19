@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
@@ -142,14 +142,32 @@ class OrderDetailScreen extends StatelessWidget {
                   child: ElevatedButton(
                     // 주문 상품을 장바구니에 다시 담는다.
                     onPressed: () {
+                      int added = 0;
+                      int skipped = 0;
                       for (final item in order.items) {
-                        for (int i = 0; i < item.quantity; i++) {
+                        if (item.product.stock == 0) {
+                          skipped += item.quantity;
+                          continue;
+                        }
+                        final addQty = item.quantity > item.product.stock
+                            ? item.product.stock
+                            : item.quantity;
+                        for (int i = 0; i < addQty; i++) {
                           manager.addToCart(item.product,
                               selectedOption: item.option);
                         }
+                        added += addQty;
+                        if (addQty < item.quantity) {
+                          skipped += (item.quantity - addQty);
+                        }
                       }
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('장바구니에 담았습니다.')),
+                        SnackBar(
+                            content: Text(added == 0
+                                ? '품절로 장바구니에 담을 수 없습니다.'
+                                : (skipped > 0
+                                    ? '재고 부족으로 일부만 담았습니다.'
+                                    : '장바구니에 담았습니다.'))),
                       );
                     },
                     child: const Text('재주문(장바구니 담기)'),

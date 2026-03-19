@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_data_manager.dart';
 
@@ -18,6 +18,8 @@ class ReviewManageScreen extends StatelessWidget {
               itemCount: manager.reviews.length,
               itemBuilder: (context, index) {
                 final review = manager.reviews[index];
+                final latestOrder =
+                    manager.getLatestOrderForProduct(review.productId);
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
@@ -29,17 +31,17 @@ class ReviewManageScreen extends StatelessWidget {
                             maxLines: 2, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 4),
                         Text(
-                          manager.getLatestOrderForProduct(review.productId) != null
-                              ? '주문번호: ${manager.getLatestOrderForProduct(review.productId)!.id}'
+                          latestOrder != null
+                              ? '주문번호: ${latestOrder.id}'
                               : '주문 정보 없음',
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          style:
+                              const TextStyle(color: Colors.grey, fontSize: 12),
                         ),
-                        if (manager.getLatestOrderForProduct(review.productId) !=
-                            null)
+                        if (latestOrder != null)
                           Text(
-                            '주문일: ${manager.getLatestOrderForProduct(review.productId)!.date.toString().substring(0, 10)}',
-                            style:
-                                const TextStyle(color: Colors.grey, fontSize: 12),
+                            '주문일: ${latestOrder.date.toString().substring(0, 10)}',
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12),
                           ),
                       ],
                     ),

@@ -16,6 +16,7 @@ class DetailScreen extends StatefulWidget {
 
 class _DetailScreenState extends State<DetailScreen> {
   String? _selectedOption;
+  int _quantity = 1;
 
   @override
   void initState() {
@@ -164,8 +165,18 @@ class _DetailScreenState extends State<DetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (product.image != null)
-                    Image.asset(product.image!,
-                        width: double.infinity, height: 300, fit: BoxFit.cover)
+                    Image.asset(
+                      product.image!,
+                      width: double.infinity,
+                      height: 300,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: double.infinity,
+                        height: 300,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.image_not_supported),
+                      ),
+                    )
                   else
                     Container(
                         width: double.infinity,
@@ -249,6 +260,43 @@ class _DetailScreenState extends State<DetailScreen> {
                                   },
                           ),
                         ],
+                        const SizedBox(height: 16),
+                        const Text(
+                          "수량",
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: isSoldOut || _quantity <= 1
+                                  ? null
+                                  : () {
+                                      setState(() => _quantity--);
+                                    },
+                              icon: const Icon(Icons.remove_circle_outline),
+                            ),
+                            Text(
+                              '$_quantity',
+                              style: const TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            IconButton(
+                              onPressed: isSoldOut || _quantity >= product.stock
+                                  ? null
+                                  : () {
+                                      setState(() => _quantity++);
+                                    },
+                              icon: const Icon(Icons.add_circle_outline),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '최대 ${product.stock}개',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
                         const Divider(height: 40),
                         const Text("상품 설명",
                             style: TextStyle(
@@ -277,7 +325,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     onPressed: () {
                       // ✅ CartProvider 대신 userManager를 사용하여 에러 해결
                       if (isSoldOut) return;
-                      userManager.addToCart(product,
+                      userManager.addToCartMultiple(product, _quantity,
                           selectedOption: _selectedOption);
                       _showCartBottomSheet(context, userManager);
                     },
@@ -306,6 +354,7 @@ class _DetailScreenState extends State<DetailScreen> {
                           builder: (context) => CheckoutScreen.single(
                             product: product,
                             selectedOption: _selectedOption,
+                            quantity: _quantity,
                           ),
                         ),
                       );

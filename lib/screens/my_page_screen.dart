@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
@@ -8,7 +8,7 @@ import 'order_detail_screen.dart';
 import 'coupon_list_screen.dart';
 import 'review_manage_screen.dart';
 
-// 마이페이지: 로그인 상태, 구매 내역, 리뷰 작성/수정을 관리한다.
+// 마이페이지: 로그인 상태, 주문 내역, 리뷰 작성/수정 등을 관리한다.
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
 
@@ -22,8 +22,8 @@ class MyPageScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title:
-            const Text('마이페이지', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('마이페이지',
+            style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
@@ -52,7 +52,8 @@ class MyPageScreen extends StatelessWidget {
           const Icon(Icons.account_circle_outlined,
               size: 100, color: Colors.grey),
           const SizedBox(height: 20),
-          const Text('로그인이 필요한 서비스입니다.', style: TextStyle(fontSize: 18)),
+          const Text('로그인이 필요한 서비스입니다.',
+              style: TextStyle(fontSize: 18)),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => Navigator.push(
@@ -63,8 +64,8 @@ class MyPageScreen extends StatelessWidget {
               backgroundColor: const Color(0xFF6342E8),
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
             ),
-            child:
-                const Text('로그인하러 가기', style: TextStyle(color: Colors.white)),
+            child: const Text('로그인하러 가기',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -82,6 +83,17 @@ class MyPageScreen extends StatelessWidget {
       length: 2,
       child: Column(
         children: [
+          if (userManager.backendError != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              color: const Color(0xFFFFF3CD),
+              child: Text(
+                '데이터 동기화 오류: ${userManager.backendError}. '
+                '권한 설정 또는 네트워크 상태를 확인해주세요.',
+                style: const TextStyle(color: Color(0xFF7A5B00)),
+              ),
+            ),
           _buildProfileSection(context, userManager),
           const TabBar(
             labelColor: Color(0xFF6342E8),
@@ -135,7 +147,8 @@ class MyPageScreen extends StatelessWidget {
                                   elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    side: BorderSide(color: Colors.grey.shade200),
+                                    side:
+                                        BorderSide(color: Colors.grey.shade200),
                                   ),
                                   margin: const EdgeInsets.symmetric(
                                       horizontal: 16, vertical: 8),
@@ -274,13 +287,16 @@ class MyPageScreen extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        const Text('쿠폰',
-                            style: TextStyle(color: Colors.grey)),
+                        const Text('쿠폰', style: TextStyle(color: Colors.grey)),
                         const SizedBox(height: 6),
                         Text('${userManager.availableCouponCount}개',
                             style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF6342E8))),
+                        const SizedBox(height: 4),
+                        const Text('사용 가능',
+                            style:
+                                TextStyle(fontSize: 12, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -305,7 +321,8 @@ class MyPageScreen extends StatelessWidget {
             child: OutlinedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const ReviewManageScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const ReviewManageScreen()),
               ),
               child: const Text('내 리뷰 관리'),
             ),
@@ -382,7 +399,7 @@ class MyPageScreen extends StatelessWidget {
     );
   }
 
-  // --- 3. 프로필 및 대시보드 ---
+  // --- 3. 프로필 영역 ---
   Widget _buildProfileSection(
       BuildContext context, UserDataManager userManager) {
     return Container(
@@ -410,7 +427,7 @@ class MyPageScreen extends StatelessWidget {
               children: [
                 _buildStatItem('마일리지', '${userManager.mileage}P'),
                 Container(width: 1, height: 20, color: Colors.grey[300]),
-                _buildStatItem('나의 리뷰', '${userManager.reviewCount}'),
+                _buildStatItem('나의 리뷰', '${userManager.reviews.length}'),
                 Container(width: 1, height: 20, color: Colors.grey[300]),
                 _buildStatItem('쿠폰', '${userManager.availableCouponCount}'),
               ],
@@ -435,7 +452,7 @@ class MyPageScreen extends StatelessWidget {
     );
   }
 
-  // --- 4. 사진 첨부 기능이 포함된 리뷰 팝업 ---
+  // --- 4. 리뷰 작성/수정 다이얼로그 ---
   void _showReviewDialog(BuildContext context, Product product,
       {Review? existingReview}) {
     final userManager = Provider.of<UserDataManager>(context, listen: false);
@@ -450,7 +467,7 @@ class MyPageScreen extends StatelessWidget {
         builder: (context, setDialogState) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          title: Text(existingReview != null ? '후기 수정하기' : '후기 작성하기'),
+          title: Text(existingReview != null ? '리뷰 수정하기' : '리뷰 작성하기'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -470,7 +487,7 @@ class MyPageScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 15),
 
-                // 📷 사진 첨부 섹션
+                // 리뷰 사진 첨부 영역
                 InkWell(
                   onTap: () {
                     setDialogState(() => pickedImagePath = product.image);
@@ -491,7 +508,6 @@ class MyPageScreen extends StatelessWidget {
                                 child: Image.asset(pickedImagePath!,
                                     width: double.infinity, fit: BoxFit.cover),
                               ),
-                              // ✅ 에러 해결: Position -> Positioned 로 수정
                               const Positioned(
                                   right: 5,
                                   top: 5,
@@ -559,10 +575,11 @@ class MyPageScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃 하시겠습니까?'),
+        content: const Text('정말 로그아웃 하시겠어요?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('취소')),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소')),
           TextButton(
             onPressed: () {
               userManager.logout();

@@ -1,16 +1,15 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'product.dart';
 import '../repositories/product_repository.dart';
 
-// 사용자/세션 상태를 한 곳에서 관리하는 클래스.
-// 화면에 필요한 데이터를 라우트마다 넘기지 않도록 중앙 집중화한다.
+// 사용자 화면 상태를 앱 전역에서 관리하는 클래스
+// 필요한 데이터만 들고 있어 화면이 복잡해지지 않도록 중앙 관리한다.
 
-// 사용자 권한 구분 (관리자/일반 사용자)
 enum UserRole { user, admin }
 
-// --- 1. 장바구니 아이템 모델 (기존 유지) ---
 class CartItem {
   final Product product;
   final String? option;
@@ -18,14 +17,13 @@ class CartItem {
   CartItem({required this.product, this.option, this.quantity = 1});
 }
 
-// --- 2. 리뷰 데이터 모델 (사진 경로 및 업데이트 대응) ---
 class Review {
   final String productId;
   final String productName;
   final double rating;
   final String comment;
   final DateTime date;
-  final String? imagePath; // ✅ 사진 경로 추가
+  final String? imagePath;
 
   Review({
     required this.productId,
@@ -33,11 +31,10 @@ class Review {
     required this.rating,
     required this.comment,
     required this.date,
-    this.imagePath, // ✅ 선택 사항으로 추가
+    this.imagePath,
   });
 }
 
-// --- 2-1. 주문 아이템/주문 모델 ---
 class OrderItem {
   final Product product;
   final String? option;
@@ -61,10 +58,10 @@ class Order {
   final String? couponTitle;
   final String addressSummary;
   final String paymentMethodLabel;
-  final String paymentStatus; // 결제대기/결제완료/결제실패
+  final String paymentStatus;
   final bool agreementAccepted;
   final DateTime date;
-  String status; // 예: 결제완료/배송준비/배송중/배송완료
+  String status;
   final List<OrderStatusLog> statusLogs;
 
   Order({
@@ -87,13 +84,12 @@ class Order {
 class OrderStatusLog {
   final String status;
   final DateTime date;
-  final String actor; // 변경 주체(관리자/시스템)
+  final String actor;
 
   OrderStatusLog(
       {required this.status, required this.date, required this.actor});
 }
 
-// --- 2-2. 주소/결제수단 모델 ---
 class Address {
   final String id;
   final String label;
@@ -117,7 +113,7 @@ class Address {
 class PaymentMethod {
   final String id;
   final String label;
-  final String type; // 예: CARD/NAVER/KAKAO
+  final String type;
 
   PaymentMethod({
     required this.id,
@@ -126,14 +122,13 @@ class PaymentMethod {
   });
 }
 
-// --- 2-3. 쿠폰 모델 ---
 class Coupon {
   final String id;
   final String title;
   final int discountAmount;
   final int minOrderAmount;
-  final List<String> allowedCategories; // 적용 가능한 카테고리
-  final List<String> allowedProductIds; // 적용 가능한 상품 ID
+  final List<String> allowedCategories;
+  final List<String> allowedProductIds;
   bool isUsed;
 
   Coupon({
@@ -147,15 +142,16 @@ class Coupon {
   });
 }
 
-// --- 3. 통합 데이터 관리 클래스 ---
 class UserDataManager with ChangeNotifier {
-  // [로그인 및 사용자 정보 관리]
   bool _isLoggedIn = false;
   String? _userId;
   UserRole _role = UserRole.user;
   String _userName = "손님";
   int _mileage = 1500;
-  int _reviewCount = 2;
+  int _reviewCount = 0;
+  String? _backendError;
+  bool _autoLoginEnabled = true;
+
   final bool _firebaseReady;
   FirebaseAuth? _auth;
   FirebaseFirestore? _db;
@@ -167,8 +163,9 @@ class UserDataManager with ChangeNotifier {
   String get userName => _userName;
   int get mileage => _mileage;
   int get reviewCount => _reviewCount;
+  String? get backendError => _backendError;
+  bool get autoLoginEnabled => _autoLoginEnabled;
 
-  // 전체 상품 목록 (UI 공통 사용)
   final List<Product> _products = [];
   List<Product> get products => _products;
   bool _productsLoading = false;
@@ -176,7 +173,6 @@ class UserDataManager with ChangeNotifier {
   bool get productsLoading => _productsLoading;
   bool get remoteProductsEnabled => _remoteProductsEnabled;
 
-  // 배송지/결제수단 데이터
   final List<Address> _addresses = [
     Address(
       id: 'addr1',
@@ -184,7 +180,7 @@ class UserDataManager with ChangeNotifier {
       recipient: '손님',
       addressLine: '서울시 강남구 테헤란로 123',
       phone: '010-1234-5678',
-      requestNote: '문 앞에 두고 연락주세요',
+      requestNote: '문 앞에 놓아주세요',
     ),
     Address(
       id: 'addr2',
@@ -218,7 +214,6 @@ class UserDataManager with ChangeNotifier {
   String _selectedPaymentId = '';
   String? _selectedCouponId;
 
-  // 앱 시작 시 더미 상품과 기본 선택값을 준비한다.
   UserDataManager(
       {bool firebaseReady = false, bool remoteProductsEnabled = false})
       : _firebaseReady = firebaseReady,
@@ -234,8 +229,28 @@ class UserDataManager with ChangeNotifier {
     if (_paymentMethods.isNotEmpty) {
       _selectedPaymentId = _paymentMethods.first.id;
     }
-    // 로컬/원격 여부와 관계없이 동일한 상품 로딩 경로를 사용한다.
     reloadProducts();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    if (!_firebaseReady || _auth == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    _autoLoginEnabled = prefs.getBool('autoLoginEnabled') ?? true;
+    if (!_autoLoginEnabled) {
+      await _auth?.signOut();
+      return;
+    }
+    final user = _auth!.currentUser;
+    if (user == null) return;
+    _isLoggedIn = true;
+    _userId = user.uid;
+    final email = user.email ?? '';
+    _role = email.toLowerCase() == 'admin@ceramic.com'
+        ? UserRole.admin
+        : UserRole.user;
+    await _loadFromBackend();
+    notifyListeners();
   }
 
   ProductRepository _productRepository() {
@@ -254,7 +269,6 @@ class UserDataManager with ChangeNotifier {
         ..clear()
         ..addAll(items);
     } catch (_) {
-      // 원격 로딩 실패 시에도 데모 진행이 가능하도록 로컬 데이터를 유지한다.
       if (_products.isEmpty) {
         _products.addAll(dummyProducts);
       }
@@ -273,8 +287,8 @@ class UserDataManager with ChangeNotifier {
   List<PaymentMethod> get paymentMethods => _paymentMethods;
   List<Coupon> get coupons => _coupons;
   int get availableCouponCount => _coupons.where((c) => !c.isUsed).length;
+  int get totalCouponCount => _coupons.length;
 
-  // 현재 선택된 배송지/결제수단
   Address? get selectedAddress {
     if (_addresses.isEmpty) return null;
     return _addresses.firstWhere((a) => a.id == _selectedAddressId,
@@ -292,7 +306,6 @@ class UserDataManager with ChangeNotifier {
         orElse: () => _coupons.first);
   }
 
-  // 배송지/결제수단 선택 변경
   void setSelectedAddress(String id) {
     _selectedAddressId = id;
     _persist();
@@ -305,7 +318,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 쿠폰 선택/해제
   void setSelectedCoupon(String? id) {
     _selectedCouponId = id;
     _persist();
@@ -324,7 +336,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 배송지 삭제
   void removeAddress(String id) {
     _addresses.removeWhere((a) => a.id == id);
     if (_addresses.isEmpty) {
@@ -336,7 +347,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 결제수단 삭제
   void removePaymentMethod(String id) {
     _paymentMethods.removeWhere((p) => p.id == id);
     if (_paymentMethods.isEmpty) {
@@ -348,7 +358,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 배송지 추가
   void addAddress(Address address) {
     _addresses.add(address);
     _selectedAddressId = address.id;
@@ -356,7 +365,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 배송지 수정
   void updateAddress(Address updated) {
     final index = _addresses.indexWhere((a) => a.id == updated.id);
     if (index != -1) {
@@ -366,7 +374,6 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // 기본 배송지 변경
   void setDefaultAddress(String id) {
     if (_addresses.any((a) => a.id == id)) {
       _selectedAddressId = id;
@@ -375,7 +382,6 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // 결제수단 추가
   void addPaymentMethod(PaymentMethod method) {
     _paymentMethods.add(method);
     _selectedPaymentId = method.id;
@@ -383,7 +389,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 결제수단 수정
   void updatePaymentMethod(PaymentMethod method) {
     final index = _paymentMethods.indexWhere((p) => p.id == method.id);
     if (index != -1) {
@@ -393,7 +398,6 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // 기본 결제수단 변경
   void setDefaultPayment(String id) {
     if (_paymentMethods.any((p) => p.id == id)) {
       _selectedPaymentId = id;
@@ -402,7 +406,6 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // 회원가입: Firebase Auth 계정 생성 + 사용자 데이터 초기 저장
   Future<void> register({
     required String email,
     required String password,
@@ -439,7 +442,6 @@ class UserDataManager with ChangeNotifier {
   }
 
   Future<void> login({required String email, required String password}) async {
-    // Firebase 연결이 없으면 로컬 모드로 로그인한다.
     if (!_firebaseReady) {
       _isLoggedIn = true;
       _userId = email;
@@ -467,7 +469,6 @@ class UserDataManager with ChangeNotifier {
   }
 
   void logout() {
-    // 로그아웃 시 기본 사용자 상태로 되돌린다.
     _isLoggedIn = false;
     _userId = null;
     _role = UserRole.user;
@@ -484,20 +485,16 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 탭 관리
   int _currentTabIndex = 0;
   int get currentTabIndex => _currentTabIndex;
   void setTabIndex(int index) {
-    // 네비게이션 상태를 한 곳에서 관리해 화면을 단순화한다.
     _currentTabIndex = index;
     notifyListeners();
   }
 
-  // 주문 목록
   final List<Order> _orders = [];
   List<Order> get orders => _orders;
 
-  // 주문 목록에서 구매된 상품을 추출 (리뷰/마이페이지 표시용)
   List<Product> get purchasedProducts {
     final Map<String, Product> map = {};
     for (final order in _orders) {
@@ -508,12 +505,10 @@ class UserDataManager with ChangeNotifier {
     return map.values.toList();
   }
 
-  // 찜하기(위시리스트)
   final List<Product> _wishlist = [];
   List<Product> get wishlist => _wishlist;
 
   void toggleWishlist(Product product) {
-    // 즐겨찾기 토글로 즉시 UI 피드백을 제공한다.
     _wishlist.contains(product)
         ? _wishlist.remove(product)
         : _wishlist.add(product);
@@ -523,14 +518,11 @@ class UserDataManager with ChangeNotifier {
 
   bool isFavorite(Product product) => _wishlist.contains(product);
 
-  // --- 장바구니 로직 (기존 유지) ---
   final List<CartItem> _cartWithQuantity = [];
   List<CartItem> get items => _cartWithQuantity;
 
-  // 장바구니 담기: 품절/재고 초과 방지
   void addToCart(Product product, {String? selectedOption}) {
     if (product.stock == 0) return;
-    // 이미 담긴 상품이면 수량만 증가시켜 중복을 방지한다.
     for (var item in _cartWithQuantity) {
       if (item.product.id == product.id &&
           item.option == (selectedOption ?? item.option)) {
@@ -547,6 +539,14 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  void addToCartMultiple(Product product, int quantity,
+      {String? selectedOption}) {
+    if (quantity <= 0) return;
+    for (int i = 0; i < quantity; i++) {
+      addToCart(product, selectedOption: selectedOption);
+    }
+  }
+
   void removeFromCart(Product product, {String? option}) {
     _cartWithQuantity.removeWhere(
         (item) => item.product.id == product.id && item.option == option);
@@ -554,7 +554,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 수량 증가: 재고 초과 방지
   void incrementQuantity(String productId, String? option) {
     for (var item in _cartWithQuantity) {
       if (item.product.id == productId && item.option == option) {
@@ -601,7 +600,6 @@ class UserDataManager with ChangeNotifier {
     return total;
   }
 
-  // 세일가가 있으면 세일가를 사용한다.
   int _getEffectivePrice(Product product) {
     if (product.isSale && product.salePrice != null) {
       return product.salePrice!;
@@ -609,7 +607,6 @@ class UserDataManager with ChangeNotifier {
     return product.price;
   }
 
-  // 쿠폰 할인 계산
   bool _isCouponApplicable(Coupon coupon, List<OrderItem> items, int subtotal) {
     if (coupon.isUsed) return false;
     if (subtotal < coupon.minOrderAmount) return false;
@@ -632,20 +629,17 @@ class UserDataManager with ChangeNotifier {
     return coupon.discountAmount;
   }
 
-  // 마일리지 사용 금액 계산
   int _calculateMileageUsage(int requested, int subtotalAfterCoupon) {
     final maxUsable =
         _mileage < subtotalAfterCoupon ? _mileage : subtotalAfterCoupon;
     return requested > maxUsable ? maxUsable : requested;
   }
 
-  // 주문 시 재고 차감
   void _decreaseStock(Product product, int quantity) {
     final newStock = product.stock - quantity;
     product.stock = newStock < 0 ? 0 : newStock;
   }
 
-  // 장바구니 기반 주문 생성
   void placeOrderFromCart(
       {String? couponId,
       int mileageUsed = 0,
@@ -712,9 +706,9 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 단일 상품 즉시구매
   void placeSingleOrder(Product product,
       {String? option,
+      int quantity = 1,
       String? couponId,
       int mileageUsed = 0,
       Address? address,
@@ -724,12 +718,12 @@ class UserDataManager with ChangeNotifier {
       OrderItem(
         product: product,
         option: option,
-        quantity: 1,
+        quantity: quantity,
         unitPrice: _getEffectivePrice(product),
       ),
     ];
 
-    final subtotal = items.first.unitPrice;
+    final subtotal = items.first.unitPrice * quantity;
     final coupon = couponId == null
         ? null
         : _coupons.firstWhere((c) => c.id == couponId,
@@ -739,7 +733,7 @@ class UserDataManager with ChangeNotifier {
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
     final total = subtotal - couponDiscount - mileageToUse;
 
-    _decreaseStock(product, 1);
+    _decreaseStock(product, quantity);
 
     _orders.add(Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -774,7 +768,6 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  // 주문 상태 전환
   static const List<String> _orderStatuses = [
     '결제완료',
     '배송준비',
@@ -782,7 +775,6 @@ class UserDataManager with ChangeNotifier {
     '배송완료',
   ];
 
-  // 주문 상태를 다음 단계로 진행 (관리자 UI에서 사용)
   void advanceOrderStatus(String orderId, {String actor = '관리자'}) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     final currentIndex = _orderStatuses.indexOf(order.status);
@@ -796,7 +788,6 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // 주문 상태를 특정 값으로 변경 (확장용)
   void setOrderStatus(String orderId, String status, {String actor = '관리자'}) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     if (order.status != status) {
@@ -808,24 +799,20 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // --- 리뷰 로직 (수정 및 1회 제한 기능 추가) ---
   final List<Review> _reviews = [];
   List<Review> get reviews => _reviews;
 
-  // 리뷰 삭제
   void removeReviewAt(int index) {
     _reviews.removeAt(index);
-    if (_reviewCount > 0) _reviewCount--;
+    _reviewCount = _reviews.length;
     _persist();
     notifyListeners();
   }
 
-  // ✅ 1. 특정 상품 리뷰 존재 여부 확인 (hasReview 에러 해결)
   bool hasReview(String productId) {
     return _reviews.any((r) => r.productId == productId);
   }
 
-  // ✅ 2. 특정 상품 리뷰 가져오기 (getReview 에러 해결)
   Review? getReview(String productId) {
     try {
       return _reviews.firstWhere((r) => r.productId == productId);
@@ -834,7 +821,6 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  // 리뷰에 연결된 최근 주문 찾기
   Order? getLatestOrderForProduct(String productId) {
     Order? latest;
     for (final order in _orders) {
@@ -849,11 +835,9 @@ class UserDataManager with ChangeNotifier {
     return latest;
   }
 
-  // ✅ 3. 리뷰 추가 (imagePath 파라미터 추가)
   void addReview(
       String productId, String productName, double rating, String comment,
       {String? imagePath}) {
-    // 데모이므로 업로드 없이 이미지 경로만 보관한다.
     _reviews.add(Review(
       productId: productId,
       productName: productName,
@@ -864,12 +848,11 @@ class UserDataManager with ChangeNotifier {
     ));
 
     _mileage += 100;
-    _reviewCount++;
+    _reviewCount = _reviews.length;
     _persist();
     notifyListeners();
   }
 
-  // ✅ 4. 리뷰 수정 (updateReview 에러 해결)
   void updateReview(
       String productId, double rating, String comment, String? imagePath) {
     final index = _reviews.indexWhere((r) => r.productId == productId);
@@ -879,7 +862,7 @@ class UserDataManager with ChangeNotifier {
         productName: _reviews[index].productName,
         rating: rating,
         comment: comment,
-        date: DateTime.now(), // 수정일 기준 갱신
+        date: DateTime.now(),
         imagePath: imagePath,
       );
       _persist();
@@ -889,37 +872,47 @@ class UserDataManager with ChangeNotifier {
 
   Future<void> _loadFromBackend() async {
     if (!_firebaseReady || _userId == null) return;
-    final doc = await _db!.collection('users').doc(_userId).get();
-    if (!doc.exists) return;
-    final data = doc.data()!;
-    _userName = data['userName'] ?? _userName;
-    _mileage = data['mileage'] ?? _mileage;
-    _reviewCount = data['reviewCount'] ?? _reviewCount;
-    final roleStr = data['role'] as String? ?? 'user';
-    _role = roleStr == 'admin' ? UserRole.admin : UserRole.user;
+    try {
+      final doc = await _db!.collection('users').doc(_userId).get();
+      if (!doc.exists) {
+        _backendError = null;
+        return;
+      }
+      final data = doc.data()!;
+      _userName = data['userName'] ?? _userName;
+      _mileage = data['mileage'] ?? _mileage;
+      final roleStr = data['role'] as String? ?? 'user';
+      _role = roleStr == 'admin' ? UserRole.admin : UserRole.user;
 
-    _addresses
-      ..clear()
-      ..addAll((data['addresses'] as List<dynamic>? ?? [])
-          .map((e) => _addressFromMap(Map<String, dynamic>.from(e))));
-    _paymentMethods
-      ..clear()
-      ..addAll((data['paymentMethods'] as List<dynamic>? ?? [])
-          .map((e) => _paymentFromMap(Map<String, dynamic>.from(e))));
-    _reviews
-      ..clear()
-      ..addAll((data['reviews'] as List<dynamic>? ?? [])
-          .map((e) => _reviewFromMap(Map<String, dynamic>.from(e))));
-    _orders
-      ..clear()
-      ..addAll((data['orders'] as List<dynamic>? ?? [])
-          .map((e) => _orderFromMap(Map<String, dynamic>.from(e))));
+      _addresses
+        ..clear()
+        ..addAll((data['addresses'] as List<dynamic>? ?? [])
+            .map((e) => _addressFromMap(Map<String, dynamic>.from(e))));
+      _paymentMethods
+        ..clear()
+        ..addAll((data['paymentMethods'] as List<dynamic>? ?? [])
+            .map((e) => _paymentFromMap(Map<String, dynamic>.from(e))));
+      _reviews
+        ..clear()
+        ..addAll((data['reviews'] as List<dynamic>? ?? [])
+            .map((e) => _reviewFromMap(Map<String, dynamic>.from(e))));
+      _orders
+        ..clear()
+        ..addAll((data['orders'] as List<dynamic>? ?? [])
+            .map((e) => _orderFromMap(Map<String, dynamic>.from(e))));
 
-    final usedCoupons = (data['usedCoupons'] as List<dynamic>? ?? [])
-        .map((e) => e.toString())
-        .toSet();
-    for (final c in _coupons) {
-      c.isUsed = usedCoupons.contains(c.id);
+      final usedCoupons = (data['usedCoupons'] as List<dynamic>? ?? [])
+          .map((e) => e.toString())
+          .toSet();
+      for (final c in _coupons) {
+        c.isUsed = usedCoupons.contains(c.id);
+      }
+      _reviewCount = _reviews.length;
+      _backendError = null;
+    } on FirebaseException catch (e) {
+      _backendError = e.code;
+    } catch (_) {
+      _backendError = 'unknown';
     }
   }
 
@@ -928,7 +921,7 @@ class UserDataManager with ChangeNotifier {
     final data = {
       'userName': _userName,
       'mileage': _mileage,
-      'reviewCount': _reviewCount,
+      'reviewCount': _reviews.length,
       'role': _role == UserRole.admin ? 'admin' : 'user',
       'addresses': _addresses.map(_addressToMap).toList(),
       'paymentMethods': _paymentMethods.map(_paymentToMap).toList(),
@@ -936,7 +929,17 @@ class UserDataManager with ChangeNotifier {
       'orders': _orders.map(_orderToMap).toList(),
       'usedCoupons': _coupons.where((c) => c.isUsed).map((c) => c.id).toList(),
     };
-    await _db!.collection('users').doc(_userId).set(data, SetOptions(merge: true));
+    try {
+      await _db!
+          .collection('users')
+          .doc(_userId)
+          .set(data, SetOptions(merge: true));
+      _backendError = null;
+    } on FirebaseException catch (e) {
+      _backendError = e.code;
+    } catch (_) {
+      _backendError = 'unknown';
+    }
   }
 
   Map<String, dynamic> _addressToMap(Address a) => {
