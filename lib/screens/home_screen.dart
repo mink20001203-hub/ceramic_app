@@ -13,7 +13,8 @@ class HomeScreen extends StatelessWidget {
   // lib/screens/home_screen.dart
 
   Widget build(BuildContext context) {
-    final products = context.watch<UserDataManager>().products;
+    final manager = context.watch<UserDataManager>();
+    final products = manager.products;
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -83,6 +84,11 @@ class HomeScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
+            if (manager.productsLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GridView.builder(

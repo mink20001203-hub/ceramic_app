@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'product.dart';
+import '../repositories/product_repository.dart';
 
 // 사용자/세션 상태를 한 곳에서 관리하는 클래스.
 // 화면에 필요한 데이터를 라우트마다 넘기지 않도록 중앙 집중화한다.
@@ -170,6 +171,10 @@ class UserDataManager with ChangeNotifier {
   // 전체 상품 목록 (UI 공통 사용)
   final List<Product> _products = [];
   List<Product> get products => _products;
+  bool _productsLoading = false;
+  bool _remoteProductsEnabled = false;
+  bool get productsLoading => _productsLoading;
+  bool get remoteProductsEnabled => _remoteProductsEnabled;
 
   // 배송지/결제수단 데이터
   final List<Address> _addresses = [
@@ -214,8 +219,10 @@ class UserDataManager with ChangeNotifier {
   String? _selectedCouponId;
 
   // 앱 시작 시 더미 상품과 기본 선택값을 준비한다.
-  UserDataManager({bool firebaseReady = false})
-      : _firebaseReady = firebaseReady {
+  UserDataManager(
+      {bool firebaseReady = false, bool remoteProductsEnabled = false})
+      : _firebaseReady = firebaseReady,
+        _remoteProductsEnabled = remoteProductsEnabled {
     if (_firebaseReady) {
       _auth = FirebaseAuth.instance;
       _db = FirebaseFirestore.instance;
@@ -227,6 +234,39 @@ class UserDataManager with ChangeNotifier {
     if (_paymentMethods.isNotEmpty) {
       _selectedPaymentId = _paymentMethods.first.id;
     }
+    // 로컬/원격 여부와 관계없이 동일한 상품 로딩 경로를 사용한다.
+    reloadProducts();
+  }
+
+  ProductRepository _productRepository() {
+    if (_remoteProductsEnabled && _firebaseReady && _db != null) {
+      return FirestoreProductRepository(_db!);
+    }
+    return LocalProductRepository();
+  }
+
+  Future<void> reloadProducts() async {
+    _productsLoading = true;
+    notifyListeners();
+    try {
+      final items = await _productRepository().fetchProducts();
+      _products
+        ..clear()
+        ..addAll(items);
+    } catch (_) {
+      // 원격 로딩 실패 시에도 데모 진행이 가능하도록 로컬 데이터를 유지한다.
+      if (_products.isEmpty) {
+        _products.addAll(dummyProducts);
+      }
+    } finally {
+      _productsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> setRemoteProductsEnabled(bool enabled) async {
+    _remoteProductsEnabled = enabled;
+    await reloadProducts();
   }
 
   List<Address> get addresses => _addresses;

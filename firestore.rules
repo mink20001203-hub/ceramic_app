@@ -1,0 +1,41 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // MVP 단계 관리자 UID 화이트리스트
+    function isAdmin() {
+      return isSignedIn() && request.auth.uid in [
+        "ADMIN_UID_1"
+      ];
+    }
+
+    // 사용자 데이터는 본인만 접근 가능
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // 상품은 누구나 조회 가능, 변경은 관리자만
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 쿠폰은 로그인 사용자만 조회, 수정은 관리자만
+    match /coupons/{couponId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 명시되지 않은 경로는 모두 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
