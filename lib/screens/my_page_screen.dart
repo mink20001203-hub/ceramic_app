@@ -259,22 +259,30 @@ class MyPageScreen extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF7F7F7),
-                    borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const CouponListScreen()),
                   ),
-                  child: Column(
-                    children: [
-                      const Text('쿠폰',
-                          style: TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 6),
-                      Text('${userManager.availableCouponCount}개',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF6342E8))),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F7F7),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('쿠폰',
+                            style: TextStyle(color: Colors.grey)),
+                        const SizedBox(height: 6),
+                        Text('${userManager.availableCouponCount}개',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF6342E8))),
+                      ],
+                    ),
                   ),
                 ),
               ),

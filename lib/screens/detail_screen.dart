@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/product.dart';
@@ -303,7 +303,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => CheckoutScreen(
+                          builder: (context) => CheckoutScreen.single(
                             product: product,
                             selectedOption: _selectedOption,
                           ),
