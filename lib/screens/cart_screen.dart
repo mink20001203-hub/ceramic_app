@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
+import 'cart_checkout_screen.dart';
 import 'login_screen.dart';
 
 // 장바구니 화면: 수량 변경, 삭제, 주문 확정까지 처리한다.
@@ -321,11 +322,13 @@ class CartScreen extends StatelessWidget {
                   // 1. 팝업 닫기
                   Navigator.of(context).pop();
 
-                  // 2. 결제 시트로 이동(쿠폰/마일리지 적용)
-                  _showPaymentSheet(context, userManager);
-
-                  // 3. 마이페이지 탭으로 이동
-                  userManager.setTabIndex(3);
+                  // 2. 결제 화면으로 이동 (모달 간편결제 대신 전체 결제 페이지)
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CartCheckoutScreen(),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple),
