@@ -43,3 +43,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Secrets / credentials
+.env
+.env.*
+*.pem
+*.p12
+*.jks
+*.keystore
+serviceAccountKey.json
+*service-account*.json
+*client_secret*.json
+
+# Firebase local config files (public repo에서는 제외 권장)
+GoogleService-Info.plist
