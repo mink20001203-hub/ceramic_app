@@ -5,7 +5,7 @@ import '../models/product.dart';
 import '../models/user_data_manager.dart';
 import 'checkout_screen.dart';
 
-// 상품 상세 화면: 옵션 선택, 재고 상태, 구매 진입을 제공한다.
+// 상품 상세 화면: 옵션/수량 선택과 구매 진입을 제공한다.
 class DetailScreen extends StatefulWidget {
   final Product product;
   const DetailScreen({super.key, required this.product});
@@ -26,7 +26,6 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
-  // --- 장바구니 알림 바텀 시트 (기존 유지) ---
   void _showCartBottomSheet(BuildContext context, UserDataManager userManager) {
     showModalBottomSheet(
       context: context,
@@ -47,46 +46,43 @@ class _DetailScreenState extends State<DetailScreen> {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text('나와 비슷한 고객들이 비교한 상품',
-                  style: TextStyle(fontSize: 14, color: Colors.grey)),
               const SizedBox(height: 16),
+              const Text('비슷한 크리에이터 작품도 둘러보세요',
+                  style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const SizedBox(height: 12),
               SizedBox(
-                height: 180,
+                height: 160,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: 4,
                   itemBuilder: (context, index) => _buildSimilarProductItem(),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('쇼핑 계속하기',
-                          style: TextStyle(color: Colors.black)),
+                      child: const Text('쇼핑 계속하기'),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.pop(context); // 바텀시트 닫기
-                        userManager.setTabIndex(2); // 장바구니 탭으로 인덱스 변경
+                        Navigator.pop(context);
+                        userManager.setTabIndex(2);
                         Navigator.popUntil(
-                            context, (route) => route.isFirst); // 메인으로 이동
+                            context, (route) => route.isFirst);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('장바구니 보기',
-                          style: TextStyle(color: Colors.white)),
+                      child: const Text('장바구니 보기'),
                     ),
                   ),
                 ],
@@ -106,15 +102,15 @@ class _DetailScreenState extends State<DetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            height: 120,
+            height: 110,
             decoration: BoxDecoration(
               color: Colors.grey[200],
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Center(child: Icon(Icons.image, color: Colors.grey)),
           ),
-          const SizedBox(height: 8),
-          const Text('유사 상품 이름',
+          const SizedBox(height: 6),
+          const Text('유사 작품',
               style: TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis),
           const Text('19,900원',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
@@ -125,7 +121,6 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // build 내에서 userManager를 가져옵니다.
     final userManager = Provider.of<UserDataManager>(context, listen: false);
     final priceFormat = NumberFormat('#,###', 'ko_KR');
     final product = widget.product;
@@ -137,14 +132,12 @@ class _DetailScreenState extends State<DetailScreen> {
       appBar: AppBar(
         title: Text(product.title),
         actions: [
-          // 🏠 1. 강사님 조언: 상단 홈 버튼 추가
           IconButton(
             icon: const Icon(Icons.home_outlined),
             onPressed: () {
               Navigator.popUntil(context, (route) => route.isFirst);
             },
           ),
-          // 2. 찜하기 버튼 (기존 유지)
           Consumer<UserDataManager>(
             builder: (context, manager, child) {
               final isFav = manager.isFavorite(product);
@@ -168,11 +161,11 @@ class _DetailScreenState extends State<DetailScreen> {
                     Image.asset(
                       product.image!,
                       width: double.infinity,
-                      height: 300,
+                      height: 320,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => Container(
                         width: double.infinity,
-                        height: 300,
+                        height: 320,
                         color: Colors.grey[300],
                         child: const Icon(Icons.image_not_supported),
                       ),
@@ -180,7 +173,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   else
                     Container(
                         width: double.infinity,
-                        height: 300,
+                        height: 320,
                         color: Colors.grey[300]),
                   Padding(
                     padding: const EdgeInsets.all(20.0),
@@ -190,17 +183,21 @@ class _DetailScreenState extends State<DetailScreen> {
                         Text(product.title,
                             style: const TextStyle(
                                 fontSize: 24, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 6),
+                        Text(product.subTitle,
+                            style:
+                                const TextStyle(color: Colors.grey, fontSize: 14)),
+                        const SizedBox(height: 12),
                         if (hasSale)
                           Row(
                             children: [
-                              Text("${priceFormat.format(effectivePrice)}원",
+                              Text('${priceFormat.format(effectivePrice)}원',
                                   style: const TextStyle(
                                       fontSize: 20,
-                                      color: Colors.deepPurple,
+                                      color: Color(0xFFA53C2C),
                                       fontWeight: FontWeight.w600)),
                               const SizedBox(width: 8),
-                              Text("${priceFormat.format(product.price)}원",
+                              Text('${priceFormat.format(product.price)}원',
                                   style: const TextStyle(
                                       color: Colors.grey,
                                       decoration:
@@ -208,10 +205,10 @@ class _DetailScreenState extends State<DetailScreen> {
                             ],
                           )
                         else
-                          Text("${priceFormat.format(product.price)}원",
+                          Text('${priceFormat.format(product.price)}원',
                               style: const TextStyle(
                                   fontSize: 20,
-                                  color: Colors.deepPurple,
+                                  color: Color(0xFFA53C2C),
                                   fontWeight: FontWeight.w600)),
                         const SizedBox(height: 6),
                         Text(
@@ -232,78 +229,96 @@ class _DetailScreenState extends State<DetailScreen> {
                               child: const Text('재입고 알림 신청'),
                             ),
                           ),
-                        if (product.options.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          const Text("옵션 선택",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _selectedOption,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                              isDense: true,
-                            ),
-                            items: product.options
-                                .map((option) => DropdownMenuItem(
-                                      value: option,
-                                      child: Text(option),
-                                    ))
-                                .toList(),
-                            onChanged: isSoldOut
-                                ? null
-                                : (value) {
-                                    setState(() {
-                                      _selectedOption = value;
-                                    });
-                                  },
-                          ),
-                        ],
                         const SizedBox(height: 16),
-                        const Text(
-                          "수량",
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF4F4F0),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (product.options.isNotEmpty) ...[
+                                const Text('옵션 선택',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 8),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedOption,
+                                  decoration: InputDecoration(
+                                    border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    isDense: true,
+                                  ),
+                                  items: product.options
+                                      .map((option) => DropdownMenuItem(
+                                            value: option,
+                                            child: Text(option),
+                                          ))
+                                      .toList(),
+                                  onChanged: isSoldOut
+                                      ? null
+                                      : (value) {
+                                          setState(() {
+                                            _selectedOption = value;
+                                          });
+                                        },
+                                ),
+                                const SizedBox(height: 16),
+                              ],
+                              const Text('수량',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    onPressed: isSoldOut || _quantity <= 1
+                                        ? null
+                                        : () {
+                                            setState(() => _quantity--);
+                                          },
+                                    icon:
+                                        const Icon(Icons.remove_circle_outline),
+                                  ),
+                                  Text(
+                                    '$_quantity',
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  IconButton(
+                                    onPressed: isSoldOut ||
+                                            _quantity >= product.stock
+                                        ? null
+                                        : () {
+                                            setState(() => _quantity++);
+                                          },
+                                    icon: const Icon(Icons.add_circle_outline),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text('최대 ${product.stock}개',
+                                      style:
+                                          const TextStyle(color: Colors.grey)),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: isSoldOut || _quantity <= 1
-                                  ? null
-                                  : () {
-                                      setState(() => _quantity--);
-                                    },
-                              icon: const Icon(Icons.remove_circle_outline),
-                            ),
-                            Text(
-                              '$_quantity',
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            IconButton(
-                              onPressed: isSoldOut || _quantity >= product.stock
-                                  ? null
-                                  : () {
-                                      setState(() => _quantity++);
-                                    },
-                              icon: const Icon(Icons.add_circle_outline),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '최대 ${product.stock}개',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        const Divider(height: 40),
-                        const Text("상품 설명",
+                        const SizedBox(height: 20),
+                        const Text('상품 설명',
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
-                        const Text("장인의 손길로 제작된 명품 도자기입니다.",
-                            style: TextStyle(fontSize: 16, height: 1.5)),
+                        const Text(
+                          '장인의 손길로 제작된 명품 도자기입니다. '
+                          '유약의 깊이와 촉감을 직접 느껴보세요.',
+                          style: TextStyle(fontSize: 16, height: 1.5),
+                        ),
                       ],
                     ),
                   ),
@@ -311,7 +326,6 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
           ),
-          // 하단 버튼 영역
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
             decoration: const BoxDecoration(color: Colors.white, boxShadow: [
@@ -323,18 +337,14 @@ class _DetailScreenState extends State<DetailScreen> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () {
-                      // ✅ CartProvider 대신 userManager를 사용하여 에러 해결
                       if (isSoldOut) return;
                       userManager.addToCartMultiple(product, _quantity,
                           selectedOption: _selectedOption);
                       _showCartBottomSheet(context, userManager);
                     },
                     style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.deepPurple),
                         minimumSize: const Size(double.infinity, 50)),
-                    child: const Text("장바구니",
-                        style:
-                            TextStyle(fontSize: 16, color: Colors.deepPurple)),
+                    child: const Text('장바구니'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -360,11 +370,8 @@ class _DetailScreenState extends State<DetailScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
                         minimumSize: const Size(double.infinity, 50)),
-                    child: Text(isSoldOut ? "품절" : "지금 구매하기",
-                        style: const TextStyle(fontSize: 16)),
+                    child: Text(isSoldOut ? '품절' : '바로 구매하기'),
                   ),
                 ),
               ],
@@ -375,3 +382,4 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 }
+

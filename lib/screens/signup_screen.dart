@@ -159,7 +159,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Color(0xFFA53C2C),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: const Text(
@@ -173,3 +173,5 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 }
+
+

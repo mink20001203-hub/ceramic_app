@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+
 import '../models/product.dart';
 import '../models/user_data_manager.dart';
-import '../screens/detail_screen.dart'; // ✅ 실제 파일명에 맞춰 수정됨
+import '../screens/detail_screen.dart';
 
-// 상품 카드 위젯: 이미지, 이름, 가격, 찜하기 버튼을 표시한다.
 class ProductCard extends StatelessWidget {
   final Product product;
 
@@ -19,40 +19,37 @@ class ProductCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        if (isSoldOut) return; // 품절 상품은 상세로 진입하지 않음
-        // 상품 클릭 시 상세 페이지로 이동
+        if (isSoldOut) return;
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                DetailScreen(product: product), // ✅ 클래스명 확인 필요
+            builder: (context) => DetailScreen(product: product),
           ),
         );
       },
       child: Card(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(14),
         ),
-        elevation: 2,
+        elevation: 0,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. 이미지 및 찜하기 버튼 (Stack 사용)
             Expanded(
               child: Stack(
                 children: [
-                  // 상품 이미지
                   ClipRRect(
                     borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(10)),
+                        const BorderRadius.vertical(top: Radius.circular(14)),
                     child: product.image != null
                         ? Image.asset(
                             product.image!,
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const Center(child: Icon(Icons.image, size: 50)),
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(Icons.image, size: 50),
+                            ),
                           )
                         : const Center(child: Icon(Icons.image, size: 50)),
                   ),
@@ -62,16 +59,21 @@ class ProductCard extends StatelessWidget {
                       top: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text('품절',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          '품절',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   if (!isSoldOut && product.isNew)
@@ -80,16 +82,21 @@ class ProductCard extends StatelessWidget {
                       top: 8,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6342E8),
+                          color: Theme.of(context).colorScheme.primary,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text('NEW',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          '신상',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   if (!isSoldOut && product.isSale)
@@ -98,19 +105,23 @@ class ProductCard extends StatelessWidget {
                       top: 32,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.redAccent,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text('SALE',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          '세일',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                  // 오른쪽 상단 하트 버튼
                   Positioned(
                     top: 8,
                     right: 8,
@@ -140,16 +151,17 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-            // 2. 상품 정보 (텍스트 부분)
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.title, // ✅ name 대신 title로 수정됨
+                    product.title,
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -158,14 +170,15 @@ class ProductCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          "${priceFormat.format(product.salePrice)}원",
+                          '${priceFormat.format(product.salePrice)}원',
                           style: const TextStyle(
-                              color: Colors.redAccent,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          "${priceFormat.format(product.price)}원",
+                          '${priceFormat.format(product.price)}원',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,
@@ -176,9 +189,11 @@ class ProductCard extends StatelessWidget {
                     )
                   else
                     Text(
-                      "${priceFormat.format(product.price)}원",
+                      '${priceFormat.format(product.price)}원',
                       style: const TextStyle(
-                          color: Colors.redAccent, fontWeight: FontWeight.bold),
+                        color: Colors.redAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                 ],
               ),

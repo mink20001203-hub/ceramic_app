@@ -57,3 +57,6 @@ serviceAccountKey.json
 
 # Firebase local config files (public repo에서는 제외 권장)
 GoogleService-Info.plist
+
+# Stitch exports
+stitch/

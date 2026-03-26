@@ -96,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              'Welcome Back!',
+              '다시 만나 반가워요',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Color(0xFFA53C2C),
               ),
               child: const Text('로그인',
                   style: TextStyle(color: Colors.white)),
@@ -189,3 +189,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+

@@ -1,6 +1,7 @@
-﻿import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 import 'models/user_data_manager.dart';
@@ -10,7 +11,6 @@ import 'screens/home_screen.dart';
 import 'screens/my_page_screen.dart';
 import 'screens/search_screen.dart';
 
-// false: 로컬 더미 상품 사용, true: Firestore products 사용
 const bool kUseRemoteProducts = true;
 
 Future<void> main() async {
@@ -23,7 +23,6 @@ Future<void> main() async {
     );
     firebaseReady = true;
   } catch (_) {
-    // Firebase 초기화 실패 시 로컬 모드로 동작
     firebaseReady = false;
   }
 
@@ -50,18 +49,64 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        primaryColor: const Color(0xFF6342E8),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF222222),
+        scaffoldBackgroundColor: const Color(0xFFFAF9F6),
+        primaryColor: const Color(0xFFA53C2C),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFFA53C2C),
+          brightness: Brightness.light,
+          background: const Color(0xFFFAF9F6),
+        ),
+        textTheme: GoogleFonts.manropeTextTheme(
+          ThemeData.light().textTheme,
+        ),
+        appBarTheme: AppBarTheme(
+          backgroundColor: const Color(0xFFFAF9F6),
+          foregroundColor: const Color(0xFF303330),
           elevation: 0,
           centerTitle: true,
+          titleTextStyle: GoogleFonts.plusJakartaSans(
+            textStyle: const TextStyle(
+              color: Color(0xFF303330),
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFFF4F4F0),
+          elevation: 0,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFFF4F4F0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFA53C2C),
+            foregroundColor: Colors.white,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFA53C2C),
+            side: const BorderSide(color: Color(0xFFA53C2C)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
         ),
         bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          selectedItemColor: Color(0xFF6342E8),
-          unselectedItemColor: Colors.grey,
-          backgroundColor: Colors.white,
+          selectedItemColor: Color(0xFFA53C2C),
+          unselectedItemColor: Color(0xFF5D605C),
+          backgroundColor: Color(0xFFFAF9F6),
           type: BottomNavigationBarType.fixed,
         ),
       ),
@@ -88,7 +133,7 @@ class MainScreen extends StatelessWidget {
     return Scaffold(
       appBar: currentTabIndex == 0
           ? AppBar(
-              title: const Text('아자기 스튜디오'),
+              title: const Text('OUD'),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.search),

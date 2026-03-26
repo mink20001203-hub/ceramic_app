@@ -131,158 +131,180 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('주문 상품',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            _sectionTitle('주문 상품'),
             const SizedBox(height: 8),
-            ...items.map(
-              (item) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: item.product.image != null
-                    ? Image.asset(item.product.image!,
-                        width: 48, height: 48, fit: BoxFit.cover)
-                    : Container(
-                        width: 48,
-                        height: 48,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported),
+            _sectionCard(
+              child: Column(
+                children: items
+                    .map(
+                      (item) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: item.product.image != null
+                            ? Image.asset(item.product.image!,
+                                width: 48, height: 48, fit: BoxFit.cover)
+                            : Container(
+                                width: 48,
+                                height: 48,
+                                color: Colors.grey[200],
+                                child: const Icon(Icons.image_not_supported),
+                              ),
+                        title: Text(item.product.title),
+                        subtitle: Text(
+                          '${item.option ?? '기본'} · ${item.quantity}개',
+                        ),
+                        trailing: Text(
+                          '${format.format(((item.product.isSale && item.product.salePrice != null) ? item.product.salePrice! : item.product.price) * item.quantity)}원',
+                        ),
                       ),
-                title: Text(item.product.title),
-                subtitle: Text(
-                  '${item.option ?? '기본'} · ${item.quantity}개',
-                ),
-                trailing: Text(
-                  '${format.format(((item.product.isSale && item.product.salePrice != null) ? item.product.salePrice! : item.product.price) * item.quantity)}원',
-                ),
+                    )
+                    .toList(),
               ),
             ),
-            const Divider(height: 32),
-            const Text('배송지',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            _sectionTitle('배송지'),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedAddressId,
-              items: manager.addresses
-                  .map((a) => DropdownMenuItem(
-                        value: a.id,
-                        child: Text('${a.recipient} | ${a.phone}'),
-                      ))
-                  .toList(),
-              onChanged: (value) => setState(() => _selectedAddressId = value),
+            _sectionCard(
+              child: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedAddressId,
+                    items: manager.addresses
+                        .map((a) => DropdownMenuItem(
+                              value: a.id,
+                              child: Text('${a.recipient} | ${a.phone}'),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _selectedAddressId = value),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () => _showAddressDialog(context),
+                    child: const Text('배송지 추가/수정'),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => _showAddressDialog(context),
-              child: const Text('배송지 추가/수정'),
-            ),
-            const Divider(height: 32),
-            const Text('결제 수단',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            _sectionTitle('결제 수단'),
             const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _selectedPaymentId,
-              items: manager.paymentMethods
-                  .map((p) => DropdownMenuItem(
-                        value: p.id,
-                        child: Text(p.label),
-                      ))
-                  .toList(),
-              onChanged: (value) => setState(() => _selectedPaymentId = value),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: () => _showPaymentDialog(context),
-              child: const Text('결제수단 추가/수정'),
-            ),
-            const Divider(height: 32),
-            const Text('쿠폰',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            if (coupon != null && !couponApplicable)
-              const Padding(
-                padding: EdgeInsets.only(top: 6, bottom: 4),
-                child: Text(
-                  '선택한 쿠폰은 현재 주문에 적용할 수 없습니다.',
-                  style: TextStyle(color: Colors.red),
-                ),
+            _sectionCard(
+              child: Column(
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: _selectedPaymentId,
+                    items: manager.paymentMethods
+                        .map((p) => DropdownMenuItem(
+                              value: p.id,
+                              child: Text(p.label),
+                            ))
+                        .toList(),
+                    onChanged: (value) =>
+                        setState(() => _selectedPaymentId = value),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () => _showPaymentDialog(context),
+                    child: const Text('결제수단 추가/수정'),
+                  ),
+                ],
               ),
-            RadioListTile<String?>(
-              value: null,
-              groupValue: _selectedCouponId,
-              onChanged: (_) => setState(() => _selectedCouponId = null),
-              title: const Text('쿠폰 사용 안 함'),
-              dense: true,
             ),
-            if (manager.coupons.where((c) => !c.isUsed).isEmpty)
-              const Padding(
-                padding: EdgeInsets.only(top: 4, bottom: 8),
-                child: Text(
-                  '사용 가능한 쿠폰이 없습니다.',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
-            ...manager.coupons.where((c) => !c.isUsed).map(
-                  (c) => RadioListTile<String?>(
-                    value: c.id,
+            const SizedBox(height: 20),
+            _sectionTitle('쿠폰/마일리지'),
+            const SizedBox(height: 8),
+            _sectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (coupon != null && !couponApplicable)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text(
+                        '선택한 쿠폰은 현재 주문에 적용할 수 없습니다.',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  RadioListTile<String?>(
+                    value: null,
                     groupValue: _selectedCouponId,
-                    onChanged:
-                        _isCouponApplicable(c) ? (value) => setState(() => _selectedCouponId = value) : null,
-                    title: Text(c.title),
-                    subtitle: Text(
-                        '${format.format(c.discountAmount)}원 할인 · ${format.format(c.minOrderAmount)}원 이상'),
+                    onChanged: (_) => setState(() => _selectedCouponId = null),
+                    title: const Text('쿠폰 사용 안 함'),
                     dense: true,
                   ),
-                ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _mileageController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: '마일리지 사용',
-                      hintText: '보유 ${manager.mileage}P',
-                      border: const OutlineInputBorder(),
+                  if (manager.coupons.where((c) => !c.isUsed).isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4, bottom: 8),
+                      child: Text('사용 가능한 쿠폰이 없습니다.',
+                          style: TextStyle(color: Colors.grey)),
                     ),
-                    onChanged: (value) {
-                      final raw = value.replaceAll(',', '');
-                      final parsed = int.tryParse(raw) ?? 0;
-                      final clamped = parsed.clamp(0, maxMileage);
-                      final formatted = format.format(clamped);
-                      _mileageController.value = TextEditingValue(
-                        text: formatted,
-                        selection:
-                            TextSelection.collapsed(offset: formatted.length),
-                      );
-                      setState(() {});
-                    },
+                  ...manager.coupons.where((c) => !c.isUsed).map(
+                        (c) => RadioListTile<String?>(
+                          value: c.id,
+                          groupValue: _selectedCouponId,
+                          onChanged: _isCouponApplicable(c)
+                              ? (value) =>
+                                  setState(() => _selectedCouponId = value)
+                              : null,
+                          title: Text(c.title),
+                          subtitle: Text(
+                              '${format.format(c.discountAmount)}원 할인 · ${format.format(c.minOrderAmount)}원 이상'),
+                          dense: true,
+                        ),
+                      ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _mileageController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: '마일리지 사용',
+                            hintText: '보유 ${manager.mileage}P',
+                            border: const OutlineInputBorder(),
+                          ),
+                          onChanged: (value) {
+                            final raw = value.replaceAll(',', '');
+                            final parsed = int.tryParse(raw) ?? 0;
+                            final clamped = parsed.clamp(0, maxMileage);
+                            final formatted = format.format(clamped);
+                            _mileageController.value = TextEditingValue(
+                              text: formatted,
+                              selection: TextSelection.collapsed(
+                                  offset: formatted.length),
+                            );
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          _mileageController.text = format.format(maxMileage);
+                          setState(() {});
+                        },
+                        child: const Text('최대 사용'),
+                      )
+                    ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () {
-                    _mileageController.text = format.format(maxMileage);
-                    setState(() {});
-                  },
-                  child: const Text('최대 사용'),
-                )
-              ],
-            ),
-            const SizedBox(height: 12),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _isAgreementChecked,
-              onChanged: (value) =>
-                  setState(() => _isAgreementChecked = value ?? false),
-              title: const Text('구매동의(필수) 전자상거래법 제8조 2항'),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F7),
-                borderRadius: BorderRadius.circular(8),
+                ],
               ),
+            ),
+            const SizedBox(height: 20),
+            _sectionTitle('구매 동의'),
+            const SizedBox(height: 8),
+            _sectionCard(
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _isAgreementChecked,
+                onChanged: (value) =>
+                    setState(() => _isAgreementChecked = value ?? false),
+                title: const Text('구매동의(필수) 전자상거래법 제8조 2항'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _sectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -383,8 +405,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       },
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 54),
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
                 ),
                 child: Text(_isSubmitting ? '처리 중...' : '결제하기'),
               )
@@ -399,6 +419,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 child: const Text('로그인 후 결제하기'),
               ),
       ),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Text(title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold));
+  }
+
+  Widget _sectionCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F4F0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: child,
     );
   }
 
@@ -622,3 +659,4 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 }
+

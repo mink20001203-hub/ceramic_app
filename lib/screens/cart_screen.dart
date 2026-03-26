@@ -59,7 +59,7 @@ class CartScreen extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple),
+                    backgroundColor: Color(0xFFA53C2C)),
                 child:
                     const Text('주문하기', style: TextStyle(color: Colors.white)),
               ),
@@ -211,7 +211,7 @@ class CartScreen extends StatelessWidget {
                                 '${priceFormat.format(userManager.totalAmount)}원',
                                 style: const TextStyle(
                                     fontSize: 22,
-                                    color: Colors.deepPurple,
+                                    color: Color(0xFFA53C2C),
                                     fontWeight: FontWeight.bold),
                               ),
                             ],
@@ -225,7 +225,7 @@ class CartScreen extends StatelessWidget {
                                   : () => _showOrderConfirmDialog(
                                       context, userManager),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.deepPurple,
+                                backgroundColor: Color(0xFFA53C2C),
                                 foregroundColor: Colors.white,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 15),
@@ -246,3 +246,5 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
+
+

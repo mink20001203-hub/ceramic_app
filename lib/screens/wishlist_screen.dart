@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
@@ -67,32 +67,32 @@ class WishlistScreen extends StatelessWidget {
                         ? const Text('품절',
                             style: TextStyle(color: Colors.red))
                         : product.isSale && product.salePrice != null
-                        ? Row(
-                            children: [
-                              Text(
-                                '${priceFormat.format(product.salePrice)}원',
-                                style: const TextStyle(
-                                    color: Colors.deepPurple,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
+                            ? Row(
+                                children: [
+                                  Text(
+                                    '${priceFormat.format(product.salePrice)}원',
+                                    style: const TextStyle(
+                                        color: Color(0xFFA53C2C),
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${priceFormat.format(product.price)}원',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
                                 '${priceFormat.format(product.price)}원',
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
+                                style: const TextStyle(color: Color(0xFFA53C2C)),
                               ),
-                            ],
-                          )
-                        : Text(
-                            '${priceFormat.format(product.price)}원',
-                            style: const TextStyle(color: Colors.deepPurple),
-                          ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // ✅ 장바구니 버튼 로직 연결
+                        // 장바구니 버튼 로직 처리
                         IconButton(
                           icon: const Icon(Icons.shopping_cart_outlined),
                           onPressed: () {
@@ -113,14 +113,14 @@ class WishlistScreen extends StatelessWidget {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('${product.title}을 장바구니에 담았습니다.'),
+                                content:
+                                    Text('${product.title}을(를) 장바구니에 담았습니다.'),
                                 duration: const Duration(seconds: 1),
-                                // 💡 팁: 장바구니로 바로 이동하는 액션 추가
+                                // 지금 바로 장바구니로 이동하는 액션 추가
                                 action: SnackBarAction(
                                   label: '이동',
                                   textColor: Colors.white,
-                                  onPressed: () =>
-                                      userManager.setTabIndex(2), // 장바구니 탭 인덱스
+                                  onPressed: () => userManager.setTabIndex(2),
                                 ),
                               ),
                             );
@@ -133,8 +133,8 @@ class WishlistScreen extends StatelessWidget {
                             userManager.toggleWishlist(product);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('찜 목록에서 삭제되었습니다.'),
-                                duration: const Duration(seconds: 1),
+                                content: Text('찜 목록에서 삭제했습니다.'),
+                                duration: Duration(seconds: 1),
                               ),
                             );
                           },

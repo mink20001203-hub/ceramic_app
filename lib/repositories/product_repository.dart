@@ -10,7 +10,38 @@ abstract class ProductRepository {
 class LocalProductRepository implements ProductRepository {
   @override
   Future<List<Product>> fetchProducts() async {
-    return List<Product>.from(dummyProducts);
+    final base = List<Product>.from(dummyProducts);
+    if (base.isEmpty) {
+      return [];
+    }
+
+    // 로컬 데모용: Firestore 없이도 상품을 더 많이 보이게 생성
+    final List<Product> expanded = [];
+    int batch = 0;
+    for (final factor in [1.0, 1.05, 1.1, 1.15, 1.2]) {
+      batch++;
+      for (final product in base) {
+        final int bumpedPrice = (product.price * factor).round();
+        final int? bumpedSale = product.salePrice == null
+            ? null
+            : (product.salePrice! * factor).round();
+        expanded.add(Product(
+          id: '${product.id}_v$batch',
+          title: product.title,
+          subTitle: product.subTitle,
+          price: bumpedPrice,
+          image: product.image,
+          category: product.category,
+          stock: product.stock,
+          isNew: product.isNew,
+          isSale: product.isSale,
+          salePrice: bumpedSale,
+          options: List<String>.from(product.options),
+        ));
+      }
+    }
+
+    return expanded;
   }
 }
 

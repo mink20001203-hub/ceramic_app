@@ -99,7 +99,7 @@ class OrderDetailScreen extends StatelessWidget {
                     Text('${priceFormat.format(order.totalAmount)}원',
                         style: const TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF6342E8))),
+                            color: Color(0xFFA53C2C))),
                   ],
                 ),
                 if (order.discountAmount > 0)
@@ -181,3 +181,5 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 }
+
+
