@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/user_data_manager.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/oud_components.dart';
+import 'admin_role_management_screen.dart';
 import 'coupon_list_screen.dart';
 import 'login_screen.dart';
 import 'review_manage_screen.dart';
@@ -37,7 +38,7 @@ class MyPageScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                '로그인이 필요합니다',
+                '로그인이 필요합니다.',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
@@ -62,13 +63,12 @@ class MyPageScreen extends StatelessWidget {
   }
 
   Widget _loggedIn(BuildContext context, UserDataManager manager) {
-    final paymentDone =
-        manager.orders.where((o) => o.status == '결제완료').length;
-    final preparing =
-        manager.orders.where((o) => o.status == '배송준비').length;
+    final paymentDone = manager.orders.where((o) => o.status == '결제완료').length;
+    final preparing = manager.orders.where((o) => o.status == '배송준비').length;
     final shipping = manager.orders.where((o) => o.status == '배송중').length;
-    final delivered =
-        manager.orders.where((o) => o.status == '배송완료').length;
+    final delivered = manager.orders.where((o) => o.status == '배송완료').length;
+    final cancelRequested = manager.orders.where((o) => o.status == '취소요청').length;
+    final canceled = manager.orders.where((o) => o.status == '취소완료').length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -86,7 +86,7 @@ class MyPageScreen extends StatelessWidget {
               style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
             ),
             const Text(
-              '지속 가능한 세라믹을 탐구합니다.',
+              '지속 가능한 세라믹을 탐색해 보세요.',
               style: TextStyle(color: OudColors.mutedText),
             ),
           ],
@@ -109,10 +109,7 @@ class MyPageScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${manager.mileage}',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -134,10 +131,7 @@ class MyPageScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${manager.availableCouponCount}',
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -184,6 +178,17 @@ class MyPageScreen extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const SellerDemoScreen()),
             ),
           ),
+        if (manager.isAdmin)
+          _menuTile(
+            icon: Icons.admin_panel_settings_outlined,
+            title: '판매자 권한 관리',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AdminRoleManagementScreen(),
+              ),
+            ),
+          ),
         const SizedBox(height: 18),
         const Text(
           '주문 및 배송',
@@ -195,13 +200,16 @@ class MyPageScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OudSectionCard(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 12,
             children: [
               _status('결제완료', paymentDone),
               _status('배송준비', preparing),
               _status('배송중', shipping),
               _status('배송완료', delivered),
+              _status('취소요청', cancelRequested),
+              _status('취소완료', canceled),
             ],
           ),
         ),
@@ -247,10 +255,7 @@ class MyPageScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
                   ),
                 ),
                 const Icon(
