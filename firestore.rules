@@ -54,19 +54,16 @@ service cloud.firestore {
     // Optional top-level orders collection for seller dashboard or migration.
     match /orders/{orderId} {
       allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
-      allow read: if isSignedIn() && (
-          resource.data.buyerId == request.auth.uid ||
-          resource.data.sellerId == request.auth.uid ||
-          isAdmin()
-      );
+      allow read: if isSignedIn() &&
+          (resource.data.buyerId == request.auth.uid || isSeller() || isAdmin());
       allow update: if isSignedIn() && (
+          isSeller() ||
           isAdmin() ||
-          resource.data.sellerId == request.auth.uid ||
           (
             resource.data.buyerId == request.auth.uid &&
             request.resource.data.status == '취소요청'
           )
-      );
+        );
       allow delete: if isAdmin();
     }
 
