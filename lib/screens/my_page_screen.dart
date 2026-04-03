@@ -175,7 +175,7 @@ class MyPageScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const WishlistScreen()),
           ),
         ),
-        if (manager.isAdmin)
+        if (manager.isSeller)
           _menuTile(
             icon: Icons.storefront_outlined,
             title: '판매자 데모 관리',

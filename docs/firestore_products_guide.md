@@ -137,3 +137,8 @@ const bool kUseRemoteProducts = true;
 전체 초기화 + 재등록:
 
 - `npm run seed:products:wipe`
+
+## 9) 권한/스키마 참고 문서
+
+- `docs/firestore_roles_and_schema.md`
+- 판매자 role(`seller`) / 관리자 role(`admin`) 권한 정책과 컬렉션 구조를 함께 정리했습니다.

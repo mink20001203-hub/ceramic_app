@@ -9,7 +9,7 @@ import '../repositories/product_repository.dart';
 // 사용자 화면 상태를 앱 전역에서 관리하는 클래스
 // 필요한 데이터만 들고 있어 화면이 복잡해지지 않도록 중앙 관리한다.
 
-enum UserRole { user, admin }
+enum UserRole { user, seller, admin }
 
 class CartItem {
   final Product product;
@@ -63,6 +63,11 @@ class Order {
   final bool agreementAccepted;
   final DateTime date;
   String status;
+  String? trackingNumber;
+  String? shippingMemo;
+  DateTime? shippedAt;
+  String? cancelReason;
+  DateTime? canceledAt;
   final List<OrderStatusLog> statusLogs;
 
   Order({
@@ -78,6 +83,11 @@ class Order {
     required this.agreementAccepted,
     required this.date,
     required this.status,
+    this.trackingNumber,
+    this.shippingMemo,
+    this.shippedAt,
+    this.cancelReason,
+    this.canceledAt,
     required this.statusLogs,
   });
 }
@@ -161,6 +171,7 @@ class UserDataManager with ChangeNotifier {
   String? get userId => _userId;
   UserRole get role => _role;
   bool get isAdmin => _role == UserRole.admin;
+  bool get isSeller => _role == UserRole.seller || _role == UserRole.admin;
   String get userName => _userName;
   int get mileage => _mileage;
   int get reviewCount => _reviewCount;
@@ -234,6 +245,35 @@ class UserDataManager with ChangeNotifier {
     _restoreSession();
   }
 
+  UserRole _roleFromEmail(String email) {
+    final normalized = email.toLowerCase();
+    if (normalized == 'admin@ceramic.com') return UserRole.admin;
+    if (normalized == 'seller@ceramic.com') return UserRole.seller;
+    return UserRole.user;
+  }
+
+  String _roleToString(UserRole role) {
+    switch (role) {
+      case UserRole.admin:
+        return 'admin';
+      case UserRole.seller:
+        return 'seller';
+      case UserRole.user:
+        return 'user';
+    }
+  }
+
+  UserRole _roleFromString(String? role) {
+    switch (role) {
+      case 'admin':
+        return UserRole.admin;
+      case 'seller':
+        return UserRole.seller;
+      default:
+        return UserRole.user;
+    }
+  }
+
   Future<void> _restoreSession() async {
     if (!_firebaseReady || _auth == null) return;
     final prefs = await SharedPreferences.getInstance();
@@ -247,9 +287,7 @@ class UserDataManager with ChangeNotifier {
     _isLoggedIn = true;
     _userId = user.uid;
     final email = user.email ?? '';
-    _role = email.toLowerCase() == 'admin@ceramic.com'
-        ? UserRole.admin
-        : UserRole.user;
+    _role = _roleFromEmail(email);
     await _loadFromBackend();
     notifyListeners();
   }
@@ -530,9 +568,7 @@ class UserDataManager with ChangeNotifier {
       _isLoggedIn = true;
       _userId = email;
       _userName = name;
-      _role = email.toLowerCase() == 'admin@ceramic.com'
-          ? UserRole.admin
-          : UserRole.user;
+      _role = _roleFromEmail(email);
       notifyListeners();
       return;
     }
@@ -545,9 +581,7 @@ class UserDataManager with ChangeNotifier {
     _isLoggedIn = true;
     _userId = cred.user?.uid;
     _userName = name;
-    _role = email.toLowerCase() == 'admin@ceramic.com'
-        ? UserRole.admin
-        : UserRole.user;
+    _role = _roleFromEmail(email);
     try {
       await _persist();
     } catch (_) {
@@ -560,9 +594,7 @@ class UserDataManager with ChangeNotifier {
     if (!_firebaseReady) {
       _isLoggedIn = true;
       _userId = email;
-      _role = email.toLowerCase() == 'admin@ceramic.com'
-          ? UserRole.admin
-          : UserRole.user;
+      _role = _roleFromEmail(email);
       notifyListeners();
       return;
     }
@@ -571,9 +603,7 @@ class UserDataManager with ChangeNotifier {
 
     _isLoggedIn = true;
     _userId = _auth!.currentUser?.uid;
-    _role = email.toLowerCase() == 'admin@ceramic.com'
-        ? UserRole.admin
-        : UserRole.user;
+    _role = _roleFromEmail(email);
     try {
       await _loadFromBackend();
       await _persist();
@@ -888,6 +918,8 @@ class UserDataManager with ChangeNotifier {
     '배송준비',
     '배송중',
     '배송완료',
+    '취소요청',
+    '취소완료',
   ];
 
   void advanceOrderStatus(String orderId, {String actor = '관리자'}) {
@@ -907,11 +939,53 @@ class UserDataManager with ChangeNotifier {
     final order = _orders.firstWhere((o) => o.id == orderId);
     if (order.status != status) {
       order.status = status;
+      if (status == '배송중') {
+        order.shippedAt ??= DateTime.now();
+      }
+      if (status == '취소완료') {
+        order.canceledAt = DateTime.now();
+      }
       order.statusLogs.add(
           OrderStatusLog(status: status, date: DateTime.now(), actor: actor));
       _persist();
       notifyListeners();
     }
+  }
+
+  void markOrderShipped(
+    String orderId, {
+    required String trackingNumber,
+    String? shippingMemo,
+    String actor = '판매자',
+  }) {
+    final order = _orders.firstWhere((o) => o.id == orderId);
+    order.trackingNumber = trackingNumber.trim();
+    final memo = (shippingMemo ?? '').trim();
+    order.shippingMemo = memo.isEmpty ? null : memo;
+    order.shippedAt = DateTime.now();
+    order.status = '배송중';
+    order.statusLogs.add(
+      OrderStatusLog(status: '배송중', date: DateTime.now(), actor: actor),
+    );
+    _persist();
+    notifyListeners();
+  }
+
+  void markOrderCanceled(
+    String orderId, {
+    required String reason,
+    String actor = '판매자',
+  }) {
+    final order = _orders.firstWhere((o) => o.id == orderId);
+    final normalizedReason = reason.trim();
+    order.cancelReason = normalizedReason.isEmpty ? '판매자 취소 처리' : normalizedReason;
+    order.canceledAt = DateTime.now();
+    order.status = '취소완료';
+    order.statusLogs.add(
+      OrderStatusLog(status: '취소완료', date: DateTime.now(), actor: actor),
+    );
+    _persist();
+    notifyListeners();
   }
 
   final List<Review> _reviews = [];
@@ -997,7 +1071,7 @@ class UserDataManager with ChangeNotifier {
       _userName = data['userName'] ?? _userName;
       _mileage = data['mileage'] ?? _mileage;
       final roleStr = data['role'] as String? ?? 'user';
-      _role = roleStr == 'admin' ? UserRole.admin : UserRole.user;
+      _role = _roleFromString(roleStr);
 
       _addresses
         ..clear()
@@ -1037,7 +1111,7 @@ class UserDataManager with ChangeNotifier {
       'userName': _userName,
       'mileage': _mileage,
       'reviewCount': _reviews.length,
-      'role': _role == UserRole.admin ? 'admin' : 'user',
+      'role': _roleToString(_role),
       'addresses': _addresses.map(_addressToMap).toList(),
       'paymentMethods': _paymentMethods.map(_paymentToMap).toList(),
       'reviews': _reviews.map(_reviewToMap).toList(),
@@ -1132,6 +1206,11 @@ class UserDataManager with ChangeNotifier {
         'agreementAccepted': o.agreementAccepted,
         'date': o.date.toIso8601String(),
         'status': o.status,
+        'trackingNumber': o.trackingNumber,
+        'shippingMemo': o.shippingMemo,
+        'shippedAt': o.shippedAt?.toIso8601String(),
+        'cancelReason': o.cancelReason,
+        'canceledAt': o.canceledAt?.toIso8601String(),
         'statusLogs': o.statusLogs.map(_orderLogToMap).toList(),
       };
 
@@ -1150,6 +1229,16 @@ class UserDataManager with ChangeNotifier {
         agreementAccepted: m['agreementAccepted'] ?? false,
         date: DateTime.parse(m['date']),
         status: m['status'],
+        trackingNumber: m['trackingNumber'],
+        shippingMemo: m['shippingMemo'],
+        shippedAt: (m['shippedAt'] is String && (m['shippedAt'] as String).isNotEmpty)
+            ? DateTime.parse(m['shippedAt'])
+            : null,
+        cancelReason: m['cancelReason'],
+        canceledAt:
+            (m['canceledAt'] is String && (m['canceledAt'] as String).isNotEmpty)
+                ? DateTime.parse(m['canceledAt'])
+                : null,
         statusLogs: (m['statusLogs'] as List<dynamic>)
             .map((e) => _orderLogFromMap(Map<String, dynamic>.from(e)))
             .toList(),

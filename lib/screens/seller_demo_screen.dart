@@ -29,10 +29,17 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
   final _categoryController = TextEditingController(text: '컵');
   final _salePriceController = TextEditingController(text: '0');
 
-  var _isSale = false;
-  var _isSubmitting = false;
+  bool _isSale = false;
+  bool _isSubmitting = false;
 
-  static const _statusOptions = ['결제완료', '배송준비', '배송중', '배송완료'];
+  static const List<String> _statusOptions = [
+    '결제완료',
+    '배송준비',
+    '배송중',
+    '배송완료',
+    '취소요청',
+    '취소완료',
+  ];
 
   @override
   void initState() {
@@ -85,7 +92,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         const Text(
-          '새 상품 등록 후 목록에서 가격/재고 수정 및 삭제가 가능합니다.',
+          '새 상품 등록과 기존 상품의 수정/삭제를 한 화면에서 처리합니다.',
           style: TextStyle(color: OudColors.mutedText),
         ),
         const SizedBox(height: 12),
@@ -97,7 +104,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(labelText: '상품명'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? '필수 입력' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? '필수 입력' : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -108,7 +116,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 TextFormField(
                   controller: _categoryController,
                   decoration: const InputDecoration(labelText: '카테고리'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? '필수 입력' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? '필수 입력' : null,
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -185,7 +194,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
             height: 160,
             child: OudEmptyState(
               title: '등록된 상품이 없습니다',
-              subtitle: '위 폼으로 상품을 추가해 주세요.',
+              subtitle: '위 폼에서 새 상품을 추가해 주세요.',
               icon: Icons.inventory_2_outlined,
             ),
           )
@@ -213,10 +222,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                     children: [
                       Text(
                         product.title,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                       ),
                       Text(
                         '${product.category} · 재고 ${product.stock}',
@@ -226,11 +232,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                   ),
                 ),
                 Text(
-                  '₩${format.format(displayPrice)}',
-                  style: const TextStyle(
-                    color: OudColors.primary,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  '${format.format(displayPrice)}원',
+                  style: const TextStyle(color: OudColors.primary, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -299,18 +302,24 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '총 ${order.items.length}개 상품 · ₩${format.format(order.totalAmount)}',
+                  '총 ${order.items.length}개 상품 · ${format.format(order.totalAmount)}원',
                   style: const TextStyle(color: OudColors.mutedText),
                 ),
+                if (order.trackingNumber != null &&
+                    order.trackingNumber!.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '송장번호: ${order.trackingNumber}',
+                      style: const TextStyle(color: OudColors.mutedText),
+                    ),
+                  ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
                   initialValue: order.status,
                   decoration: const InputDecoration(labelText: '주문 상태'),
                   items: _statusOptions
-                      .map((status) => DropdownMenuItem(
-                            value: status,
-                            child: Text(status),
-                          ))
+                      .map((status) => DropdownMenuItem(value: status, child: Text(status)))
                       .toList(),
                   onChanged: (value) {
                     if (value == null) return;
@@ -329,9 +338,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                         spacing: 6,
                         runSpacing: 6,
                         children: order.items
-                            .map((item) => OudTag(
-                                  label: '${item.product.title} x${item.quantity}',
-                                ))
+                            .map((item) => OudTag(label: '${item.product.title} x${item.quantity}'))
                             .toList(),
                       ),
                     ),
@@ -341,8 +348,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                SellerOrderDetailScreen(orderId: order.id),
+                            builder: (_) => SellerOrderDetailScreen(orderId: order.id),
                           ),
                         );
                       },
@@ -380,9 +386,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
         price: price,
         category: _categoryController.text.trim(),
         stock: stock,
-        image: _imageController.text.trim().isEmpty
-            ? null
-            : _imageController.text.trim(),
+        image: _imageController.text.trim().isEmpty ? null : _imageController.text.trim(),
         isNew: true,
         isSale: _isSale,
         salePrice: salePrice,
@@ -407,9 +411,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
         const SnackBar(content: Text('상품 등록 실패: Firebase 권한/설정을 확인해 주세요.')),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isSubmitting = false);
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -422,9 +424,10 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
     final stockController = TextEditingController(text: '${product.stock}');
     final imageController = TextEditingController(text: product.image ?? '');
     final optionsController = TextEditingController(text: product.options.join(','));
-    var isSale = product.isSale;
-    final salePriceController =
-        TextEditingController(text: '${product.salePrice ?? product.price}');
+    bool isSale = product.isSale;
+    final salePriceController = TextEditingController(
+      text: '${product.salePrice ?? product.price}',
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -496,9 +499,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 onPressed: () async {
                   final price = int.tryParse(priceController.text.trim());
                   final stock = int.tryParse(stockController.text.trim());
-                  final salePrice = isSale
-                      ? int.tryParse(salePriceController.text.trim())
-                      : null;
+                  final salePrice = isSale ? int.tryParse(salePriceController.text.trim()) : null;
                   if (price == null || stock == null) return;
 
                   final options = optionsController.text
@@ -514,9 +515,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                     price: price,
                     category: categoryController.text.trim(),
                     stock: stock,
-                    image: imageController.text.trim().isEmpty
-                        ? null
-                        : imageController.text.trim(),
+                    image: imageController.text.trim().isEmpty ? null : imageController.text.trim(),
                     isSale: isSale,
                     salePrice: salePrice,
                     options: options,
@@ -574,7 +573,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
       await manager.deleteProductBySeller(product);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('상품이 삭제되었습니다.')),
+        const SnackBar(content: Text('상품을 삭제했습니다.')),
       );
     } catch (_) {
       if (!context.mounted) return;

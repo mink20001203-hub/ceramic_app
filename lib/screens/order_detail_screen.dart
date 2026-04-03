@@ -15,7 +15,7 @@ class OrderDetailScreen extends StatelessWidget {
     return Consumer<UserDataManager>(
       builder: (context, manager, child) {
         final order = manager.orders.firstWhere((o) => o.id == orderId);
-        final isAdmin = manager.isLoggedIn && manager.isAdmin;
+        final canManageOrder = manager.isLoggedIn && manager.isSeller;
 
         return Scaffold(
           appBar: AppBar(
@@ -50,12 +50,12 @@ class OrderDetailScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
-                      // 관리자만 주문 상태 변경 가능
-                      onPressed: isAdmin
+                      // 판매자/관리자만 주문 상태 변경 가능
+                      onPressed: canManageOrder
                           ? () => manager.advanceOrderStatus(order.id,
-                              actor: '관리자')
+                              actor: '판매자')
                           : null,
-                      child: const Text('다음 상태로 변경(관리자)'),
+                      child: const Text('다음 상태로 변경(판매자)'),
                     ),
                   ),
                 const Divider(),
