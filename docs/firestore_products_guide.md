@@ -105,3 +105,16 @@ const bool kUseRemoteProducts = true;
 - 최소: 5개
 - 권장: 10~20개
 - 카테고리별 2~3개 이상 배치 권장
+
+## 7) 판매자 데모 화면 사용 순서
+
+1. `admin@ceramic.com` 계정으로 로그인
+2. 마이페이지 -> `판매자 데모 관리` 진입
+3. `상품 등록/관리` 탭에서 새 상품 등록
+4. 같은 탭의 등록 상품 목록에서 가격/재고 수정 또는 삭제
+5. 구매 테스트 주문 생성 후 `주문 관리` 탭에서 상태 변경
+
+관련 파일:
+
+- `lib/screens/seller_demo_screen.dart`
+- `lib/models/user_data_manager.dart`

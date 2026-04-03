@@ -337,6 +337,67 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
+  Future<void> updateProductBySeller(
+    Product product, {
+    required String title,
+    required String subTitle,
+    required int price,
+    required String category,
+    required int stock,
+    String? image,
+    bool? isNew,
+    bool? isSale,
+    int? salePrice,
+    List<String>? options,
+  }) async {
+    final index = _products.indexWhere((p) => p.id == product.id);
+    if (index == -1) return;
+
+    final updated = Product(
+      id: product.id,
+      title: title,
+      subTitle: subTitle,
+      price: price,
+      image: image,
+      category: category,
+      stock: stock,
+      isNew: isNew ?? product.isNew,
+      isSale: isSale ?? product.isSale,
+      salePrice: salePrice,
+      options: options ?? product.options,
+    );
+
+    _products[index] = updated;
+    notifyListeners();
+
+    if (_remoteProductsEnabled && _firebaseReady && _db != null) {
+      await _db!.collection(FirestorePaths.products).doc(product.id).set({
+        'title': title,
+        'subTitle': subTitle,
+        'price': price,
+        'image': image,
+        'category': category,
+        'stock': stock,
+        'isNew': isNew ?? product.isNew,
+        'isSale': isSale ?? product.isSale,
+        'salePrice': salePrice,
+        'options': options ?? product.options,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  Future<void> deleteProductBySeller(Product product) async {
+    _products.removeWhere((p) => p.id == product.id);
+    _wishlist.removeWhere((p) => p.id == product.id);
+    _cartWithQuantity.removeWhere((item) => item.product.id == product.id);
+    notifyListeners();
+
+    if (_remoteProductsEnabled && _firebaseReady && _db != null) {
+      await _db!.collection(FirestorePaths.products).doc(product.id).delete();
+    }
+  }
+
   List<Address> get addresses => _addresses;
   List<PaymentMethod> get paymentMethods => _paymentMethods;
   List<Coupon> get coupons => _coupons;
