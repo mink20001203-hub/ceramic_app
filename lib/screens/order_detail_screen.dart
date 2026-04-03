@@ -16,6 +16,8 @@ class OrderDetailScreen extends StatelessWidget {
       builder: (context, manager, child) {
         final order = manager.orders.firstWhere((o) => o.id == orderId);
         final canManageOrder = manager.isLoggedIn && manager.isSeller;
+        final canBuyerRequestCancel =
+            manager.isLoggedIn && !manager.isSeller && manager.canRequestCancellation(order);
 
         return Scaffold(
           appBar: AppBar(
@@ -46,7 +48,7 @@ class OrderDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (order.status != '배송완료')
+                if (canManageOrder && order.status != '배송완료')
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -58,6 +60,16 @@ class OrderDetailScreen extends StatelessWidget {
                       child: const Text('다음 상태로 변경(판매자)'),
                     ),
                   ),
+                if (canBuyerRequestCancel) ...[
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => _showCancelRequestDialog(context, manager, order.id),
+                      child: const Text('취소 요청'),
+                    ),
+                  ),
+                ],
                 const Divider(),
                 const Text('배송/결제 정보',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -68,6 +80,18 @@ class OrderDetailScreen extends StatelessWidget {
                     style: const TextStyle(color: Colors.grey)),
                 Text('결제상태: ${order.paymentStatus}',
                     style: const TextStyle(color: Colors.grey)),
+                if (order.status == '취소요청' || order.status == '취소완료') ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '취소 사유: ${order.cancelReason ?? '사유 없음'}',
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  if (order.canceledAt != null)
+                    Text(
+                      '취소 완료 시각: ${DateFormat('yyyy.MM.dd HH:mm').format(order.canceledAt!)}',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                ],
                 const Divider(),
                 const Text('주문 상품',
                     style: TextStyle(fontWeight: FontWeight.bold)),
@@ -178,6 +202,55 @@ class OrderDetailScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showCancelRequestDialog(
+    BuildContext context,
+    UserDataManager manager,
+    String orderId,
+  ) async {
+    final reasonController = TextEditingController();
+    final requested = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('주문 취소 요청'),
+            content: TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: '취소 사유를 입력해 주세요 (선택)',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('닫기'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('요청'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!requested) {
+      reasonController.dispose();
+      return;
+    }
+
+    manager.requestOrderCancellation(
+      orderId,
+      reason: reasonController.text,
+      actor: '구매자',
+    );
+    reasonController.dispose();
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('취소요청이 접수되었습니다. 판매자 확인 후 처리됩니다.')),
     );
   }
 }

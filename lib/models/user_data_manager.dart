@@ -61,6 +61,8 @@ class Order {
   final String paymentMethodLabel;
   final String paymentStatus;
   final bool agreementAccepted;
+  final String? buyerId;
+  final String? sellerId;
   final DateTime date;
   String status;
   String? trackingNumber;
@@ -81,6 +83,8 @@ class Order {
     required this.paymentMethodLabel,
     required this.paymentStatus,
     required this.agreementAccepted,
+    this.buyerId,
+    this.sellerId,
     required this.date,
     required this.status,
     this.trackingNumber,
@@ -153,11 +157,28 @@ class Coupon {
   });
 }
 
+class AdminUserSummary {
+  final String id;
+  final String email;
+  final String userName;
+  final UserRole role;
+
+  AdminUserSummary({
+    required this.id,
+    required this.email,
+    required this.userName,
+    required this.role,
+  });
+}
+
 class UserDataManager with ChangeNotifier {
+  static const String _defaultSellerId = 'seller_demo';
+
   bool _isLoggedIn = false;
   String? _userId;
   UserRole _role = UserRole.user;
   String _userName = "손님";
+  String _userEmail = '';
   int _mileage = 1500;
   int _reviewCount = 0;
   String? _backendError;
@@ -173,6 +194,7 @@ class UserDataManager with ChangeNotifier {
   bool get isAdmin => _role == UserRole.admin;
   bool get isSeller => _role == UserRole.seller || _role == UserRole.admin;
   String get userName => _userName;
+  String get userEmail => _userEmail;
   int get mileage => _mileage;
   int get reviewCount => _reviewCount;
   String? get backendError => _backendError;
@@ -274,6 +296,84 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
+  Future<void> _persistOrder(Order order) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    try {
+      final payload = _orderToMap(order);
+      payload['buyerId'] = order.buyerId ?? _userId;
+      payload['sellerId'] = order.sellerId ?? _defaultSellerId;
+      payload['updatedAt'] = FieldValue.serverTimestamp();
+      await _db!
+          .collection(FirestorePaths.orders)
+          .doc(order.id)
+          .set(payload, SetOptions(merge: true));
+      _backendError = null;
+    } on FirebaseException catch (e) {
+      _backendError = e.code;
+    } catch (_) {
+      _backendError = 'unknown';
+    }
+  }
+
+  Future<void> _loadOrdersFromCollection() async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+
+    QuerySnapshot<Map<String, dynamic>> snapshot;
+    if (_role == UserRole.user) {
+      snapshot = await _db!
+          .collection(FirestorePaths.orders)
+          .where('buyerId', isEqualTo: _userId)
+          .get();
+    } else {
+      snapshot = await _db!.collection(FirestorePaths.orders).get();
+    }
+
+    final loaded = snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] ??= doc.id;
+      return _orderFromMap(data);
+    }).toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    _orders
+      ..clear()
+      ..addAll(loaded);
+  }
+
+  Future<void> _migrateLegacyOrders(List<Order> legacyOrders) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    for (final order in legacyOrders) {
+      final migrated = Order(
+        id: order.id,
+        items: order.items,
+        totalAmount: order.totalAmount,
+        discountAmount: order.discountAmount,
+        mileageUsed: order.mileageUsed,
+        couponTitle: order.couponTitle,
+        addressSummary: order.addressSummary,
+        paymentMethodLabel: order.paymentMethodLabel,
+        paymentStatus: order.paymentStatus,
+        agreementAccepted: order.agreementAccepted,
+        buyerId: order.buyerId ?? _userId,
+        sellerId: order.sellerId ?? _defaultSellerId,
+        date: order.date,
+        status: order.status,
+        trackingNumber: order.trackingNumber,
+        shippingMemo: order.shippingMemo,
+        shippedAt: order.shippedAt,
+        cancelReason: order.cancelReason,
+        canceledAt: order.canceledAt,
+        statusLogs: order.statusLogs,
+      );
+      await _persistOrder(migrated);
+    }
+
+    await _db!.collection(FirestorePaths.users).doc(_userId).set(
+      {'orders': FieldValue.delete()},
+      SetOptions(merge: true),
+    );
+  }
+
   Future<void> _restoreSession() async {
     if (!_firebaseReady || _auth == null) return;
     final prefs = await SharedPreferences.getInstance();
@@ -287,6 +387,7 @@ class UserDataManager with ChangeNotifier {
     _isLoggedIn = true;
     _userId = user.uid;
     final email = user.email ?? '';
+    _userEmail = email;
     _role = _roleFromEmail(email);
     await _loadFromBackend();
     notifyListeners();
@@ -568,6 +669,7 @@ class UserDataManager with ChangeNotifier {
       _isLoggedIn = true;
       _userId = email;
       _userName = name;
+      _userEmail = email;
       _role = _roleFromEmail(email);
       notifyListeners();
       return;
@@ -581,6 +683,7 @@ class UserDataManager with ChangeNotifier {
     _isLoggedIn = true;
     _userId = cred.user?.uid;
     _userName = name;
+    _userEmail = email;
     _role = _roleFromEmail(email);
     try {
       await _persist();
@@ -594,6 +697,7 @@ class UserDataManager with ChangeNotifier {
     if (!_firebaseReady) {
       _isLoggedIn = true;
       _userId = email;
+      _userEmail = email;
       _role = _roleFromEmail(email);
       notifyListeners();
       return;
@@ -603,6 +707,7 @@ class UserDataManager with ChangeNotifier {
 
     _isLoggedIn = true;
     _userId = _auth!.currentUser?.uid;
+    _userEmail = email;
     _role = _roleFromEmail(email);
     try {
       await _loadFromBackend();
@@ -618,6 +723,7 @@ class UserDataManager with ChangeNotifier {
     _userId = null;
     _role = UserRole.user;
     _userName = "손님";
+    _userEmail = '';
     if (_firebaseReady) {
       _auth?.signOut();
     }
@@ -817,7 +923,7 @@ class UserDataManager with ChangeNotifier {
       _decreaseStock(item.product, item.quantity);
     }
 
-    _orders.add(Order(
+    final createdOrder = Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       items: items,
       totalAmount: total,
@@ -830,13 +936,17 @@ class UserDataManager with ChangeNotifier {
       paymentMethodLabel: payment?.label ?? '결제수단 없음',
       paymentStatus: '결제완료',
       agreementAccepted: agreementAccepted,
+      buyerId: _userId,
+      sellerId: _defaultSellerId,
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
         OrderStatusLog(
             status: '결제완료', date: DateTime.now(), actor: '시스템'),
       ],
-    ));
+    );
+    _orders.add(createdOrder);
+    _persistOrder(createdOrder);
 
     if (couponDiscount > 0) {
       useCoupon(couponId);
@@ -880,7 +990,7 @@ class UserDataManager with ChangeNotifier {
 
     _decreaseStock(product, quantity);
 
-    _orders.add(Order(
+    final createdOrder = Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       items: items,
       totalAmount: total,
@@ -893,13 +1003,17 @@ class UserDataManager with ChangeNotifier {
       paymentMethodLabel: payment?.label ?? '결제수단 없음',
       paymentStatus: '결제완료',
       agreementAccepted: agreementAccepted,
+      buyerId: _userId,
+      sellerId: _defaultSellerId,
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
         OrderStatusLog(
             status: '결제완료', date: DateTime.now(), actor: '시스템'),
       ],
-    ));
+    );
+    _orders.add(createdOrder);
+    _persistOrder(createdOrder);
 
     if (couponDiscount > 0) {
       useCoupon(couponId);
@@ -930,6 +1044,7 @@ class UserDataManager with ChangeNotifier {
       order.status = nextStatus;
       order.statusLogs.add(
           OrderStatusLog(status: nextStatus, date: DateTime.now(), actor: actor));
+      _persistOrder(order);
       _persist();
       notifyListeners();
     }
@@ -947,9 +1062,35 @@ class UserDataManager with ChangeNotifier {
       }
       order.statusLogs.add(
           OrderStatusLog(status: status, date: DateTime.now(), actor: actor));
+      _persistOrder(order);
       _persist();
       notifyListeners();
     }
+  }
+
+  bool canRequestCancellation(Order order) {
+    return order.status == '결제완료' || order.status == '배송준비';
+  }
+
+  void requestOrderCancellation(
+    String orderId, {
+    String? reason,
+    String actor = '구매자',
+  }) {
+    final order = _orders.firstWhere((o) => o.id == orderId);
+    if (!canRequestCancellation(order)) return;
+
+    final normalizedReason = (reason ?? '').trim();
+    if (normalizedReason.isNotEmpty) {
+      order.cancelReason = normalizedReason;
+    }
+    order.status = '취소요청';
+    order.statusLogs.add(
+      OrderStatusLog(status: '취소요청', date: DateTime.now(), actor: actor),
+    );
+    _persistOrder(order);
+    _persist();
+    notifyListeners();
   }
 
   void markOrderShipped(
@@ -967,6 +1108,7 @@ class UserDataManager with ChangeNotifier {
     order.statusLogs.add(
       OrderStatusLog(status: '배송중', date: DateTime.now(), actor: actor),
     );
+    _persistOrder(order);
     _persist();
     notifyListeners();
   }
@@ -984,6 +1126,7 @@ class UserDataManager with ChangeNotifier {
     order.statusLogs.add(
       OrderStatusLog(status: '취소완료', date: DateTime.now(), actor: actor),
     );
+    _persistOrder(order);
     _persist();
     notifyListeners();
   }
@@ -1069,6 +1212,7 @@ class UserDataManager with ChangeNotifier {
       }
       final data = doc.data()!;
       _userName = data['userName'] ?? _userName;
+      _userEmail = data['email'] ?? _userEmail;
       _mileage = data['mileage'] ?? _mileage;
       final roleStr = data['role'] as String? ?? 'user';
       _role = _roleFromString(roleStr);
@@ -1085,10 +1229,15 @@ class UserDataManager with ChangeNotifier {
         ..clear()
         ..addAll((data['reviews'] as List<dynamic>? ?? [])
             .map((e) => _reviewFromMap(Map<String, dynamic>.from(e))));
-      _orders
-        ..clear()
-        ..addAll((data['orders'] as List<dynamic>? ?? [])
-            .map((e) => _orderFromMap(Map<String, dynamic>.from(e))));
+      await _loadOrdersFromCollection();
+
+      if (_orders.isEmpty && (data['orders'] as List<dynamic>? ?? []).isNotEmpty) {
+        final legacyOrders = (data['orders'] as List<dynamic>)
+            .map((e) => _orderFromMap(Map<String, dynamic>.from(e)))
+            .toList();
+        await _migrateLegacyOrders(legacyOrders);
+        await _loadOrdersFromCollection();
+      }
 
       final usedCoupons = (data['usedCoupons'] as List<dynamic>? ?? [])
           .map((e) => e.toString())
@@ -1109,13 +1258,13 @@ class UserDataManager with ChangeNotifier {
     if (!_firebaseReady || _userId == null) return;
     final data = {
       'userName': _userName,
+      'email': _userEmail,
       'mileage': _mileage,
       'reviewCount': _reviews.length,
       'role': _roleToString(_role),
       'addresses': _addresses.map(_addressToMap).toList(),
       'paymentMethods': _paymentMethods.map(_paymentToMap).toList(),
       'reviews': _reviews.map(_reviewToMap).toList(),
-      'orders': _orders.map(_orderToMap).toList(),
       'usedCoupons': _coupons.where((c) => c.isUsed).map((c) => c.id).toList(),
     };
     try {
@@ -1129,6 +1278,34 @@ class UserDataManager with ChangeNotifier {
     } catch (_) {
       _backendError = 'unknown';
     }
+  }
+
+  Future<List<AdminUserSummary>> loadUsersForAdmin() async {
+    if (!_firebaseReady || _db == null || !isAdmin) return [];
+    final snapshot = await _db!.collection(FirestorePaths.users).get();
+    final users = snapshot.docs.map((doc) {
+      final data = doc.data();
+      final role = _roleFromString(data['role'] as String?);
+      return AdminUserSummary(
+        id: doc.id,
+        email: (data['email'] as String?) ?? '',
+        userName: (data['userName'] as String?) ?? '사용자',
+        role: role,
+      );
+    }).toList()
+      ..sort((a, b) => a.userName.compareTo(b.userName));
+    return users;
+  }
+
+  Future<void> updateUserRoleByAdmin({
+    required String targetUserId,
+    required UserRole role,
+  }) async {
+    if (!_firebaseReady || _db == null || !isAdmin) return;
+    await _db!.collection(FirestorePaths.users).doc(targetUserId).set(
+      {'role': _roleToString(role)},
+      SetOptions(merge: true),
+    );
   }
 
   Map<String, dynamic> _addressToMap(Address a) => {
@@ -1204,6 +1381,8 @@ class UserDataManager with ChangeNotifier {
         'paymentMethodLabel': o.paymentMethodLabel,
         'paymentStatus': o.paymentStatus,
         'agreementAccepted': o.agreementAccepted,
+        'buyerId': o.buyerId,
+        'sellerId': o.sellerId,
         'date': o.date.toIso8601String(),
         'status': o.status,
         'trackingNumber': o.trackingNumber,
@@ -1227,6 +1406,8 @@ class UserDataManager with ChangeNotifier {
         paymentMethodLabel: m['paymentMethodLabel'],
         paymentStatus: m['paymentStatus'],
         agreementAccepted: m['agreementAccepted'] ?? false,
+        buyerId: m['buyerId'],
+        sellerId: m['sellerId'],
         date: DateTime.parse(m['date']),
         status: m['status'],
         trackingNumber: m['trackingNumber'],
