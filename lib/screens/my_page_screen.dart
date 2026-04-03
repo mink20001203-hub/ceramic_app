@@ -7,6 +7,7 @@ import '../widgets/oud_components.dart';
 import 'coupon_list_screen.dart';
 import 'login_screen.dart';
 import 'review_manage_screen.dart';
+import 'seller_demo_screen.dart';
 import 'wishlist_screen.dart';
 
 class MyPageScreen extends StatelessWidget {
@@ -81,7 +82,7 @@ class MyPageScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${manager.userName} 작가님',
+              '${manager.userName} 님',
               style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
             ),
             const Text(
@@ -174,6 +175,15 @@ class MyPageScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const WishlistScreen()),
           ),
         ),
+        if (manager.isAdmin)
+          _menuTile(
+            icon: Icons.storefront_outlined,
+            title: '판매자 데모 관리',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SellerDemoScreen()),
+            ),
+          ),
         const SizedBox(height: 18),
         const Text(
           '주문 및 배송',
@@ -243,7 +253,10 @@ class MyPageScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: OudColors.mutedText),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: OudColors.mutedText,
+                ),
               ],
             ),
           ),
@@ -278,7 +291,10 @@ class MyPageScreen extends StatelessWidget {
         title: const Text('로그아웃'),
         content: const Text('현재 계정에서 로그아웃할까요?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
           ElevatedButton(
             onPressed: () {
               manager.logout();

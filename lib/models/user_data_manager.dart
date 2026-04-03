@@ -2,6 +2,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../data/firestore_paths.dart';
 import 'product.dart';
 import '../repositories/product_repository.dart';
 
@@ -281,6 +282,59 @@ class UserDataManager with ChangeNotifier {
   Future<void> setRemoteProductsEnabled(bool enabled) async {
     _remoteProductsEnabled = enabled;
     await reloadProducts();
+  }
+
+  Future<void> addProductBySeller({
+    required String title,
+    required String subTitle,
+    required int price,
+    required String category,
+    required int stock,
+    String? image,
+    bool isNew = true,
+    bool isSale = false,
+    int? salePrice,
+    List<String> options = const [],
+  }) async {
+    final id = 'p_${DateTime.now().millisecondsSinceEpoch}';
+    final product = Product(
+      id: id,
+      title: title,
+      subTitle: subTitle,
+      price: price,
+      image: image,
+      category: category,
+      stock: stock,
+      isNew: isNew,
+      isSale: isSale,
+      salePrice: salePrice,
+      options: options,
+    );
+
+    _products.insert(0, product);
+    notifyListeners();
+
+    if (_remoteProductsEnabled && _firebaseReady && _db != null) {
+      try {
+        await _db!.collection(FirestorePaths.products).doc(id).set({
+          'title': title,
+          'subTitle': subTitle,
+          'price': price,
+          'image': image,
+          'category': category,
+          'stock': stock,
+          'isNew': isNew,
+          'isSale': isSale,
+          'salePrice': salePrice,
+          'options': options,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      } catch (_) {
+        _products.removeWhere((p) => p.id == id);
+        notifyListeners();
+        rethrow;
+      }
+    }
   }
 
   List<Address> get addresses => _addresses;
