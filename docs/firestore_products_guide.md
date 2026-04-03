@@ -118,3 +118,22 @@ const bool kUseRemoteProducts = true;
 
 - `lib/screens/seller_demo_screen.dart`
 - `lib/models/user_data_manager.dart`
+
+## 8) 자동 시드 스크립트 사용
+
+자동 등록 파일:
+
+- `scripts/seed_products_firestore.mjs`
+- `scripts/seed_products.sample.json`
+- `scripts/seed_products_README.md`
+
+실행 순서:
+
+1. 서비스 계정 키 경로를 `GOOGLE_APPLICATION_CREDENTIALS`로 설정
+2. `cd scripts`
+3. `npm install`
+4. `npm run seed:products`
+
+전체 초기화 + 재등록:
+
+- `npm run seed:products:wipe`

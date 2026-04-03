@@ -6,6 +6,7 @@ import '../models/product.dart';
 import '../models/user_data_manager.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/oud_components.dart';
+import 'seller_order_detail_screen.dart';
 
 class SellerDemoScreen extends StatefulWidget {
   const SellerDemoScreen({super.key});
@@ -321,14 +322,33 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                   },
                 ),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: order.items
-                      .map((item) => OudTag(
-                            label: '${item.product.title} x${item.quantity}',
-                          ))
-                      .toList(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: order.items
+                            .map((item) => OudTag(
+                                  label: '${item.product.title} x${item.quantity}',
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                SellerOrderDetailScreen(orderId: order.id),
+                          ),
+                        );
+                      },
+                      child: const Text('상세'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -384,7 +404,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(
-        const SnackBar(content: Text('상품 등록에 실패했습니다. Firebase 설정을 확인해 주세요.')),
+        const SnackBar(content: Text('상품 등록 실패: Firebase 권한/설정을 확인해 주세요.')),
       );
     } finally {
       if (mounted) {

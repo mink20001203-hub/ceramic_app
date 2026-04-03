@@ -1,0 +1,12 @@
+﻿{
+  "name": "ceramic-app-firestore-seed",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:products": "node seed_products_firestore.mjs",
+    "seed:products:wipe": "node seed_products_firestore.mjs --wipe"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

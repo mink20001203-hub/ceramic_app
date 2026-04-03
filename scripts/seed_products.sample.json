@@ -1,0 +1,67 @@
+﻿[
+  {
+    "id": "p_oud_001",
+    "title": "오트 화이트 머그",
+    "subTitle": "Handmade / Matte Finish",
+    "price": 52000,
+    "salePrice": 45000,
+    "image": "assets/images/mug.jpg",
+    "category": "컵",
+    "stock": 12,
+    "isNew": true,
+    "isSale": true,
+    "options": ["Small (220ml)", "Medium (320ml)"]
+  },
+  {
+    "id": "p_oud_002",
+    "title": "모스 그린 세라믹 볼",
+    "subTitle": "Olive Stoneware / Matte",
+    "price": 92000,
+    "salePrice": null,
+    "image": "assets/images/plate.jpg",
+    "category": "볼",
+    "stock": 8,
+    "isNew": false,
+    "isSale": false,
+    "options": ["1ea", "2ea Set"]
+  },
+  {
+    "id": "p_oud_003",
+    "title": "아스카 화이트 실린더 베이스",
+    "subTitle": "White Clay / Glossy Glaze",
+    "price": 78000,
+    "salePrice": null,
+    "image": "assets/images/plate.jpg",
+    "category": "화병",
+    "stock": 5,
+    "isNew": true,
+    "isSale": false,
+    "options": ["Small", "Medium", "Large"]
+  },
+  {
+    "id": "p_oud_004",
+    "title": "로우 엣지 세라믹 플레이트",
+    "subTitle": "Raw Clay / Unglazed Outer",
+    "price": 45000,
+    "salePrice": 39000,
+    "image": "assets/images/plate.jpg",
+    "category": "접시",
+    "stock": 18,
+    "isNew": false,
+    "isSale": true,
+    "options": ["20cm", "24cm"]
+  },
+  {
+    "id": "p_oud_005",
+    "title": "세이지 림 컵",
+    "subTitle": "Studio Line / Daily Use",
+    "price": 36000,
+    "salePrice": null,
+    "image": "assets/images/cup.jpg",
+    "category": "컵",
+    "stock": 21,
+    "isNew": true,
+    "isSale": false,
+    "options": ["250ml", "330ml"]
+  }
+]
