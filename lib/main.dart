@@ -1,7 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 import 'models/user_data_manager.dart';
@@ -10,13 +9,15 @@ import 'screens/category_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_page_screen.dart';
 import 'screens/search_screen.dart';
+import 'theme/app_theme.dart';
+import 'theme/app_tokens.dart';
 
 const bool kUseRemoteProducts = true;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  bool firebaseReady = false;
+  var firebaseReady = false;
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -48,68 +49,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFFAF9F6),
-        primaryColor: const Color(0xFFA53C2C),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFA53C2C),
-          brightness: Brightness.light,
-          background: const Color(0xFFFAF9F6),
-        ),
-        textTheme: GoogleFonts.manropeTextTheme(
-          ThemeData.light().textTheme,
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: const Color(0xFFFAF9F6),
-          foregroundColor: const Color(0xFF303330),
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: GoogleFonts.plusJakartaSans(
-            textStyle: const TextStyle(
-              color: Color(0xFF303330),
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-            ),
-          ),
-        ),
-        cardTheme: CardThemeData(
-          color: const Color(0xFFF4F4F0),
-          elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFFF4F4F0),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFA53C2C),
-            foregroundColor: Colors.white,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFFA53C2C),
-            side: const BorderSide(color: Color(0xFFA53C2C)),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          selectedItemColor: Color(0xFFA53C2C),
-          unselectedItemColor: Color(0xFF5D605C),
-          backgroundColor: Color(0xFFFAF9F6),
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
+      theme: AppTheme.light(),
       home: const MainScreen(),
     );
   }
@@ -127,96 +67,125 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentTabIndex =
-        context.select((UserDataManager m) => m.currentTabIndex);
+    final manager = context.watch<UserDataManager>();
+    final currentTabIndex = manager.currentTabIndex;
+    final cartCount = manager.items.length;
 
     return Scaffold(
-      appBar: currentTabIndex == 0
-          ? AppBar(
-              title: const Text('OUD'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SearchScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
-            )
-          : null,
-      body: _screens[currentTabIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        currentIndex: currentTabIndex,
-        onTap: (index) => context.read<UserDataManager>().setTabIndex(index),
-        items: [
-          const BottomNavigationBarItem(icon: Icon(Icons.home), label: '홈'),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.category),
-            label: '카테고리',
+      appBar: AppBar(
+        title: const Text('OUD'),
+        leading: IconButton(
+          icon: const Icon(Icons.search),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            );
+          },
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded),
+            onPressed: () {},
           ),
-          BottomNavigationBarItem(
-            icon: Selector<UserDataManager, int>(
-              selector: (_, manager) => manager.items.length,
-              builder: (context, count, child) {
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.shopping_cart),
-                    if (count > 0)
-                      Positioned(
-                        right: -8,
-                        top: -8,
-                        child: TweenAnimationBuilder<double>(
-                          key: ValueKey(count),
-                          duration: const Duration(seconds: 1),
-                          tween: Tween<double>(begin: 0.0, end: 1.0),
-                          curve: Curves.elasticOut,
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: 0.5 + (value * 0.7),
-                              child: child,
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 18,
-                              minHeight: 18,
-                            ),
-                            child: Text(
-                              '$count',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        child: _screens[currentTabIndex],
+      ),
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: OudColors.bg,
+          border: Border(top: BorderSide(color: OudColors.border)),
+        ),
+        padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          type: BottomNavigationBarType.fixed,
+          currentIndex: currentTabIndex,
+          selectedItemColor: OudColors.primary,
+          unselectedItemColor: OudColors.mutedText,
+          onTap: (index) => manager.setTabIndex(index),
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_rounded),
+              label: 'HOME',
+            ),
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined),
+              activeIcon: Icon(Icons.explore_rounded),
+              label: 'DISCOVER',
+            ),
+            BottomNavigationBarItem(
+              label: 'SHOP',
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.shopping_bag_outlined),
+                  if (cartCount > 0)
+                    Positioned(
+                      right: -6,
+                      top: -4,
+                      child: Container(
+                        constraints:
+                            const BoxConstraints(minWidth: 16, minHeight: 16),
+                        decoration: const BoxDecoration(
+                          color: OudColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$cartCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                  ],
-                );
-              },
+                    ),
+                ],
+              ),
+              activeIcon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.shopping_bag_rounded),
+                  if (cartCount > 0)
+                    Positioned(
+                      right: -6,
+                      top: -4,
+                      child: Container(
+                        constraints:
+                            const BoxConstraints(minWidth: 16, minHeight: 16),
+                        decoration: const BoxDecoration(
+                          color: OudColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$cartCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-            label: '장바구니',
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: '마이페이지',
-          ),
-        ],
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'PROFILE',
+            ),
+          ],
+        ),
       ),
     );
   }
