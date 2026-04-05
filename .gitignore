@@ -60,3 +60,9 @@ GoogleService-Info.plist
 
 # Stitch exports
 stitch/
+docs/stitch_/
+
+# Local credential/materialized dependency folders
+keys/
+scripts/node_modules/
+scripts/package-lock.json

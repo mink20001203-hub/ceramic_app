@@ -324,6 +324,19 @@ class UserDataManager with ChangeNotifier {
           .collection(FirestorePaths.orders)
           .where('buyerId', isEqualTo: _userId)
           .get();
+    } else if (_role == UserRole.seller) {
+      final sellerIds = _currentSellerIdsForQuery();
+      if (sellerIds.length == 1) {
+        snapshot = await _db!
+            .collection(FirestorePaths.orders)
+            .where('sellerId', isEqualTo: sellerIds.first)
+            .get();
+      } else {
+        snapshot = await _db!
+            .collection(FirestorePaths.orders)
+            .where('sellerId', whereIn: sellerIds)
+            .get();
+      }
     } else {
       snapshot = await _db!.collection(FirestorePaths.orders).get();
     }
@@ -338,6 +351,27 @@ class UserDataManager with ChangeNotifier {
     _orders
       ..clear()
       ..addAll(loaded);
+  }
+
+  List<String> _currentSellerIdsForQuery() {
+    final userId = _userId;
+    if (userId == null) return <String>[_defaultSellerId];
+    final ids = <String>{userId};
+    if (_userEmail.toLowerCase() == 'seller@ceramic.com') {
+      // Backward compatibility for demo data created before sellerId migration.
+      ids.add(_defaultSellerId);
+    }
+    return ids.toList();
+  }
+
+  String _resolveOrderSellerId(List<OrderItem> items) {
+    for (final item in items) {
+      final sellerId = item.product.sellerId;
+      if (sellerId != null && sellerId.trim().isNotEmpty) {
+        return sellerId;
+      }
+    }
+    return _defaultSellerId;
   }
 
   Future<void> _migrateLegacyOrders(List<Order> legacyOrders) async {
@@ -435,6 +469,7 @@ class UserDataManager with ChangeNotifier {
     int? salePrice,
     List<String> options = const [],
   }) async {
+    final sellerId = _userId ?? _defaultSellerId;
     final id = 'p_${DateTime.now().millisecondsSinceEpoch}';
     final product = Product(
       id: id,
@@ -448,6 +483,7 @@ class UserDataManager with ChangeNotifier {
       isSale: isSale,
       salePrice: salePrice,
       options: options,
+      sellerId: sellerId,
     );
 
     _products.insert(0, product);
@@ -466,6 +502,7 @@ class UserDataManager with ChangeNotifier {
           'isSale': isSale,
           'salePrice': salePrice,
           'options': options,
+          'sellerId': sellerId,
           'createdAt': FieldValue.serverTimestamp(),
         });
       } catch (_) {
@@ -504,6 +541,7 @@ class UserDataManager with ChangeNotifier {
       isSale: isSale ?? product.isSale,
       salePrice: salePrice,
       options: options ?? product.options,
+      sellerId: product.sellerId ?? _userId ?? _defaultSellerId,
     );
 
     _products[index] = updated;
@@ -521,6 +559,7 @@ class UserDataManager with ChangeNotifier {
         'isSale': isSale ?? product.isSale,
         'salePrice': salePrice,
         'options': options ?? product.options,
+        'sellerId': product.sellerId ?? _userId ?? _defaultSellerId,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     }
@@ -937,7 +976,7 @@ class UserDataManager with ChangeNotifier {
       paymentStatus: '결제완료',
       agreementAccepted: agreementAccepted,
       buyerId: _userId,
-      sellerId: _defaultSellerId,
+      sellerId: _resolveOrderSellerId(items),
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
@@ -1004,7 +1043,7 @@ class UserDataManager with ChangeNotifier {
       paymentStatus: '결제완료',
       agreementAccepted: agreementAccepted,
       buyerId: _userId,
-      sellerId: _defaultSellerId,
+      sellerId: _resolveOrderSellerId(items),
       date: DateTime.now(),
       status: '결제완료',
       statusLogs: [
@@ -1445,6 +1484,7 @@ class UserDataManager with ChangeNotifier {
         'image': p.image,
         'category': p.category,
         'salePrice': p.salePrice,
+        'sellerId': p.sellerId,
       };
 
   Product _productFromMap(Map<String, dynamic> m) => Product(
@@ -1455,5 +1495,6 @@ class UserDataManager with ChangeNotifier {
         image: m['image'],
         category: m['category'],
         salePrice: m['salePrice'],
+        sellerId: m['sellerId'],
       );
 }

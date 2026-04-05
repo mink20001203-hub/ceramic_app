@@ -37,6 +37,7 @@ class LocalProductRepository implements ProductRepository {
           isSale: product.isSale,
           salePrice: bumpedSale,
           options: List<String>.from(product.options),
+          sellerId: product.sellerId,
         ));
       }
     }
@@ -71,6 +72,7 @@ class FirestoreProductRepository implements ProductRepository {
       salePrice: (data['salePrice'] as num?)?.toInt(),
       options:
           (data['options'] as List<dynamic>? ?? []).map((e) => '$e').toList(),
+      sellerId: data['sellerId'] as String?,
     );
   }
 }

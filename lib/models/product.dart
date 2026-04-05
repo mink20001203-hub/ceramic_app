@@ -11,6 +11,7 @@ class Product {
   final bool isSale; // 세일 여부
   final int? salePrice; // 세일가 (없으면 null)
   final List<String> options; // 옵션 리스트
+  final String? sellerId; // 판매자 ID
 
   Product({
     required this.id,
@@ -24,6 +25,7 @@ class Product {
     this.isSale = false,
     this.salePrice,
     this.options = const [],
+    this.sellerId,
   });
 }
 

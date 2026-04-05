@@ -86,7 +86,14 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
 
   Widget _buildProductsTab(BuildContext context) {
     final manager = context.watch<UserDataManager>();
-    final products = List<Product>.from(manager.products);
+    final sellerId = manager.userId;
+    final products = List<Product>.from(manager.products).where((p) {
+      if (manager.isAdmin) return true;
+      if (sellerId == null) return false;
+      return p.sellerId == sellerId ||
+          (manager.userEmail.toLowerCase() == 'seller@ceramic.com' &&
+              p.sellerId == 'seller_demo');
+    }).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -264,7 +271,14 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
   Widget _buildOrderManagement(BuildContext context) {
     final manager = context.watch<UserDataManager>();
     final format = NumberFormat('#,###', 'ko_KR');
-    final orders = List<Order>.from(manager.orders)
+    final sellerId = manager.userId;
+    final orders = List<Order>.from(manager.orders).where((o) {
+      if (manager.isAdmin) return true;
+      if (sellerId == null) return false;
+      return o.sellerId == sellerId ||
+          (manager.userEmail.toLowerCase() == 'seller@ceramic.com' &&
+              o.sellerId == 'seller_demo');
+    }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
     if (orders.isEmpty) {
