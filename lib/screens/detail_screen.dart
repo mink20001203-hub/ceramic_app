@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/product.dart';
@@ -29,11 +30,17 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final manager = context.read<UserDataManager>();
+    final manager = context.watch<UserDataManager>();
     final product = widget.product;
     final sale = product.isSale && product.salePrice != null;
     final price = sale ? product.salePrice! : product.price;
     final soldOut = product.stock == 0;
+    final productReviews =
+        manager.reviews.where((review) => review.productId == product.id).toList();
+    final relatedProducts = manager.products
+        .where((item) => item.id != product.id)
+        .take(4)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -43,6 +50,10 @@ class _DetailScreenState extends State<DetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () {},
+          ),
           Consumer<UserDataManager>(
             builder: (_, data, __) {
               final favorite = data.isFavorite(product);
@@ -53,11 +64,11 @@ class _DetailScreenState extends State<DetailScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 118),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 124),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -94,7 +105,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       Text(
                         product.title,
                         style: const TextStyle(
-                          fontSize: 37,
+                          fontSize: 36,
                           fontWeight: FontWeight.w900,
                           height: 1.05,
                         ),
@@ -121,14 +132,7 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
-              '상품 설명',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: OudColors.mutedText,
-                letterSpacing: 0.2,
-              ),
-            ),
+            const OudSectionTitle(title: '상품 설명'),
             const SizedBox(height: 8),
             const Text(
               '고령토의 따뜻한 질감을 살린 제작 방식으로, 식탁 위에 오래 남는 오브제를 제안합니다. '
@@ -136,13 +140,7 @@ class _DetailScreenState extends State<DetailScreen> {
               style: TextStyle(height: 1.6),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'COLOR SELECTION',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: OudColors.mutedText,
-              ),
-            ),
+            const OudSectionTitle(title: '컬러 선택'),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -162,13 +160,7 @@ class _DetailScreenState extends State<DetailScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'SIZE',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: OudColors.mutedText,
-              ),
-            ),
+            const OudSectionTitle(title: '사이즈'),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -179,13 +171,7 @@ class _DetailScreenState extends State<DetailScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            const Text(
-              'QUANTITY',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                color: OudColors.mutedText,
-              ),
-            ),
+            const OudSectionTitle(title: '수량'),
             const SizedBox(height: 8),
             OudQuantityStepper(
               value: _quantity,
@@ -221,6 +207,12 @@ class _DetailScreenState extends State<DetailScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 18),
+            _reviewSection(productReviews),
+            const SizedBox(height: 18),
+            _shippingPolicySection(),
+            const SizedBox(height: 18),
+            _relatedProductsSection(relatedProducts),
           ],
         ),
       ),
@@ -286,6 +278,179 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _reviewSection(List<Review> reviews) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        OudSectionTitle(
+          title: '리뷰 ${reviews.length}건',
+          trailing: TextButton(
+            onPressed: () {},
+            child: const Text('전체보기'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (reviews.isEmpty)
+          const OudSectionCard(
+            child: Text(
+              '아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨보세요.',
+              style: TextStyle(color: OudColors.mutedText),
+            ),
+          )
+        else
+          ...reviews.take(2).map(_reviewCard),
+      ],
+    );
+  }
+
+  Widget _reviewCard(Review review) {
+    final dateLabel = DateFormat('yyyy.MM.dd').format(review.date);
+    final stars = '★' * review.rating.round().clamp(1, 5);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: OudSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  stars,
+                  style: const TextStyle(
+                    color: OudColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(dateLabel, style: OudTypography.bodyMuted),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              review.comment,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(height: 1.4),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shippingPolicySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        OudSectionTitle(title: '배송/교환/환불 안내'),
+        SizedBox(height: 8),
+        OudSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '배송 안내',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '주문 후 1~3일 내 발송되며, 도서산간 지역은 1~2일 추가 소요될 수 있습니다.',
+                style: TextStyle(color: OudColors.mutedText, height: 1.4),
+              ),
+              SizedBox(height: 10),
+              Text(
+                '교환/환불',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '수령 후 7일 이내 접수 가능하며, 사용 흔적이 있는 경우 교환/환불이 제한됩니다.',
+                style: TextStyle(color: OudColors.mutedText, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _relatedProductsSection(List<Product> relatedProducts) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const OudSectionTitle(title: '함께 보면 좋은 상품'),
+        const SizedBox(height: 8),
+        if (relatedProducts.isEmpty)
+          const OudSectionCard(
+            child: Text('추천 상품이 없습니다.', style: OudTypography.bodyMuted),
+          )
+        else
+          SizedBox(
+            height: 188,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: relatedProducts.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, index) {
+                final item = relatedProducts[index];
+                return InkWell(
+                  borderRadius: OudRadii.md,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(product: item),
+                      ),
+                    );
+                  },
+                  child: SizedBox(
+                    width: 150,
+                    child: OudSectionCard(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipRRect(
+                            borderRadius: OudRadii.sm,
+                            child: AspectRatio(
+                              aspectRatio: 1.1,
+                              child: item.image == null
+                                  ? Container(color: OudColors.surface)
+                                  : Image.asset(
+                                      item.image!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) =>
+                                          Container(color: OudColors.surface),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '₩${NumberFormat('#,###', 'ko_KR').format(item.price)}',
+                            style: const TextStyle(
+                              color: OudColors.primary,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
