@@ -8,8 +8,8 @@ class AppTheme {
     final base = ThemeData.light(useMaterial3: true);
     final textTheme = GoogleFonts.notoSansKrTextTheme(base.textTheme).copyWith(
       titleLarge: GoogleFonts.plusJakartaSans(
-        fontSize: 20,
-        fontWeight: FontWeight.w700,
+        fontSize: OudTypography.sectionTitle.fontSize,
+        fontWeight: OudTypography.sectionTitle.fontWeight,
         color: OudColors.text,
       ),
     );
@@ -22,15 +22,15 @@ class AppTheme {
         secondary: OudColors.sage,
         surface: OudColors.surface,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: OudColors.bg,
         foregroundColor: OudColors.text,
         centerTitle: true,
         elevation: 0,
         toolbarHeight: 58,
         titleTextStyle: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w900,
+          fontSize: OudTypography.headingMd.fontSize,
+          fontWeight: OudTypography.headingMd.fontWeight,
           color: OudColors.text,
         ),
       ),

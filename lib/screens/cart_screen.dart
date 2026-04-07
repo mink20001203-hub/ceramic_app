@@ -173,21 +173,24 @@ class CartScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '결제 요약',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 26,
-                    ),
+                  const Text('결제 요약', style: OudTypography.headingMd),
+                  const SizedBox(height: 10),
+                  OudAmountRow(
+                    label: '총 상품 금액',
+                    value: '₩${format.format(subtotal)}',
+                  ),
+                  OudAmountRow(
+                    label: '배송비',
+                    value: '₩${format.format(shippingFee)}',
+                  ),
+                  OudAmountRow(
+                    label: 'NEWMEMBERDISCOUNT',
+                    value: '-₩${format.format(memberDiscount)}',
                   ),
                   const SizedBox(height: 10),
-                  _summaryRow('총 상품 금액', '₩${format.format(subtotal)}'),
-                  _summaryRow('배송비', '₩${format.format(shippingFee)}'),
-                  _summaryRow('NEWMEMBERDISCOUNT', '-₩${format.format(memberDiscount)}'),
-                  const SizedBox(height: 10),
-                  _summaryRow(
-                    '최종 결제 금액',
-                    '₩${format.format(finalAmount)}',
+                  OudAmountRow(
+                    label: '최종 결제 금액',
+                    value: '₩${format.format(finalAmount)}',
                     emphasize: true,
                   ),
                   const SizedBox(height: 14),
@@ -224,33 +227,6 @@ class CartScreen extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-
-  Widget _summaryRow(String label, String value, {bool emphasize = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: emphasize ? OudColors.text : OudColors.mutedText,
-              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
-              fontSize: emphasize ? 20 : 14,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              color: emphasize ? OudColors.primary : OudColors.text,
-              fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
-              fontSize: emphasize ? 34 : 18,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -132,7 +132,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               style: TextStyle(color: OudColors.mutedText),
             ),
             const SizedBox(height: 18),
-            _stepTitle(1, '주문 상품'),
+            const OudStepTitle(step: 1, title: '주문 상품'),
             OudSectionCard(
               child: Column(
                 children: items.map((item) {
@@ -184,7 +184,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _stepTitle(2, '배송 정보'),
+            const OudStepTitle(step: 2, title: '배송 정보'),
             OudSectionCard(
               child: DropdownButtonFormField<String>(
                 initialValue: _addressId,
@@ -201,7 +201,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _stepTitle(3, '쿠폰 및 마일리지'),
+            const OudStepTitle(step: 3, title: '쿠폰 및 마일리지'),
             OudSectionCard(
               child: Column(
                 children: [
@@ -253,7 +253,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _stepTitle(4, '결제 수단'),
+            const OudStepTitle(step: 4, title: '결제 수단'),
             OudSectionCard(
               child: DropdownButtonFormField<String>(
                 initialValue: _paymentId,
@@ -273,7 +273,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFF232624),
+                color: OudColors.panelDark,
                 borderRadius: OudRadii.lg,
               ),
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
@@ -288,15 +288,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _darkPriceRow('총 상품금액', '₩${format.format(subtotal)}'),
-                  _darkPriceRow('총 배송비', '₩${format.format(shippingFee)}'),
-                  _darkPriceRow('쿠폰 할인', '-₩${format.format(couponDiscount)}'),
-                  _darkPriceRow('마일리지 사용', '-₩${format.format(_mileageToUse)}'),
-                  const Divider(color: Color(0xFF4A4F4D)),
-                  _darkPriceRow(
-                    '최종 결제 금액',
-                    '₩${format.format(total)}',
+                  OudAmountRow(
+                    label: '총 상품금액',
+                    value: '₩${format.format(subtotal)}',
+                    dark: true,
+                  ),
+                  OudAmountRow(
+                    label: '총 배송비',
+                    value: '₩${format.format(shippingFee)}',
+                    dark: true,
+                  ),
+                  OudAmountRow(
+                    label: '쿠폰 할인',
+                    value: '-₩${format.format(couponDiscount)}',
+                    dark: true,
+                  ),
+                  OudAmountRow(
+                    label: '마일리지 사용',
+                    value: '-₩${format.format(_mileageToUse)}',
+                    dark: true,
+                  ),
+                  const Divider(color: OudColors.panelDarkDivider),
+                  OudAmountRow(
+                    label: '최종 결제 금액',
+                    value: '₩${format.format(total)}',
                     emphasize: true,
+                    dark: true,
                   ),
                 ],
               ),
@@ -386,56 +403,4 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     );
   }
 
-  Widget _stepTitle(int step, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 9,
-            backgroundColor: OudColors.primary,
-            child: Text(
-              '$step',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _darkPriceRow(String label, String value, {bool emphasize = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: emphasize ? Colors.white : const Color(0xFFAFB5B2),
-              fontWeight: emphasize ? FontWeight.w700 : FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TextStyle(
-              color: emphasize ? const Color(0xFFFFD4C8) : Colors.white,
-              fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
-              fontSize: emphasize ? 28 : 14,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

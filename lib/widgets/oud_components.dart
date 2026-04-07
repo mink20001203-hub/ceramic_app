@@ -27,6 +27,28 @@ class OudSectionCard extends StatelessWidget {
   }
 }
 
+class OudSectionTitle extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+
+  const OudSectionTitle({
+    super.key,
+    required this.title,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(title, style: OudTypography.sectionTitle),
+        const Spacer(),
+        if (trailing != null) trailing!,
+      ],
+    );
+  }
+}
+
 class OudTag extends StatelessWidget {
   final String label;
   final Color bgColor;
@@ -171,6 +193,149 @@ class _StepperCircleIcon extends StatelessWidget {
           icon,
           size: 14,
           color: onTap == null ? OudColors.border : OudColors.mutedText,
+        ),
+      ),
+    );
+  }
+}
+
+class OudStepTitle extends StatelessWidget {
+  final int step;
+  final String title;
+
+  const OudStepTitle({
+    super.key,
+    required this.step,
+    required this.title,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 9,
+            backgroundColor: OudColors.primary,
+            child: Text(
+              '$step',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(title, style: OudTypography.sectionTitle),
+        ],
+      ),
+    );
+  }
+}
+
+class OudAmountRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasize;
+  final bool dark;
+
+  const OudAmountRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+    this.dark = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final labelColor = dark
+        ? (emphasize ? Colors.white : OudColors.panelDarkMutedText)
+        : (emphasize ? OudColors.text : OudColors.mutedText);
+    final valueColor = dark
+        ? (emphasize ? OudColors.panelDarkAccent : Colors.white)
+        : (emphasize ? OudColors.primary : OudColors.text);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: labelColor,
+              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
+              fontSize: emphasize ? 20 : 14,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor,
+              fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
+              fontSize: emphasize ? (dark ? 28 : 34) : 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OudMenuTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconBg;
+  final String title;
+  final VoidCallback onTap;
+
+  const OudMenuTile({
+    super.key,
+    required this.icon,
+    required this.iconBg,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: OudRadii.lg,
+          onTap: onTap,
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: OudColors.border),
+              borderRadius: OudRadii.lg,
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: iconBg,
+                  child: Icon(icon, size: 16, color: OudColors.text),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: OudColors.mutedText,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

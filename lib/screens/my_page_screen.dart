@@ -149,7 +149,7 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _menuTile(
+        OudMenuTile(
           icon: Icons.confirmation_number_outlined,
           iconBg: const Color(0xFFE8F0D9),
           title: '쿠폰함',
@@ -158,13 +158,13 @@ class MyPageScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const CouponListScreen()),
           ),
         ),
-        _menuTile(
+        OudMenuTile(
           icon: Icons.payments_outlined,
           iconBg: const Color(0xFFECE1F7),
           title: '마일리지 내역',
           onTap: () {},
         ),
-        _menuTile(
+        OudMenuTile(
           icon: Icons.rate_review_outlined,
           iconBg: const Color(0xFFF6DDDA),
           title: '내가 쓴 리뷰',
@@ -173,7 +173,7 @@ class MyPageScreen extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const ReviewManageScreen()),
           ),
         ),
-        _menuTile(
+        OudMenuTile(
           icon: Icons.local_shipping_outlined,
           iconBg: const Color(0xFFE7E7E7),
           title: '주문 및 배송 조회',
@@ -183,7 +183,7 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
         if (manager.isSeller)
-          _menuTile(
+          OudMenuTile(
             icon: Icons.storefront_outlined,
             iconBg: const Color(0xFFFFE9D8),
             title: '판매자 주문 관리',
@@ -193,7 +193,7 @@ class MyPageScreen extends StatelessWidget {
             ),
           ),
         if (manager.isAdmin)
-          _menuTile(
+          OudMenuTile(
             icon: Icons.admin_panel_settings_outlined,
             iconBg: const Color(0xFFE1F0FF),
             title: '판매자 권한 관리',
@@ -243,52 +243,6 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _menuTile({
-    required IconData icon,
-    required Color iconBg,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: OudRadii.lg,
-          onTap: onTap,
-          child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: OudColors.border),
-              borderRadius: OudRadii.lg,
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: iconBg,
-                  child: Icon(icon, size: 16, color: OudColors.text),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: OudColors.mutedText,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 

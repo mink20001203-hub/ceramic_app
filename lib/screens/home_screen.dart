@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen>
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
-            child: Text('작품 목록', style: Theme.of(context).textTheme.titleLarge),
+            child: const OudSectionTitle(title: '작품 목록'),
           ),
         ),
         if (manager.productsLoading)
@@ -97,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen>
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text('최근 포스트', style: Theme.of(context).textTheme.titleLarge),
+            child: const OudSectionTitle(title: '최근 포스트'),
           ),
         ),
         SliverList(

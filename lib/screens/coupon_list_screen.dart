@@ -27,7 +27,7 @@ class CouponListScreen extends StatelessWidget {
         children: [
           const Text(
             '마이베네핏',
-            style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
+            style: OudTypography.headingXl,
           ),
           const Text(
             '나의 쿠폰과 작성 가능한 리뷰를 확인하세요.',
@@ -58,26 +58,28 @@ class CouponListScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Text('보유 쿠폰', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(width: 6),
-              Text(
-                '${coupons.length}',
-                style: const TextStyle(
-                  color: OudColors.primary,
-                  fontWeight: FontWeight.w800,
+          OudSectionTitle(
+            title: '보유 쿠폰',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${coupons.length}',
+                  style: const TextStyle(
+                    color: OudColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  '쿠폰 등록하기',
-                  style: TextStyle(color: OudColors.primary),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text(
+                    '쿠폰 등록하기',
+                    style: TextStyle(color: OudColors.primary),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           if (coupons.isEmpty)
             const SizedBox(
@@ -91,7 +93,7 @@ class CouponListScreen extends StatelessWidget {
           else
             ...coupons.map((coupon) => _couponTile(coupon, context)).toList(),
           const SizedBox(height: 12),
-          Text('작성 가능한 리뷰', style: Theme.of(context).textTheme.titleLarge),
+          const OudSectionTitle(title: '작성 가능한 리뷰'),
           const SizedBox(height: 8),
           if (pendingReviews.isEmpty)
             const SizedBox(
