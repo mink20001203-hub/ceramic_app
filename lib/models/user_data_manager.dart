@@ -933,6 +933,7 @@ class UserDataManager with ChangeNotifier {
   void placeOrderFromCart(
       {String? couponId,
       int mileageUsed = 0,
+      int shippingFee = 0,
       Address? address,
       PaymentMethod? payment,
       bool agreementAccepted = false}) {
@@ -956,7 +957,7 @@ class UserDataManager with ChangeNotifier {
     final couponDiscount = _calculateCouponDiscount(coupon, subtotal, items);
     final mileageToUse =
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
-    final total = subtotal - couponDiscount - mileageToUse;
+    final total = subtotal + shippingFee - couponDiscount - mileageToUse;
 
     for (final item in items) {
       _decreaseStock(item.product, item.quantity);
@@ -1005,6 +1006,7 @@ class UserDataManager with ChangeNotifier {
       int quantity = 1,
       String? couponId,
       int mileageUsed = 0,
+      int shippingFee = 0,
       Address? address,
       PaymentMethod? payment,
       bool agreementAccepted = false}) {
@@ -1025,7 +1027,7 @@ class UserDataManager with ChangeNotifier {
     final couponDiscount = _calculateCouponDiscount(coupon, subtotal, items);
     final mileageToUse =
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
-    final total = subtotal - couponDiscount - mileageToUse;
+    final total = subtotal + shippingFee - couponDiscount - mileageToUse;
 
     _decreaseStock(product, quantity);
 

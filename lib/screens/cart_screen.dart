@@ -16,19 +16,17 @@ class CartScreen extends StatelessWidget {
     return Consumer<UserDataManager>(
       builder: (context, manager, _) {
         final items = manager.items;
-
         if (items.isEmpty) {
           return const OudEmptyState(
             title: '장바구니가 비어 있습니다',
-            subtitle: '마음에 드는 상품을 담아보세요',
+            subtitle: '마음에 드는 상품을 담아보세요.',
             icon: Icons.shopping_bag_outlined,
           );
         }
 
         final subtotal = manager.totalAmount;
-        const shippingFee = 3000;
-        const memberDiscount = 3000;
-        final finalAmount = subtotal + shippingFee - memberDiscount;
+        final shippingFee = subtotal >= 50000 ? 0 : 3000;
+        final finalAmount = subtotal + shippingFee;
 
         return Column(
           children: [
@@ -183,13 +181,9 @@ class CartScreen extends StatelessWidget {
                     label: '배송비',
                     value: '₩${format.format(shippingFee)}',
                   ),
-                  OudAmountRow(
-                    label: 'NEWMEMBERDISCOUNT',
-                    value: '-₩${format.format(memberDiscount)}',
-                  ),
                   const SizedBox(height: 10),
                   OudAmountRow(
-                    label: '최종 결제 금액',
+                    label: '결제 예정 금액',
                     value: '₩${format.format(finalAmount)}',
                     emphasize: true,
                   ),
@@ -199,9 +193,8 @@ class CartScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         final soldOut = items.any((item) => item.product.stock == 0);
-                        final overStock = items.any(
-                          (item) => item.quantity > item.product.stock,
-                        );
+                        final overStock =
+                            items.any((item) => item.quantity > item.product.stock);
                         if (soldOut || overStock) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('재고를 먼저 확인해 주세요.')),
@@ -218,7 +211,7 @@ class CartScreen extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(56),
                       ),
-                      child: Text('결제하기    ₩${format.format(finalAmount)}  →'),
+                      child: Text('결제하기  ₩${format.format(finalAmount)}  →'),
                     ),
                   ),
                 ],
