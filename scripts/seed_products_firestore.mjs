@@ -2,9 +2,12 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import admin from 'firebase-admin';
 
-const DEFAULT_INPUT = path.resolve('scripts', 'seed_products.sample.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const DEFAULT_INPUT = path.join(__dirname, 'seed_products.sample.json');
 const COLLECTION = 'products';
 
 async function main() {
@@ -24,7 +27,8 @@ async function main() {
 
   const db = admin.firestore();
   const raw = await fs.readFile(inputPath, 'utf8');
-  const items = JSON.parse(raw);
+  const normalized = raw.replace(/^\uFEFF/, '');
+  const items = JSON.parse(normalized);
 
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error('Seed JSON must be a non-empty array');
