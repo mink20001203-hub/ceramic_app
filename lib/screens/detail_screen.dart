@@ -224,12 +224,8 @@ class _DetailScreenState extends State<DetailScreen> {
           child: Row(
             children: [
               Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFA6D388),
-                    foregroundColor: const Color(0xFF24461B),
-                  ),
-                  onPressed: soldOut
+                child: OudTapScale(
+                  onTap: soldOut
                       ? null
                       : () {
                           manager.addToCartMultiple(
@@ -241,17 +237,31 @@ class _DetailScreenState extends State<DetailScreen> {
                             const SnackBar(content: Text('장바구니에 담았습니다.')),
                           );
                         },
-                  child: const Text('장바구니'),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFA6D388),
+                      foregroundColor: const Color(0xFF24461B),
+                    ),
+                    onPressed: soldOut
+                        ? null
+                        : () {
+                            manager.addToCartMultiple(
+                              product,
+                              _quantity,
+                              selectedOption: _selectedOption,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('장바구니에 담았습니다.')),
+                            );
+                          },
+                    child: const Text('장바구니'),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFB34230),
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: soldOut
+                child: OudTapScale(
+                  onTap: soldOut
                       ? null
                       : () {
                           if (!manager.isLoggedIn) {
@@ -271,7 +281,33 @@ class _DetailScreenState extends State<DetailScreen> {
                             ),
                           );
                         },
-                  child: Text(soldOut ? '품절' : '바로 구매하기'),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFB34230),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: soldOut
+                        ? null
+                        : () {
+                            if (!manager.isLoggedIn) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
+                              );
+                              return;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CheckoutScreen.single(
+                                  product: product,
+                                  selectedOption: _selectedOption,
+                                  quantity: _quantity,
+                                ),
+                              ),
+                            );
+                          },
+                    child: Text(soldOut ? '품절' : '바로 구매하기'),
+                  ),
                 ),
               ),
             ],
