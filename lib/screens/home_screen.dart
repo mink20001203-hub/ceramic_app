@@ -38,12 +38,13 @@ class _HomeScreenState extends State<HomeScreen>
     final recent = products.reversed.take(3).toList();
 
     return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
       slivers: [
         SliverToBoxAdapter(child: _creatorHero(manager)),
         SliverToBoxAdapter(child: _tabStrip()),
         SliverToBoxAdapter(
           child: SizedBox(
-            height: 212,
+            height: 224,
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -54,10 +55,10 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
         ),
-        SliverToBoxAdapter(
+        const SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
-            child: const OudSectionTitle(title: '작품 목록'),
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 10),
+            child: OudSectionTitle(title: '작품 목록'),
           ),
         ),
         if (manager.productsLoading)
@@ -73,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen>
               height: 240,
               child: OudEmptyState(
                 title: '등록된 상품이 없습니다',
-                subtitle: '잠시 후 다시 확인해 주세요',
+                subtitle: '잠시 후 다시 확인해 주세요.',
                 icon: Icons.inventory_2_outlined,
               ),
             ),
@@ -90,14 +91,14 @@ class _HomeScreenState extends State<HomeScreen>
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 0.69,
+                childAspectRatio: 0.72,
               ),
             ),
           ),
-        SliverToBoxAdapter(
+        const SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: const OudSectionTitle(title: '최근 포스트'),
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+            child: OudSectionTitle(title: '최근 포스트'),
           ),
         ),
         SliverList(
@@ -114,52 +115,90 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _creatorHero(UserDataManager manager) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Column(
-        children: [
-          const CircleAvatar(
-            radius: 44,
-            backgroundColor: OudColors.surface,
-            child: Icon(Icons.person, size: 46, color: OudColors.mutedText),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'OUD (오우드)',
-            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 11),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _statItem('FOLLOWERS', '1.2K'),
-              _statItem('리뷰', '${manager.reviewCount}'),
-              _statItem('작품', '${manager.products.length}'),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+        decoration: BoxDecoration(
+          borderRadius: OudRadii.lg,
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF7F3EE),
+              Color(0xFFF2EEE8),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              OudTag(
-                label: '팔로우',
-                bgColor: OudColors.primarySoft,
-                textColor: OudColors.primary,
+          border: Border.all(color: OudColors.border),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x15000000),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
-              SizedBox(width: 8),
-              OudTag(
-                label: '메시지',
-                bgColor: OudColors.sage,
-                textColor: Color(0xFF32502E),
+              child: const CircleAvatar(
+                radius: 44,
+                backgroundColor: OudColors.surface,
+                child: Icon(Icons.person, size: 44, color: OudColors.mutedText),
               ),
-            ],
-          ),
-        ],
+            ),
+            const SizedBox(height: 10),
+            const Text('OUD (오우드)', style: OudTypography.headingLg),
+            const SizedBox(height: 11),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _statItem('FOLLOWERS', '1.2K'),
+                _divider(),
+                _statItem('리뷰', '${manager.reviewCount}'),
+                _divider(),
+                _statItem('작품', '${manager.products.length}'),
+              ],
+            ),
+            const SizedBox(height: 13),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                OudTag(
+                  label: '팔로우',
+                  bgColor: OudColors.primarySoft,
+                  textColor: OudColors.primary,
+                ),
+                SizedBox(width: 8),
+                OudTag(
+                  label: '메시지',
+                  bgColor: OudColors.sage,
+                  textColor: OudColors.successText,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  Widget _divider() {
+    return Container(
+      width: 1,
+      height: 28,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: OudColors.border,
+    );
+  }
+
   Widget _statItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
+    return SizedBox(
+      width: 92,
       child: Column(
         children: [
           Text(
@@ -170,14 +209,7 @@ class _HomeScreenState extends State<HomeScreen>
               color: OudColors.text,
             ),
           ),
-          Text(
-            label,
-            style: const TextStyle(
-              color: OudColors.mutedText,
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-            ),
-          ),
+          Text(label, style: OudTypography.label),
         ],
       ),
     );
@@ -185,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _tabStrip() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 10),
       decoration: BoxDecoration(
         color: OudColors.surface,
         borderRadius: OudRadii.pill,
@@ -200,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         labelColor: OudColors.text,
         unselectedLabelColor: OudColors.mutedText,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w700),
         tabs: const [
           Tab(text: '작가 소개'),
           Tab(text: '스토리'),
@@ -227,10 +260,7 @@ class _HomeScreenState extends State<HomeScreen>
         padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: OudSectionCard(
           child: Center(
-            child: Text(
-              '표시할 스토리가 없습니다.',
-              style: TextStyle(color: OudColors.mutedText),
-            ),
+            child: Text('표시할 스토리가 없습니다.', style: OudTypography.bodyMuted),
           ),
         ),
       );
@@ -244,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen>
       itemBuilder: (_, index) {
         final product = products[index];
         return SizedBox(
-          width: 170,
+          width: 172,
           child: OudSectionCard(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -253,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ClipRRect(
                   borderRadius: OudRadii.md,
                   child: AspectRatio(
-                    aspectRatio: 1.1,
+                    aspectRatio: 1.15,
                     child: product.image == null
                         ? Container(color: OudColors.surface)
                         : Image.asset(
@@ -287,10 +317,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '누적 리뷰 ${count}건',
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
-            ),
+            Text('누적 리뷰 ${count}건', style: OudTypography.sectionTitle),
             const SizedBox(height: 8),
             const Text(
               '수공예 질감과 안정적인 형태, 패키징 완성도에 대한 긍정적인 평가가 많습니다.',
