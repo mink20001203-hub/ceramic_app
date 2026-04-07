@@ -76,85 +76,99 @@ class CouponListScreen extends StatelessWidget {
               ],
             ),
           ),
-          if (coupons.isEmpty)
-            const SizedBox(
-              height: 160,
-              child: OudEmptyState(
-                title: '쿠폰이 없습니다',
-                subtitle: '이벤트나 첫 구매 혜택을 확인해 보세요.',
-                icon: Icons.confirmation_number_outlined,
-              ),
-            )
-          else
-            ...coupons.map((coupon) => _couponTile(coupon, context)).toList(),
+          OudFadeSwitcher(
+            child: coupons.isEmpty
+                ? const SizedBox(
+                    key: ValueKey('coupon-empty'),
+                    height: 160,
+                    child: OudEmptyState(
+                      title: '쿠폰이 없습니다',
+                      subtitle: '이벤트나 첫 구매 혜택을 확인해 보세요.',
+                      icon: Icons.confirmation_number_outlined,
+                    ),
+                  )
+                : Column(
+                    key: const ValueKey('coupon-list'),
+                    children:
+                        coupons.map((coupon) => _couponTile(coupon, context)).toList(),
+                  ),
+          ),
           const SizedBox(height: 12),
           const OudSectionTitle(title: '작성 가능한 리뷰'),
           const SizedBox(height: 8),
-          if (pendingReviews.isEmpty)
-            const SizedBox(
-              height: 120,
-              child: OudEmptyState(
-                title: '작성 가능한 리뷰가 없습니다',
-                subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요.',
-                icon: Icons.rate_review_outlined,
-              ),
-            )
-          else
-            ...pendingReviews.map(
-              (product) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: OudSectionCard(
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: OudRadii.sm,
-                        child: SizedBox(
-                          width: 64,
-                          height: 64,
-                          child: product.image == null
-                              ? Container(color: OudColors.surface)
-                              : Image.asset(
-                                  product.image!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) =>
-                                      Container(color: OudColors.surface),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'HANDMADE',
-                              style: TextStyle(
-                                color: OudColors.mutedText,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11,
+          OudFadeSwitcher(
+            child: pendingReviews.isEmpty
+                ? const SizedBox(
+                    key: ValueKey('review-empty'),
+                    height: 120,
+                    child: OudEmptyState(
+                      title: '작성 가능한 리뷰가 없습니다',
+                      subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요.',
+                      icon: Icons.rate_review_outlined,
+                    ),
+                  )
+                : Column(
+                    key: const ValueKey('review-list'),
+                    children: pendingReviews
+                        .map(
+                          (product) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: OudSectionCard(
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: OudRadii.sm,
+                                    child: SizedBox(
+                                      width: 64,
+                                      height: 64,
+                                      child: product.image == null
+                                          ? Container(color: OudColors.surface)
+                                          : Image.asset(
+                                              product.image!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  Container(color: OudColors.surface),
+                                            ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'HANDMADE',
+                                          style: TextStyle(
+                                            color: OudColors.mutedText,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                        Text(
+                                          product.title,
+                                          style:
+                                              const TextStyle(fontWeight: FontWeight.w700),
+                                        ),
+                                        const Text(
+                                          '리뷰 작성 시 500P 적립',
+                                          style: TextStyle(color: OudColors.mutedText),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const OudTag(
+                                    label: 'Write Review',
+                                    bgColor: OudColors.sage,
+                                    textColor: Color(0xFF32502E),
+                                  ),
+                                ],
                               ),
                             ),
-                            Text(
-                              product.title,
-                              style: const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const Text(
-                              '리뷰 작성 시 500P 적립',
-                              style: TextStyle(color: OudColors.mutedText),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const OudTag(
-                        label: 'Write Review',
-                        bgColor: OudColors.sage,
-                        textColor: Color(0xFF32502E),
-                      ),
-                    ],
+                          ),
+                        )
+                        .toList(),
                   ),
-                ),
-              ),
-            ),
+          ),
         ],
       ),
     );

@@ -17,10 +17,13 @@ class CartScreen extends StatelessWidget {
       builder: (context, manager, _) {
         final items = manager.items;
         if (items.isEmpty) {
-          return const OudEmptyState(
-            title: '장바구니가 비어 있습니다',
-            subtitle: '마음에 드는 상품을 담아보세요.',
-            icon: Icons.shopping_bag_outlined,
+          return const OudFadeSwitcher(
+            child: OudEmptyState(
+              key: ValueKey('cart-empty'),
+              title: '장바구니가 비어 있습니다',
+              subtitle: '마음에 드는 상품을 담아보세요.',
+              icon: Icons.shopping_bag_outlined,
+            ),
           );
         }
 

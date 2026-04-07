@@ -58,6 +58,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     final manager = context.watch<UserDataManager>();
     final format = NumberFormat('#,###', 'ko_KR');
+
     final items = widget.mode == CheckoutMode.cart
         ? manager.items
             .map((item) => _CheckoutItem(
@@ -125,7 +126,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Checkout', style: TextStyle(fontSize: 35, fontWeight: FontWeight.w900)),
+            const Text(
+              'Checkout',
+              style: TextStyle(fontSize: 35, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 3),
             const Text(
               '주문서를 작성하고 결제를 완료해 주세요.',
@@ -338,81 +342,83 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           color: OudColors.bg,
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
           child: manager.isLoggedIn
-              ? ElevatedButton(
-                  onPressed: _submitting
-                      ? null
-                      : () async {
-                          if (_addressId == null || _paymentId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('배송지와 결제 수단을 선택해 주세요.')),
-                            );
-                            return;
-                          }
-                          if (!_agreed) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('결제 동의 체크가 필요합니다.')),
-                            );
-                            return;
-                          }
-
-                          setState(() => _submitting = true);
-                          try {
-                            final address = manager.addresses.firstWhere(
-                              (item) => item.id == _addressId,
-                              orElse: () => manager.addresses.first,
-                            );
-                            final payment = manager.paymentMethods.firstWhere(
-                              (item) => item.id == _paymentId,
-                              orElse: () => manager.paymentMethods.first,
-                            );
-
-                            if (widget.mode == CheckoutMode.cart) {
-                              manager.placeOrderFromCart(
-                                couponId: couponDiscount > 0 ? _couponId : null,
-                                mileageUsed: _mileageToUse,
-                                shippingFee: shippingFee,
-                                address: address,
-                                payment: payment,
-                                agreementAccepted: true,
+              ? OudTapScale(
+                  child: ElevatedButton(
+                    onPressed: _submitting
+                        ? null
+                        : () async {
+                            if (_addressId == null || _paymentId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('배송지와 결제 수단을 선택해 주세요.')),
                               );
-                            } else {
-                              manager.placeSingleOrder(
-                                widget.product!,
-                                option: widget.selectedOption,
-                                quantity: widget.quantity,
-                                couponId: couponDiscount > 0 ? _couponId : null,
-                                mileageUsed: _mileageToUse,
-                                shippingFee: shippingFee,
-                                address: address,
-                                payment: payment,
-                                agreementAccepted: true,
+                              return;
+                            }
+                            if (!_agreed) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('결제 동의 체크가 필요합니다.')),
                               );
-                              manager.removeFromCart(
-                                widget.product!,
-                                option: widget.selectedOption,
-                              );
+                              return;
                             }
 
-                            if (!mounted) return;
-                            await Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OrderCompleteScreen(
-                                  finalAmount: total,
-                                  itemCount: items.fold<int>(
-                                    0,
-                                    (sum, item) => sum + item.quantity,
+                            setState(() => _submitting = true);
+                            try {
+                              final address = manager.addresses.firstWhere(
+                                (item) => item.id == _addressId,
+                                orElse: () => manager.addresses.first,
+                              );
+                              final payment = manager.paymentMethods.firstWhere(
+                                (item) => item.id == _paymentId,
+                                orElse: () => manager.paymentMethods.first,
+                              );
+
+                              if (widget.mode == CheckoutMode.cart) {
+                                manager.placeOrderFromCart(
+                                  couponId: couponDiscount > 0 ? _couponId : null,
+                                  mileageUsed: _mileageToUse,
+                                  shippingFee: shippingFee,
+                                  address: address,
+                                  payment: payment,
+                                  agreementAccepted: true,
+                                );
+                              } else {
+                                manager.placeSingleOrder(
+                                  widget.product!,
+                                  option: widget.selectedOption,
+                                  quantity: widget.quantity,
+                                  couponId: couponDiscount > 0 ? _couponId : null,
+                                  mileageUsed: _mileageToUse,
+                                  shippingFee: shippingFee,
+                                  address: address,
+                                  payment: payment,
+                                  agreementAccepted: true,
+                                );
+                                manager.removeFromCart(
+                                  widget.product!,
+                                  option: widget.selectedOption,
+                                );
+                              }
+
+                              if (!mounted) return;
+                              await Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => OrderCompleteScreen(
+                                    finalAmount: total,
+                                    itemCount: items.fold<int>(
+                                      0,
+                                      (sum, item) => sum + item.quantity,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          } finally {
-                            if (mounted) {
-                              setState(() => _submitting = false);
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(() => _submitting = false);
+                              }
                             }
-                          }
-                        },
-                  child: Text(_submitting ? '처리 중...' : '결제하기'),
+                          },
+                    child: Text(_submitting ? '처리 중...' : '결제하기'),
+                  ),
                 )
               : OutlinedButton(
                   onPressed: () async {

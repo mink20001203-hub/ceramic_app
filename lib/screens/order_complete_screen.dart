@@ -67,9 +67,12 @@ class OrderCompleteScreen extends StatelessWidget {
             const Spacer(),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-                child: const Text('홈으로 이동'),
+              child: OudTapScale(
+                child: ElevatedButton(
+                  onPressed: () =>
+                      Navigator.of(context).popUntil((route) => route.isFirst),
+                  child: const Text('홈으로 이동'),
+                ),
               ),
             ),
           ],

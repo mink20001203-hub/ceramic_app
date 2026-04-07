@@ -388,3 +388,105 @@ class OudEmptyState extends StatelessWidget {
     );
   }
 }
+
+class OudLoadingState extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const OudLoadingState({
+    super.key,
+    this.title = '불러오는 중입니다',
+    this.subtitle = '잠시만 기다려 주세요.',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(OudSpace.lg),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: OudColors.text,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(color: OudColors.mutedText),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class OudFadeSwitcher extends StatelessWidget {
+  final Widget child;
+  final Duration duration;
+
+  const OudFadeSwitcher({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 220),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: duration,
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+      child: child,
+    );
+  }
+}
+
+class OudTapScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+
+  const OudTapScale({
+    super.key,
+    required this.child,
+    this.onTap,
+  });
+
+  @override
+  State<OudTapScale> createState() => _OudTapScaleState();
+}
+
+class _OudTapScaleState extends State<OudTapScale> {
+  var _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      behavior: HitTestBehavior.translucent,
+      child: AnimatedScale(
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        scale: _pressed ? 0.985 : 1,
+        child: widget.child,
+      ),
+    );
+  }
+}

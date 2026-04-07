@@ -19,16 +19,19 @@ class UserOrderListScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('주문 및 배송 조회')),
-      body: orders.isEmpty
-          ? const OudEmptyState(
-              title: '주문 내역이 없습니다',
-              subtitle: '상품을 주문하면 이곳에서 상태를 확인할 수 있습니다.',
-              icon: Icons.receipt_long_outlined,
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-              itemCount: orders.length,
-              itemBuilder: (_, index) {
+      body: OudFadeSwitcher(
+        child: orders.isEmpty
+            ? const OudEmptyState(
+                key: ValueKey('order-empty'),
+                title: '주문 내역이 없습니다',
+                subtitle: '상품을 주문하면 이곳에서 상태를 확인할 수 있습니다.',
+                icon: Icons.receipt_long_outlined,
+              )
+            : ListView.builder(
+                key: const ValueKey('order-list'),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                itemCount: orders.length,
+                itemBuilder: (_, index) {
                 final order = orders[index];
                 final dateLabel = DateFormat('yyyy.MM.dd HH:mm').format(order.date);
                 return Padding(
@@ -99,8 +102,9 @@ class UserOrderListScreen extends StatelessWidget {
                     ),
                   ),
                 );
-              },
-            ),
+                },
+              ),
+      ),
     );
   }
 

@@ -61,40 +61,44 @@ class _HomeScreenState extends State<HomeScreen>
             child: OudSectionTitle(title: '작품 목록'),
           ),
         ),
-        if (manager.productsLoading)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-          )
-        else if (products.isEmpty)
-          const SliverToBoxAdapter(
-            child: SizedBox(
-              height: 240,
-              child: OudEmptyState(
-                title: '등록된 상품이 없습니다',
-                subtitle: '잠시 후 다시 확인해 주세요.',
-                icon: Icons.inventory_2_outlined,
-              ),
-            ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            sliver: SliverGrid(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) => ProductCard(product: products[index]),
-                childCount: products.length,
-              ),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.72,
-              ),
-            ),
+        SliverToBoxAdapter(
+          child: OudFadeSwitcher(
+            child: manager.productsLoading
+                ? const SizedBox(
+                    key: ValueKey('home-loading'),
+                    height: 240,
+                    child: OudLoadingState(
+                      title: '작품을 불러오는 중입니다',
+                      subtitle: '최신 상품 데이터를 가져오고 있어요.',
+                    ),
+                  )
+                : products.isEmpty
+                    ? const SizedBox(
+                        key: ValueKey('home-empty'),
+                        height: 240,
+                        child: OudEmptyState(
+                          title: '등록된 상품이 없습니다',
+                          subtitle: '잠시 후 다시 확인해 주세요.',
+                          icon: Icons.inventory_2_outlined,
+                        ),
+                      )
+                    : GridView.builder(
+                        key: const ValueKey('home-grid'),
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        itemCount: products.length,
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.72,
+                        ),
+                        itemBuilder: (_, index) =>
+                            ProductCard(product: products[index]),
+                      ),
           ),
+        ),
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
