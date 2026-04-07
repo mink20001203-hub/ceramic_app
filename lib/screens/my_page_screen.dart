@@ -38,12 +38,12 @@ class MyPageScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                '로그인이 필요합니다.',
+                '로그인이 필요합니다',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
               const Text(
-                '주문 내역, 쿠폰, 리뷰 관리 기능을 사용할 수 있습니다.',
+                '주문 내역, 쿠폰, 리뷰 관리 기능을 사용하실 수 있습니다.',
                 style: TextStyle(color: OudColors.mutedText),
                 textAlign: TextAlign.center,
               ),
@@ -63,30 +63,30 @@ class MyPageScreen extends StatelessWidget {
   }
 
   Widget _loggedIn(BuildContext context, UserDataManager manager) {
-    final paymentDone = manager.orders.where((o) => o.status == '결제완료').length;
-    final preparing = manager.orders.where((o) => o.status == '배송준비').length;
-    final shipping = manager.orders.where((o) => o.status == '배송중').length;
-    final delivered = manager.orders.where((o) => o.status == '배송완료').length;
-    final cancelRequested = manager.orders.where((o) => o.status == '취소요청').length;
-    final canceled = manager.orders.where((o) => o.status == '취소완료').length;
+    final paymentDone = manager.orders.where((order) => order.status == '결제완료').length;
+    final preparing = manager.orders.where((order) => order.status == '배송준비').length;
+    final shipping = manager.orders.where((order) => order.status == '배송중').length;
+    final delivered = manager.orders.where((order) => order.status == '배송완료').length;
+    final cancelRequested = manager.orders.where((order) => order.status == '취소요청').length;
+    final canceled = manager.orders.where((order) => order.status == '취소완료').length;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
       children: [
         Column(
           children: [
             const CircleAvatar(
               radius: 44,
-              backgroundColor: OudColors.primarySoft,
+              backgroundColor: Color(0xFFF2D8CB),
               child: Icon(Icons.person, size: 40, color: OudColors.primary),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              '${manager.userName} 님',
-              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
+              '${manager.userName} 작가님',
+              style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900),
             ),
             const Text(
-              '지속 가능한 세라믹을 탐색해 보세요.',
+              '지속 가능한 세라믹을 탐구합니다.',
               style: TextStyle(color: OudColors.mutedText),
             ),
           ],
@@ -102,14 +102,14 @@ class MyPageScreen extends StatelessWidget {
                     const Text(
                       'POINT',
                       style: TextStyle(
-                        color: OudColors.mutedText,
+                        color: Color(0xFFB56C59),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${manager.mileage}',
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -124,14 +124,14 @@ class MyPageScreen extends StatelessWidget {
                     const Text(
                       'COUPON',
                       style: TextStyle(
-                        color: OudColors.mutedText,
+                        color: Color(0xFF6D8A4B),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${manager.availableCouponCount}',
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -139,9 +139,19 @@ class MyPageScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
+        const Text(
+          '나의 활동',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: OudColors.mutedText,
+          ),
+        ),
+        const SizedBox(height: 8),
         _menuTile(
           icon: Icons.confirmation_number_outlined,
+          iconBg: const Color(0xFFE8F0D9),
           title: '쿠폰함',
           onTap: () => Navigator.push(
             context,
@@ -149,12 +159,14 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
         _menuTile(
-          icon: Icons.star_border_rounded,
+          icon: Icons.payments_outlined,
+          iconBg: const Color(0xFFECE1F7),
           title: '마일리지 내역',
           onTap: () {},
         ),
         _menuTile(
           icon: Icons.rate_review_outlined,
+          iconBg: const Color(0xFFF6DDDA),
           title: '내가 쓴 리뷰',
           onTap: () => Navigator.push(
             context,
@@ -162,8 +174,9 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
         _menuTile(
-          icon: Icons.favorite_border_rounded,
-          title: '찜한 상품',
+          icon: Icons.local_shipping_outlined,
+          iconBg: const Color(0xFFE7E7E7),
+          title: '주문 및 배송 조회',
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const WishlistScreen()),
@@ -172,7 +185,8 @@ class MyPageScreen extends StatelessWidget {
         if (manager.isSeller)
           _menuTile(
             icon: Icons.storefront_outlined,
-            title: '판매자 데모 관리',
+            iconBg: const Color(0xFFFFE9D8),
+            title: '판매자 주문 관리',
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const SellerDemoScreen()),
@@ -181,6 +195,7 @@ class MyPageScreen extends StatelessWidget {
         if (manager.isAdmin)
           _menuTile(
             icon: Icons.admin_panel_settings_outlined,
+            iconBg: const Color(0xFFE1F0FF),
             title: '판매자 권한 관리',
             onTap: () => Navigator.push(
               context,
@@ -189,20 +204,34 @@ class MyPageScreen extends StatelessWidget {
               ),
             ),
           ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
         const Text(
-          '주문 및 배송',
+          '설정 및 지원',
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            color: OudColors.text,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: OudColors.mutedText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _simpleTextTile('고객센터'),
+        _simpleTextTile('약관 및 정책'),
+        const SizedBox(height: 6),
+        TextButton(
+          onPressed: () => _confirmLogout(context, manager),
+          child: const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '로그아웃',
+              style: TextStyle(color: Color(0xFFBD6E61)),
+            ),
           ),
         ),
         const SizedBox(height: 8),
         OudSectionCard(
           child: Wrap(
             spacing: 16,
-            runSpacing: 12,
+            runSpacing: 10,
             children: [
               _status('결제완료', paymentDone),
               _status('배송준비', preparing),
@@ -213,20 +242,13 @@ class MyPageScreen extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 18),
-        TextButton(
-          onPressed: () => _confirmLogout(context, manager),
-          child: const Text(
-            '로그아웃',
-            style: TextStyle(color: OudColors.primary),
-          ),
-        ),
       ],
     );
   }
 
   Widget _menuTile({
     required IconData icon,
+    required Color iconBg,
     required String title,
     required VoidCallback onTap,
   }) {
@@ -248,8 +270,8 @@ class MyPageScreen extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: OudColors.surface,
-                  child: Icon(icon, size: 16, color: OudColors.primary),
+                  backgroundColor: iconBg,
+                  child: Icon(icon, size: 16, color: OudColors.text),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -266,6 +288,26 @@ class MyPageScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _simpleTextTile(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Text(
+            text,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const Spacer(),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: OudColors.mutedText,
+            size: 20,
+          ),
+        ],
       ),
     );
   }

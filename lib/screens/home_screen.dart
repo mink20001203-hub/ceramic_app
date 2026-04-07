@@ -35,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen>
     final manager = context.watch<UserDataManager>();
     final products = manager.products;
     final featured = products.take(6).toList();
-    final recent = products.reversed.take(4).toList();
+    final recent = products.reversed.take(3).toList();
 
     return CustomScrollView(
       slivers: [
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen>
         SliverToBoxAdapter(child: _tabStrip()),
         SliverToBoxAdapter(
           child: SizedBox(
-            height: 236,
+            height: 212,
             child: TabBarView(
               controller: _tabController,
               children: [
@@ -56,11 +56,8 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-            child: Text(
-              '작품 목록',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
+            child: Text('작품 목록', style: Theme.of(context).textTheme.titleLarge),
           ),
         ),
         if (manager.productsLoading)
@@ -75,8 +72,8 @@ class _HomeScreenState extends State<HomeScreen>
             child: SizedBox(
               height: 240,
               child: OudEmptyState(
-                title: '등록된 작품이 없습니다',
-                subtitle: '잠시 후 다시 확인해 주세요.',
+                title: '등록된 상품이 없습니다',
+                subtitle: '잠시 후 다시 확인해 주세요',
                 icon: Icons.inventory_2_outlined,
               ),
             ),
@@ -93,17 +90,14 @@ class _HomeScreenState extends State<HomeScreen>
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 0.68,
+                childAspectRatio: 0.69,
               ),
             ),
           ),
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text(
-              '최근 포스트',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            child: Text('최근 포스트', style: Theme.of(context).textTheme.titleLarge),
           ),
         ),
         SliverList(
@@ -130,15 +124,15 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 10),
           const Text(
             'OUD (오우드)',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 11),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _statItem('FOLLOWERS', '1.2K'),
-              _statItem('REVIEW', '${manager.reviewCount}'),
-              _statItem('PIECES', '${manager.products.length}'),
+              _statItem('리뷰', '${manager.reviewCount}'),
+              _statItem('작품', '${manager.products.length}'),
             ],
           ),
           const SizedBox(height: 12),
@@ -191,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _tabStrip() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 18, 16, 8),
+      margin: const EdgeInsets.fromLTRB(16, 18, 16, 10),
       decoration: BoxDecoration(
         color: OudColors.surface,
         borderRadius: OudRadii.pill,
@@ -217,11 +211,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _aboutPane() {
     return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: OudSectionCard(
         child: Text(
-          '따뜻한 오프화이트 톤과 낮은 채도의 유약 질감을 중심으로, '
-          '집 안에서 오래 쓰일 도자기 작품을 만듭니다.',
+          '대지를 닮은 컬러와 절제된 형태를 중심으로, 일상 테이블 위에 오래 머무는 세라믹을 만듭니다.',
           style: TextStyle(height: 1.6, color: OudColors.text),
         ),
       ),
@@ -229,13 +222,27 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _worksPane(List<Product> products) {
+    if (products.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+        child: OudSectionCard(
+          child: Center(
+            child: Text(
+              '표시할 스토리가 없습니다.',
+              style: TextStyle(color: OudColors.mutedText),
+            ),
+          ),
+        ),
+      );
+    }
+
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       scrollDirection: Axis.horizontal,
       itemCount: products.length,
       separatorBuilder: (_, __) => const SizedBox(width: 10),
       itemBuilder: (_, index) {
-        final p = products[index];
+        final product = products[index];
         return SizedBox(
           width: 170,
           child: OudSectionCard(
@@ -246,11 +253,11 @@ class _HomeScreenState extends State<HomeScreen>
                 ClipRRect(
                   borderRadius: OudRadii.md,
                   child: AspectRatio(
-                    aspectRatio: 1.15,
-                    child: p.image == null
+                    aspectRatio: 1.1,
+                    child: product.image == null
                         ? Container(color: OudColors.surface)
                         : Image.asset(
-                            p.image!,
+                            product.image!,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) =>
                                 Container(color: OudColors.surface),
@@ -259,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  p.title,
+                  product.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontWeight: FontWeight.w700),
@@ -275,18 +282,18 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _reviewPane(UserDataManager manager) {
     final count = manager.reviewCount;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: OudSectionCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '누적 리뷰 $count개',
+              '누적 리뷰 ${count}건',
               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
             ),
             const SizedBox(height: 8),
             const Text(
-              '따뜻한 톤, 안정적인 형태, 선물용 패키징에 대한 긍정적인 평가가 많습니다.',
+              '수공예 질감과 안정적인 형태, 패키징 완성도에 대한 긍정적인 평가가 많습니다.',
               style: TextStyle(color: OudColors.mutedText, height: 1.5),
             ),
           ],

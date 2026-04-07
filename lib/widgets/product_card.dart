@@ -18,8 +18,10 @@ class ProductCard extends StatelessWidget {
     final format = NumberFormat('#,###', 'ko_KR');
     final isSoldOut = product.stock == 0;
     final sale = product.isSale && product.salePrice != null;
+    final price = sale ? product.salePrice! : product.price;
 
-    return GestureDetector(
+    return InkWell(
+      borderRadius: OudRadii.lg,
       onTap: isSoldOut
           ? null
           : () {
@@ -57,8 +59,8 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 8,
-                    left: 8,
+                    top: 10,
+                    left: 10,
                     child: Row(
                       children: [
                         if (isSoldOut)
@@ -85,20 +87,20 @@ class ProductCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 8,
-                    right: 8,
+                    top: 10,
+                    right: 10,
                     child: Consumer<UserDataManager>(
                       builder: (_, manager, __) {
-                        final fav = manager.isFavorite(product);
+                        final favorite = manager.isFavorite(product);
                         return GestureDetector(
                           onTap: () => manager.toggleWishlist(product),
                           child: CircleAvatar(
                             radius: 16,
-                            backgroundColor: Colors.white70,
+                            backgroundColor: Colors.white.withValues(alpha: 0.9),
                             child: Icon(
-                              fav ? Icons.favorite : Icons.favorite_border,
+                              favorite ? Icons.favorite : Icons.favorite_border,
                               size: 16,
-                              color: fav ? OudColors.primary : OudColors.text,
+                              color: favorite ? OudColors.primary : OudColors.text,
                             ),
                           ),
                         );
@@ -109,7 +111,7 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -122,7 +124,7 @@ class ProductCard extends StatelessWidget {
                       color: OudColors.text,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     product.subTitle,
                     maxLines: 1,
@@ -132,12 +134,13 @@ class ProductCard extends StatelessWidget {
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 7),
                   Text(
-                    '₩${format.format(sale ? product.salePrice! : product.price)}',
+                    '₩${format.format(price)}',
                     style: const TextStyle(
                       color: OudColors.primary,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
                     ),
                   ),
                 ],

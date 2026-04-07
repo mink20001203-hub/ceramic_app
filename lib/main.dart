@@ -106,8 +106,17 @@ class MainScreen extends StatelessWidget {
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           currentIndex: currentTabIndex,
+          selectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 11,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
+          ),
           selectedItemColor: OudColors.primary,
           unselectedItemColor: OudColors.mutedText,
+          iconSize: 22,
           onTap: (index) => manager.setTabIndex(index),
           items: [
             const BottomNavigationBarItem(

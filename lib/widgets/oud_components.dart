@@ -42,7 +42,7 @@ class OudTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(color: bgColor, borderRadius: OudRadii.pill),
       child: Text(
         label,
@@ -79,7 +79,7 @@ class OudPriceText extends StatelessWidget {
           '₩${format.format(price)}',
           style: TextStyle(
             fontSize: 24,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w900,
             color: color,
           ),
         ),
@@ -114,20 +114,19 @@ class OudQuantityStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: OudColors.surface,
+        color: const Color(0xFFF2EFEA),
         borderRadius: OudRadii.pill,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          IconButton(
-            onPressed: onMinus,
-            icon: const Icon(Icons.remove_circle_outline),
-            color: OudColors.mutedText,
+          _StepperCircleIcon(
+            icon: Icons.remove,
+            onTap: onMinus,
           ),
           SizedBox(
-            width: 24,
+            width: 28,
             child: Text(
               '$value',
               textAlign: TextAlign.center,
@@ -137,12 +136,42 @@ class OudQuantityStepper extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            onPressed: onPlus,
-            icon: const Icon(Icons.add_circle_outline),
-            color: OudColors.mutedText,
+          _StepperCircleIcon(
+            icon: Icons.add,
+            onTap: onPlus,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StepperCircleIcon extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _StepperCircleIcon({
+    required this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 24,
+        height: 24,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          icon,
+          size: 14,
+          color: onTap == null ? OudColors.border : OudColors.mutedText,
+        ),
       ),
     );
   }

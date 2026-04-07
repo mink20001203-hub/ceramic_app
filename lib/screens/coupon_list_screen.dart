@@ -14,19 +14,23 @@ class CouponListScreen extends StatelessWidget {
     final manager = context.watch<UserDataManager>();
     final coupons = manager.coupons;
     final pendingReviews = manager.purchasedProducts
-        .where((p) => !manager.hasReview(p.id))
+        .where((product) => !manager.hasReview(product.id))
         .take(3)
         .toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('마이 베네핏'),
+        title: const Text('OUD'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           const Text(
-            '보유 쿠폰과 작성 가능한 리뷰를 확인해보세요.',
+            '마이베네핏',
+            style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
+          ),
+          const Text(
+            '나의 쿠폰과 작성 가능한 리뷰를 확인하세요.',
             style: TextStyle(color: OudColors.mutedText),
           ),
           const SizedBox(height: 12),
@@ -37,7 +41,7 @@ class CouponListScreen extends StatelessWidget {
                   child: _metric(
                     'AVAILABLE COUPONS',
                     '${manager.availableCouponCount} 장',
-                    OudColors.primary,
+                    const Color(0xFFC56D5A),
                   ),
                 ),
               ),
@@ -47,41 +51,54 @@ class CouponListScreen extends StatelessWidget {
                   child: _metric(
                     'PENDING REVIEWS',
                     '${pendingReviews.length} 건',
-                    const Color(0xFF4D6A3A),
+                    const Color(0xFF5A7A3E),
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            '보유 쿠폰',
-            style: Theme.of(context).textTheme.titleLarge,
+          Row(
+            children: [
+              Text('보유 쿠폰', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(width: 6),
+              Text(
+                '${coupons.length}',
+                style: const TextStyle(
+                  color: OudColors.primary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {},
+                child: const Text(
+                  '쿠폰 등록하기',
+                  style: TextStyle(color: OudColors.primary),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
           if (coupons.isEmpty)
             const SizedBox(
               height: 160,
               child: OudEmptyState(
                 title: '쿠폰이 없습니다',
-                subtitle: '이벤트나 첫 구매 혜택을 확인해 보세요.',
+                subtitle: '이벤트나 첫 구매 혜택을 확인해 보세요',
                 icon: Icons.confirmation_number_outlined,
               ),
             )
           else
             ...coupons.map((coupon) => _couponTile(coupon, context)).toList(),
           const SizedBox(height: 12),
-          Text(
-            '작성 가능한 리뷰',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('작성 가능한 리뷰', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           if (pendingReviews.isEmpty)
             const SizedBox(
               height: 120,
               child: OudEmptyState(
                 title: '작성 가능한 리뷰가 없습니다',
-                subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요.',
+                subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요',
                 icon: Icons.rate_review_outlined,
               ),
             )
@@ -109,13 +126,30 @@ class CouponListScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          product.title,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'HANDMADE',
+                              style: TextStyle(
+                                color: OudColors.mutedText,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                            Text(
+                              product.title,
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const Text(
+                              '리뷰 작성 시 500P',
+                              style: TextStyle(color: OudColors.mutedText),
+                            ),
+                          ],
                         ),
                       ),
                       const OudTag(
-                        label: '리뷰 작성',
+                        label: 'Write Review',
                         bgColor: OudColors.sage,
                         textColor: Color(0xFF32502E),
                       ),
@@ -157,9 +191,8 @@ class CouponListScreen extends StatelessWidget {
   Widget _couponTile(Coupon coupon, BuildContext context) {
     final format = NumberFormat('#,###', 'ko_KR');
     final used = coupon.isUsed;
-    final amountText = coupon.discountAmount > 0
-        ? '₩${format.format(coupon.discountAmount)}'
-        : '무료배송';
+    final amountText =
+        coupon.discountAmount > 0 ? '₩${format.format(coupon.discountAmount)}' : '무료배송';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -167,10 +200,10 @@ class CouponListScreen extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 76,
-              height: 76,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
-                color: used ? OudColors.surface : OudColors.primarySoft,
+                color: used ? const Color(0xFFE4E4E4) : OudColors.primarySoft,
                 borderRadius: OudRadii.md,
               ),
               alignment: Alignment.center,

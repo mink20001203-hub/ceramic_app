@@ -20,32 +20,49 @@ class CartScreen extends StatelessWidget {
         if (items.isEmpty) {
           return const OudEmptyState(
             title: '장바구니가 비어 있습니다',
-            subtitle: '마음에 드는 작품을 담아보세요.',
+            subtitle: '마음에 드는 상품을 담아보세요',
             icon: Icons.shopping_bag_outlined,
           );
         }
 
+        final subtotal = manager.totalAmount;
+        const shippingFee = 3000;
+        const memberDiscount = 3000;
+        final finalAmount = subtotal + shippingFee - memberDiscount;
+
         return Column(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: Row(
                 children: [
+                  const Icon(
+                    Icons.radio_button_checked,
+                    size: 18,
+                    color: OudColors.primary,
+                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    '장바구니 ${items.length}건',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    '전체 선택 (${items.length})',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: OudColors.text,
+                    ),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: manager.clearCart,
-                    child: const Text('전체 삭제'),
+                    child: const Text(
+                      '선택 삭제',
+                      style: TextStyle(color: OudColors.primary),
+                    ),
                   ),
                 ],
               ),
             ),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                 itemCount: items.length,
                 itemBuilder: (_, index) {
                   final item = items[index];
@@ -55,79 +72,92 @@ class CartScreen extends StatelessWidget {
                   final total = unit * item.quantity;
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: OudSectionCard(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: OudRadii.sm,
-                            child: SizedBox(
-                              width: 92,
-                              height: 92,
-                              child: item.product.image == null
-                                  ? Container(color: OudColors.surface)
-                                  : Image.asset(
-                                      item.product.image!,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          Container(color: OudColors.surface),
-                                    ),
-                            ),
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 8),
+                          child: Icon(
+                            Icons.radio_button_checked,
+                            size: 18,
+                            color: OudColors.primary,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.product.title,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
+                        ),
+                        const SizedBox(width: 8),
+                        ClipRRect(
+                          borderRadius: OudRadii.sm,
+                          child: SizedBox(
+                            width: 90,
+                            height: 90,
+                            child: item.product.image == null
+                                ? Container(color: OudColors.surface)
+                                : Image.asset(
+                                    item.product.image!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        Container(color: OudColors.surface),
                                   ),
-                                ),
-                                if (item.option != null)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 2),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
                                     child: Text(
-                                      item.option!,
+                                      item.product.title,
                                       style: const TextStyle(
-                                        color: OudColors.mutedText,
+                                        fontSize: 25,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.1,
                                       ),
                                     ),
                                   ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '₩${format.format(total)}',
-                                  style: const TextStyle(
-                                    color: OudColors.primary,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 22,
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      color: OudColors.mutedText,
+                                    ),
+                                    onPressed: () => manager.removeSingleItem(
+                                      item.product.id,
+                                      item.option,
+                                    ),
                                   ),
+                                ],
+                              ),
+                              Text(
+                                item.product.subTitle,
+                                style: const TextStyle(color: OudColors.mutedText),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '₩${format.format(total)}',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  color: OudColors.primary,
+                                  fontWeight: FontWeight.w900,
                                 ),
-                                const SizedBox(height: 4),
-                                OudQuantityStepper(
-                                  value: item.quantity,
-                                  onMinus: () => manager.decrementQuantity(
-                                    item.product.id,
-                                    item.option,
-                                  ),
-                                  onPlus: () => manager.incrementQuantity(
-                                    item.product.id,
-                                    item.option,
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              OudQuantityStepper(
+                                value: item.quantity,
+                                onMinus: () => manager.decrementQuantity(
+                                  item.product.id,
+                                  item.option,
                                 ),
-                              ],
-                            ),
+                                onPlus: () => manager.incrementQuantity(
+                                  item.product.id,
+                                  item.option,
+                                ),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            onPressed: () =>
-                                manager.removeSingleItem(item.product.id, item.option),
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -135,30 +165,40 @@ class CartScreen extends StatelessWidget {
             ),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
               decoration: const BoxDecoration(
                 color: OudColors.bg,
                 border: Border(top: BorderSide(color: OudColors.border)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      '총 결제 금액  ₩${format.format(manager.totalAmount)}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  const Text(
+                    '결제 요약',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 26,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 10),
+                  _summaryRow('총 상품 금액', '₩${format.format(subtotal)}'),
+                  _summaryRow('배송비', '₩${format.format(shippingFee)}'),
+                  _summaryRow('NEWMEMBERDISCOUNT', '-₩${format.format(memberDiscount)}'),
+                  const SizedBox(height: 10),
+                  _summaryRow(
+                    '최종 결제 금액',
+                    '₩${format.format(finalAmount)}',
+                    emphasize: true,
+                  ),
+                  const SizedBox(height: 14),
                   SizedBox(
-                    width: 160,
+                    width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        final soldOut = items.any((i) => i.product.stock == 0);
-                        final overStock =
-                            items.any((i) => i.quantity > i.product.stock);
+                        final soldOut = items.any((item) => item.product.stock == 0);
+                        final overStock = items.any(
+                          (item) => item.quantity > item.product.stock,
+                        );
                         if (soldOut || overStock) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('재고를 먼저 확인해 주세요.')),
@@ -172,7 +212,10 @@ class CartScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      child: const Text('결제 진행'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                      ),
+                      child: Text('결제하기    ₩${format.format(finalAmount)}  →'),
                     ),
                   ),
                 ],
@@ -181,6 +224,33 @@ class CartScreen extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {bool emphasize = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: emphasize ? OudColors.text : OudColors.mutedText,
+              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
+              fontSize: emphasize ? 20 : 14,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TextStyle(
+              color: emphasize ? OudColors.primary : OudColors.text,
+              fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
+              fontSize: emphasize ? 34 : 18,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

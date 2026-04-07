@@ -44,12 +44,12 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
         actions: [
           Consumer<UserDataManager>(
-            builder: (_, m, __) {
-              final fav = m.isFavorite(product);
+            builder: (_, data, __) {
+              final favorite = data.isFavorite(product);
               return IconButton(
-                icon: Icon(fav ? Icons.favorite : Icons.favorite_border),
-                color: fav ? OudColors.primary : OudColors.text,
-                onPressed: () => m.toggleWishlist(product),
+                icon: Icon(favorite ? Icons.favorite : Icons.favorite_border),
+                color: favorite ? OudColors.primary : OudColors.text,
+                onPressed: () => data.toggleWishlist(product),
               );
             },
           ),
@@ -57,14 +57,14 @@ class _DetailScreenState extends State<DetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 110),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 118),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
               borderRadius: OudRadii.xl,
               child: AspectRatio(
-                aspectRatio: 1.08,
+                aspectRatio: 1.06,
                 child: product.image == null
                     ? Container(color: OudColors.surface)
                     : Image.asset(
@@ -76,22 +76,41 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              product.subTitle,
-              style: const TextStyle(
-                color: OudColors.mutedText,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              product.title,
-              style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            OudPriceText(
-              price: price,
-              original: sale ? product.price : null,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.subTitle,
+                        style: const TextStyle(
+                          color: Color(0xFF6D8A4B),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        product.title,
+                        style: const TextStyle(
+                          fontSize: 37,
+                          fontWeight: FontWeight.w900,
+                          height: 1.05,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: OudPriceText(
+                    price: price,
+                    original: sale ? product.price : null,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             Text(
@@ -101,9 +120,9 @@ class _DetailScreenState extends State<DetailScreen> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             const Text(
-              'COLOR / STYLE',
+              '상품 설명',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: OudColors.mutedText,
@@ -111,10 +130,27 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            const Text(
+              '고령토의 따뜻한 질감을 살린 제작 방식으로, 식탁 위에 오래 남는 오브제를 제안합니다. '
+              '브러시 마감과 유약 흐름의 균형을 살려 하나씩 완성했습니다.',
+              style: TextStyle(height: 1.6),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'COLOR SELECTION',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: OudColors.mutedText,
+              ),
+            ),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: widget.product.options.map((option) {
+              children: (product.options.isEmpty
+                      ? const ['샌드 베이지', '스톤 그레이', '테라코타']
+                      : product.options)
+                  .map((option) {
                 final selected = _selectedOption == option;
                 return ChoiceChip(
                   selected: selected,
@@ -124,6 +160,23 @@ class _DetailScreenState extends State<DetailScreen> {
                       : (_) => setState(() => _selectedOption = option),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'SIZE',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: OudColors.mutedText,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: const [
+                Chip(label: Text('Small (15cm)')),
+                Chip(label: Text('Medium (22cm)')),
+                Chip(label: Text('Large (30cm)')),
+              ],
             ),
             const SizedBox(height: 20),
             const Text(
@@ -143,12 +196,29 @@ class _DetailScreenState extends State<DetailScreen> {
                   ? null
                   : () => setState(() => _quantity += 1),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
             const OudSectionCard(
-              child: Text(
-                '자연스러운 유약의 흐름과 둥근 실루엣을 중심으로 만든 수공예 작품입니다. '
-                '테이블 위에서 조용히 존재감을 만드는 오브제로 제안합니다.',
-                style: TextStyle(height: 1.6),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: OudColors.primarySoft,
+                    child: Icon(Icons.person, size: 18, color: OudColors.primary),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '김지수 작가 · 14건 게시물',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  OudTag(
+                    label: 'Follow',
+                    bgColor: OudColors.sage,
+                    textColor: Color(0xFF32502E),
+                  ),
+                ],
               ),
             ),
           ],
@@ -162,7 +232,11 @@ class _DetailScreenState extends State<DetailScreen> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA6D388),
+                    foregroundColor: const Color(0xFF24461B),
+                  ),
                   onPressed: soldOut
                       ? null
                       : () {
@@ -181,6 +255,10 @@ class _DetailScreenState extends State<DetailScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB34230),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: soldOut
                       ? null
                       : () {
@@ -201,7 +279,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             ),
                           );
                         },
-                  child: Text(soldOut ? '품절' : '바로 구매'),
+                  child: Text(soldOut ? '품절' : '바로 구매하기'),
                 ),
               ),
             ],
