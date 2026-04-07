@@ -126,7 +126,7 @@ class MileageHistoryScreen extends StatelessWidget {
               ),
             ),
             Text(
-              '${positive ? '+' : ''}$amountP',
+              '${positive ? '+' : ''}${amount}P',
               style: TextStyle(
                 color: positive ? const Color(0xFF4D6A3A) : const Color(0xFF9D4A3E),
                 fontWeight: FontWeight.w800,
