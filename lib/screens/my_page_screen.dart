@@ -7,9 +7,10 @@ import '../widgets/oud_components.dart';
 import 'admin_role_management_screen.dart';
 import 'coupon_list_screen.dart';
 import 'login_screen.dart';
+import 'mileage_history_screen.dart';
 import 'review_manage_screen.dart';
 import 'seller_demo_screen.dart';
-import 'wishlist_screen.dart';
+import 'user_order_list_screen.dart';
 
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
@@ -43,7 +44,7 @@ class MyPageScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                '주문 내역, 쿠폰, 리뷰 관리 기능을 사용하실 수 있습니다.',
+                '주문 내역, 쿠폰, 리뷰 관리 기능을 사용할 수 있습니다.',
                 style: TextStyle(color: OudColors.mutedText),
                 textAlign: TextAlign.center,
               ),
@@ -162,7 +163,10 @@ class MyPageScreen extends StatelessWidget {
           icon: Icons.payments_outlined,
           iconBg: const Color(0xFFECE1F7),
           title: '마일리지 내역',
-          onTap: () {},
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MileageHistoryScreen()),
+          ),
         ),
         OudMenuTile(
           icon: Icons.rate_review_outlined,
@@ -179,7 +183,7 @@ class MyPageScreen extends StatelessWidget {
           title: '주문 및 배송 조회',
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => const WishlistScreen()),
+            MaterialPageRoute(builder: (_) => const UserOrderListScreen()),
           ),
         ),
         if (manager.isSeller)

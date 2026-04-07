@@ -19,18 +19,13 @@ class CouponListScreen extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('OUD'),
-      ),
+      appBar: AppBar(title: const Text('OUD')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
+          const Text('마이베네핏', style: OudTypography.headingXl),
           const Text(
-            '마이베네핏',
-            style: OudTypography.headingXl,
-          ),
-          const Text(
-            '나의 쿠폰과 작성 가능한 리뷰를 확인하세요.',
+            '나의 쿠폰과 작성 가능한 리뷰를 확인해 보세요.',
             style: TextStyle(color: OudColors.mutedText),
           ),
           const SizedBox(height: 12),
@@ -40,7 +35,7 @@ class CouponListScreen extends StatelessWidget {
                 child: OudSectionCard(
                   child: _metric(
                     'AVAILABLE COUPONS',
-                    '${manager.availableCouponCount} 장',
+                    '${manager.availableCouponCount}장',
                     const Color(0xFFC56D5A),
                   ),
                 ),
@@ -50,7 +45,7 @@ class CouponListScreen extends StatelessWidget {
                 child: OudSectionCard(
                   child: _metric(
                     'PENDING REVIEWS',
-                    '${pendingReviews.length} 건',
+                    '${pendingReviews.length}건',
                     const Color(0xFF5A7A3E),
                   ),
                 ),
@@ -72,7 +67,7 @@ class CouponListScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () => _showCouponRegisterDialog(context),
                   child: const Text(
                     '쿠폰 등록하기',
                     style: TextStyle(color: OudColors.primary),
@@ -86,7 +81,7 @@ class CouponListScreen extends StatelessWidget {
               height: 160,
               child: OudEmptyState(
                 title: '쿠폰이 없습니다',
-                subtitle: '이벤트나 첫 구매 혜택을 확인해 보세요',
+                subtitle: '이벤트나 첫 구매 혜택을 확인해 보세요.',
                 icon: Icons.confirmation_number_outlined,
               ),
             )
@@ -100,7 +95,7 @@ class CouponListScreen extends StatelessWidget {
               height: 120,
               child: OudEmptyState(
                 title: '작성 가능한 리뷰가 없습니다',
-                subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요',
+                subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요.',
                 icon: Icons.rate_review_outlined,
               ),
             )
@@ -144,7 +139,7 @@ class CouponListScreen extends StatelessWidget {
                               style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                             const Text(
-                              '리뷰 작성 시 500P',
+                              '리뷰 작성 시 500P 적립',
                               style: TextStyle(color: OudColors.mutedText),
                             ),
                           ],
@@ -160,6 +155,39 @@ class CouponListScreen extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+
+  void _showCouponRegisterDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('쿠폰 등록'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: '쿠폰 코드를 입력하세요 (예: WELCOME10)',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('닫기'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final message =
+                  context.read<UserDataManager>().redeemCouponCode(controller.text);
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(message)),
+              );
+            },
+            child: const Text('등록'),
+          ),
         ],
       ),
     );

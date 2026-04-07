@@ -629,6 +629,45 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
+  String redeemCouponCode(String code) {
+    final normalized = code.trim().toUpperCase();
+    if (normalized.isEmpty) return '쿠폰 코드를 입력해 주세요.';
+
+    if (_coupons.any((coupon) => coupon.id.toUpperCase() == normalized)) {
+      return '이미 등록된 쿠폰입니다.';
+    }
+
+    if (normalized == 'WELCOME10') {
+      _coupons.add(
+        Coupon(
+          id: 'WELCOME10',
+          title: '웰컴 10,000원',
+          discountAmount: 10000,
+          minOrderAmount: 50000,
+        ),
+      );
+      _persist();
+      notifyListeners();
+      return '웰컴 쿠폰이 등록되었습니다.';
+    }
+
+    if (normalized == 'SHIPFREE') {
+      _coupons.add(
+        Coupon(
+          id: 'SHIPFREE',
+          title: '무료배송 쿠폰',
+          discountAmount: 3000,
+          minOrderAmount: 30000,
+        ),
+      );
+      _persist();
+      notifyListeners();
+      return '무료배송 쿠폰이 등록되었습니다.';
+    }
+
+    return '유효하지 않은 쿠폰 코드입니다.';
+  }
+
   void removeAddress(String id) {
     _addresses.removeWhere((a) => a.id == id);
     if (_addresses.isEmpty) {
