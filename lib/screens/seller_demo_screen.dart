@@ -99,7 +99,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         const Text(
-          '새 상품 등록과 기존 상품의 수정/삭제를 한 화면에서 처리합니다.',
+          '새 상품 등록과 기존 상품 수정/삭제를 이 화면에서 처리합니다.',
           style: TextStyle(color: OudColors.mutedText),
         ),
         const SizedBox(height: 12),
@@ -111,8 +111,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(labelText: '상품명'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? '필수 입력' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? '필수 입력' : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -123,8 +122,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 TextFormField(
                   controller: _categoryController,
                   decoration: const InputDecoration(labelText: '카테고리'),
-                  validator: (v) =>
-                      (v == null || v.trim().isEmpty) ? '필수 입력' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty) ? '필수 입력' : null,
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -239,7 +237,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                   ),
                 ),
                 Text(
-                  '${format.format(displayPrice)}원',
+                  '₩${format.format(displayPrice)}',
                   style: const TextStyle(color: OudColors.primary, fontWeight: FontWeight.w800),
                 ),
               ],
@@ -316,11 +314,10 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '총 ${order.items.length}개 상품 · ${format.format(order.totalAmount)}원',
+                  '총 ${order.items.length}개 상품 · ₩${format.format(order.totalAmount)}',
                   style: const TextStyle(color: OudColors.mutedText),
                 ),
-                if (order.trackingNumber != null &&
-                    order.trackingNumber!.trim().isNotEmpty)
+                if (order.trackingNumber != null && order.trackingNumber!.trim().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
@@ -417,7 +414,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
       _salePriceController.text = '0';
       setState(() => _isSale = false);
       messenger.showSnackBar(
-        const SnackBar(content: Text('상품이 등록되었습니다.')),
+        const SnackBar(content: Text('상품을 등록했습니다.')),
       );
     } catch (_) {
       if (!mounted) return;
@@ -444,106 +441,109 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
     );
 
     final result = await showDialog<bool>(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setStateDialog) {
-          return AlertDialog(
-            title: const Text('상품 수정'),
-            content: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextField(
-                    controller: titleController,
-                    decoration: const InputDecoration(labelText: '상품명'),
+          context: context,
+          builder: (_) => StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('상품 수정'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        decoration: const InputDecoration(labelText: '상품명'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: subtitleController,
+                        decoration: const InputDecoration(labelText: '부제목'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: categoryController,
+                        decoration: const InputDecoration(labelText: '카테고리'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: priceController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: '가격'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: stockController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: '재고'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: imageController,
+                        decoration: const InputDecoration(labelText: '이미지 경로'),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: optionsController,
+                        decoration: const InputDecoration(labelText: '옵션(쉼표 구분)'),
+                      ),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('할인 상품'),
+                        value: isSale,
+                        onChanged: (v) => setStateDialog(() => isSale = v),
+                      ),
+                      if (isSale)
+                        TextField(
+                          controller: salePriceController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(labelText: '할인가'),
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: subtitleController,
-                    decoration: const InputDecoration(labelText: '부제목'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('취소'),
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: categoryController,
-                    decoration: const InputDecoration(labelText: '카테고리'),
+                  ElevatedButton(
+                    onPressed: () async {
+                      final price = int.tryParse(priceController.text.trim());
+                      final stock = int.tryParse(stockController.text.trim());
+                      final salePrice =
+                          isSale ? int.tryParse(salePriceController.text.trim()) : null;
+                      if (price == null || stock == null) return;
+
+                      final options = optionsController.text
+                          .split(',')
+                          .map((e) => e.trim())
+                          .where((e) => e.isNotEmpty)
+                          .toList();
+
+                      await manager.updateProductBySeller(
+                        product,
+                        title: titleController.text.trim(),
+                        subTitle: subtitleController.text.trim(),
+                        price: price,
+                        category: categoryController.text.trim(),
+                        stock: stock,
+                        image:
+                            imageController.text.trim().isEmpty ? null : imageController.text.trim(),
+                        isSale: isSale,
+                        salePrice: salePrice,
+                        options: options,
+                      );
+                      if (!context.mounted) return;
+                      Navigator.pop(context, true);
+                    },
+                    child: const Text('저장'),
                   ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: '가격'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: stockController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: '재고'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: imageController,
-                    decoration: const InputDecoration(labelText: '이미지 경로'),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: optionsController,
-                    decoration: const InputDecoration(labelText: '옵션(쉼표 구분)'),
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('할인 상품'),
-                    value: isSale,
-                    onChanged: (v) => setStateDialog(() => isSale = v),
-                  ),
-                  if (isSale)
-                    TextField(
-                      controller: salePriceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: '할인가'),
-                    ),
                 ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('취소'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final price = int.tryParse(priceController.text.trim());
-                  final stock = int.tryParse(stockController.text.trim());
-                  final salePrice = isSale ? int.tryParse(salePriceController.text.trim()) : null;
-                  if (price == null || stock == null) return;
-
-                  final options = optionsController.text
-                      .split(',')
-                      .map((e) => e.trim())
-                      .where((e) => e.isNotEmpty)
-                      .toList();
-
-                  await manager.updateProductBySeller(
-                    product,
-                    title: titleController.text.trim(),
-                    subTitle: subtitleController.text.trim(),
-                    price: price,
-                    category: categoryController.text.trim(),
-                    stock: stock,
-                    image: imageController.text.trim().isEmpty ? null : imageController.text.trim(),
-                    isSale: isSale,
-                    salePrice: salePrice,
-                    options: options,
-                  );
-                  if (!context.mounted) return;
-                  Navigator.pop(context, true);
-                },
-                child: const Text('저장'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
+              );
+            },
+          ),
+        ) ??
+        false;
 
     titleController.dispose();
     subtitleController.dispose();
@@ -556,7 +556,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
 
     if (result == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('상품 정보가 수정되었습니다.')),
+        const SnackBar(content: Text('상품 정보를 수정했습니다.')),
       );
     }
   }

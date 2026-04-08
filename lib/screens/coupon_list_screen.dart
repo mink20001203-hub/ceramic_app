@@ -25,7 +25,7 @@ class CouponListScreen extends StatelessWidget {
         children: [
           const Text('마이베네핏', style: OudTypography.headingXl),
           const Text(
-            '나의 쿠폰과 작성 가능한 리뷰를 확인해 보세요.',
+            '내 쿠폰과 작성 가능한 리뷰를 확인해 보세요.',
             style: TextStyle(color: OudColors.mutedText),
           ),
           const SizedBox(height: 12),
@@ -89,8 +89,7 @@ class CouponListScreen extends StatelessWidget {
                   )
                 : Column(
                     key: const ValueKey('coupon-list'),
-                    children:
-                        coupons.map((coupon) => _couponTile(coupon, context)).toList(),
+                    children: coupons.map((coupon) => _couponTile(coupon, context)).toList(),
                   ),
           ),
           const SizedBox(height: 12),
@@ -103,7 +102,7 @@ class CouponListScreen extends StatelessWidget {
                     height: 120,
                     child: OudEmptyState(
                       title: '작성 가능한 리뷰가 없습니다',
-                      subtitle: '구매 후 리뷰를 작성하면 마일리지를 받을 수 있어요.',
+                      subtitle: '구매 후 리뷰를 작성하면 마일리지가 적립됩니다.',
                       icon: Icons.rate_review_outlined,
                     ),
                   )
@@ -144,11 +143,8 @@ class CouponListScreen extends StatelessWidget {
                                             fontSize: 11,
                                           ),
                                         ),
-                                        Text(
-                                          product.title,
-                                          style:
-                                              const TextStyle(fontWeight: FontWeight.w700),
-                                        ),
+                                        Text(product.title,
+                                            style: const TextStyle(fontWeight: FontWeight.w700)),
                                         const Text(
                                           '리뷰 작성 시 500P 적립',
                                           style: TextStyle(color: OudColors.mutedText),
@@ -183,7 +179,7 @@ class CouponListScreen extends StatelessWidget {
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            hintText: '쿠폰 코드를 입력하세요 (예: WELCOME10)',
+            hintText: '쿠폰 코드를 입력해 주세요 (예: WELCOME10)',
           ),
         ),
         actions: [
@@ -193,12 +189,9 @@ class CouponListScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              final message =
-                  context.read<UserDataManager>().redeemCouponCode(controller.text);
+              final message = context.read<UserDataManager>().redeemCouponCode(controller.text);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
             },
             child: const Text('등록'),
           ),
@@ -222,11 +215,7 @@ class CouponListScreen extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w900,
-            color: color,
-          ),
+          style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900, color: color),
         ),
       ],
     );
@@ -265,10 +254,7 @@ class CouponListScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    coupon.title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                  Text(coupon.title, style: const TextStyle(fontWeight: FontWeight.w700)),
                   Text(
                     '${format.format(coupon.minOrderAmount)}원 이상 주문 시 사용 가능',
                     style: const TextStyle(color: OudColors.mutedText),

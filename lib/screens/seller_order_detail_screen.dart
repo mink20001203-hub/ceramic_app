@@ -78,10 +78,8 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                       initialValue: order.status,
                       decoration: const InputDecoration(labelText: '주문 상태'),
                       items: _statusOptions
-                          .map((status) => DropdownMenuItem(
-                                value: status,
-                                child: Text(status),
-                              ))
+                          .map((status) =>
+                              DropdownMenuItem(value: status, child: Text(status)))
                           .toList(),
                       onChanged: (value) {
                         if (value == null) return;
@@ -111,7 +109,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                       maxLines: 2,
                       decoration: const InputDecoration(
                         labelText: '배송 메모',
-                        hintText: '포장/배송 관련 메모를 남겨주세요',
+                        hintText: '포장/배송 관련 메모를 입력해 주세요.',
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -133,7 +131,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                             actor: '판매자',
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('발송 처리되었습니다.')),
+                            const SnackBar(content: Text('발송 처리했습니다.')),
                           );
                         },
                         child: const Text('발송 처리'),
@@ -183,7 +181,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                             actor: '판매자',
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('취소 완료 처리되었습니다.')),
+                            const SnackBar(content: Text('취소 완료 처리했습니다.')),
                           );
                         },
                         child: const Text('취소 완료 처리'),
@@ -214,13 +212,19 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   children: [
                     const Text('배송/결제 정보', style: TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 6),
-                    Text(order.addressSummary,
-                        style: const TextStyle(color: OudColors.mutedText)),
+                    Text(
+                      order.addressSummary,
+                      style: const TextStyle(color: OudColors.mutedText),
+                    ),
                     const SizedBox(height: 10),
-                    Text('결제수단: ${order.paymentMethodLabel}',
-                        style: const TextStyle(color: OudColors.mutedText)),
-                    Text('결제상태: ${order.paymentStatus}',
-                        style: const TextStyle(color: OudColors.mutedText)),
+                    Text(
+                      '결제수단: ${order.paymentMethodLabel}',
+                      style: const TextStyle(color: OudColors.mutedText),
+                    ),
+                    Text(
+                      '결제상태: ${order.paymentStatus}',
+                      style: const TextStyle(color: OudColors.mutedText),
+                    ),
                   ],
                 ),
               ),
@@ -262,7 +266,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                               ),
                             ),
                             Text(
-                              '${format.format(item.unitPrice * item.quantity)}원',
+                              '₩${format.format(item.unitPrice * item.quantity)}',
                               style: const TextStyle(
                                 color: OudColors.primary,
                                 fontWeight: FontWeight.w800,
@@ -279,7 +283,7 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                             style: TextStyle(fontWeight: FontWeight.w800)),
                         const Spacer(),
                         Text(
-                          '${format.format(order.totalAmount)}원',
+                          '₩${format.format(order.totalAmount)}',
                           style: const TextStyle(
                             color: OudColors.primary,
                             fontWeight: FontWeight.w900,

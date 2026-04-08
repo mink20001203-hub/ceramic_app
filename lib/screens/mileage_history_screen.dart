@@ -12,8 +12,9 @@ class MileageHistoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final manager = context.watch<UserDataManager>();
-    final orders = List<Order>.from(manager.orders)
+    final logs = List<MileageLog>.from(manager.mileageLogs)
       ..sort((a, b) => b.date.compareTo(a.date));
+    final orders = List<Order>.from(manager.orders)..sort((a, b) => b.date.compareTo(a.date));
     final format = NumberFormat('#,###', 'ko_KR');
 
     return Scaffold(
@@ -47,13 +48,22 @@ class MileageHistoryScreen extends StatelessWidget {
           const SizedBox(height: 12),
           const OudSectionTitle(title: '적립/사용 내역'),
           const SizedBox(height: 8),
-          if (orders.isEmpty)
+          if (logs.isEmpty && orders.isEmpty)
             const SizedBox(
               height: 180,
               child: OudEmptyState(
                 title: '마일리지 내역이 없습니다',
-                subtitle: '주문 또는 리뷰 작성 후 내역이 표시됩니다.',
+                subtitle: '주문 또는 리뷰 작성 시 내역이 표시됩니다.',
                 icon: Icons.payments_outlined,
+              ),
+            )
+          else if (logs.isNotEmpty)
+            ...logs.map(
+              (log) => _historyRow(
+                title: log.title,
+                subtitle: log.description,
+                amount: log.delta,
+                date: log.date,
               ),
             )
           else
@@ -81,16 +91,14 @@ class MileageHistoryScreen extends StatelessWidget {
             }),
           if (manager.reviews.isNotEmpty) ...[
             const SizedBox(height: 8),
-            ...manager.reviews
-                .map(
-                  (review) => _historyRow(
-                    title: '리뷰 적립',
-                    subtitle: review.productName,
-                    amount: 100,
-                    date: review.date,
-                  ),
-                )
-                .toList(),
+            ...manager.reviews.map(
+              (review) => _historyRow(
+                title: '리뷰 적립',
+                subtitle: review.productName,
+                amount: 100,
+                date: review.date,
+              ),
+            ),
           ],
         ],
       ),
@@ -114,14 +122,9 @@ class MileageHistoryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  Text(
-                    '$subtitle · $dateLabel',
-                    style: const TextStyle(color: OudColors.mutedText),
-                  ),
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text('$subtitle · $dateLabel',
+                      style: const TextStyle(color: OudColors.mutedText)),
                 ],
               ),
             ),

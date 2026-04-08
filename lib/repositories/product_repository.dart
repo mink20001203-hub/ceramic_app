@@ -11,44 +11,41 @@ class LocalProductRepository implements ProductRepository {
   @override
   Future<List<Product>> fetchProducts() async {
     final base = List<Product>.from(dummyProducts);
-    if (base.isEmpty) {
-      return [];
-    }
+    if (base.isEmpty) return [];
 
-    // 로컬 데모용: Firestore 없이도 상품을 더 많이 보이게 생성
+    // Firestore 미연결 데모 환경에서도 목록이 충분히 보이도록 확장한다.
     final List<Product> expanded = [];
     int batch = 0;
     for (final factor in [1.0, 1.05, 1.1, 1.15, 1.2]) {
       batch++;
       for (final product in base) {
-        final int bumpedPrice = (product.price * factor).round();
-        final int? bumpedSale = product.salePrice == null
-            ? null
-            : (product.salePrice! * factor).round();
-        expanded.add(Product(
-          id: '${product.id}_v$batch',
-          title: product.title,
-          subTitle: product.subTitle,
-          price: bumpedPrice,
-          image: product.image,
-          category: product.category,
-          stock: product.stock,
-          isNew: product.isNew,
-          isSale: product.isSale,
-          salePrice: bumpedSale,
-          options: List<String>.from(product.options),
-          sellerId: product.sellerId,
-        ));
+        final bumpedPrice = (product.price * factor).round();
+        final bumpedSale =
+            product.salePrice == null ? null : (product.salePrice! * factor).round();
+        expanded.add(
+          Product(
+            id: '${product.id}_v$batch',
+            title: product.title,
+            subTitle: product.subTitle,
+            price: bumpedPrice,
+            image: product.image,
+            category: product.category,
+            stock: product.stock,
+            isNew: product.isNew,
+            isSale: product.isSale,
+            salePrice: bumpedSale,
+            options: List<String>.from(product.options),
+            sellerId: product.sellerId,
+          ),
+        );
       }
     }
-
     return expanded;
   }
 }
 
 class FirestoreProductRepository implements ProductRepository {
   final FirebaseFirestore _db;
-
   FirestoreProductRepository(this._db);
 
   @override
@@ -70,8 +67,7 @@ class FirestoreProductRepository implements ProductRepository {
       isNew: data['isNew'] as bool? ?? false,
       isSale: data['isSale'] as bool? ?? false,
       salePrice: (data['salePrice'] as num?)?.toInt(),
-      options:
-          (data['options'] as List<dynamic>? ?? []).map((e) => '$e').toList(),
+      options: (data['options'] as List<dynamic>? ?? []).map((e) => '$e').toList(),
       sellerId: data['sellerId'] as String?,
     );
   }
