@@ -36,6 +36,22 @@ class Review {
   });
 }
 
+class MileageLog {
+  final String id;
+  final String title;
+  final int delta;
+  final DateTime date;
+  final String description;
+
+  MileageLog({
+    required this.id,
+    required this.title,
+    required this.delta,
+    required this.date,
+    required this.description,
+  });
+}
+
 class OrderItem {
   final Product product;
   final String? option;
@@ -622,6 +638,7 @@ class UserDataManager with ChangeNotifier {
     for (final coupon in _coupons) {
       if (coupon.id == id) {
         coupon.isUsed = true;
+        _upsertCoupon(coupon);
         break;
       }
     }
@@ -646,6 +663,7 @@ class UserDataManager with ChangeNotifier {
           minOrderAmount: 50000,
         ),
       );
+      _upsertCoupon(_coupons.last);
       _persist();
       notifyListeners();
       return '웰컴 쿠폰이 등록되었습니다.';
@@ -660,6 +678,7 @@ class UserDataManager with ChangeNotifier {
           minOrderAmount: 30000,
         ),
       );
+      _upsertCoupon(_coupons.last);
       _persist();
       notifyListeners();
       return '무료배송 쿠폰이 등록되었습니다.';
@@ -675,6 +694,7 @@ class UserDataManager with ChangeNotifier {
     } else if (_selectedAddressId == id) {
       _selectedAddressId = _addresses.first.id;
     }
+    _deleteAddress(id);
     _persist();
     notifyListeners();
   }
@@ -686,6 +706,7 @@ class UserDataManager with ChangeNotifier {
     } else if (_selectedPaymentId == id) {
       _selectedPaymentId = _paymentMethods.first.id;
     }
+    _deletePaymentMethod(id);
     _persist();
     notifyListeners();
   }
@@ -693,6 +714,7 @@ class UserDataManager with ChangeNotifier {
   void addAddress(Address address) {
     _addresses.add(address);
     _selectedAddressId = address.id;
+    _upsertAddress(address);
     _persist();
     notifyListeners();
   }
@@ -701,6 +723,7 @@ class UserDataManager with ChangeNotifier {
     final index = _addresses.indexWhere((a) => a.id == updated.id);
     if (index != -1) {
       _addresses[index] = updated;
+      _upsertAddress(updated);
       _persist();
       notifyListeners();
     }
@@ -717,6 +740,7 @@ class UserDataManager with ChangeNotifier {
   void addPaymentMethod(PaymentMethod method) {
     _paymentMethods.add(method);
     _selectedPaymentId = method.id;
+    _upsertPaymentMethod(method);
     _persist();
     notifyListeners();
   }
@@ -725,6 +749,7 @@ class UserDataManager with ChangeNotifier {
     final index = _paymentMethods.indexWhere((p) => p.id == method.id);
     if (index != -1) {
       _paymentMethods[index] = method;
+      _upsertPaymentMethod(method);
       _persist();
       notifyListeners();
     }
@@ -1032,9 +1057,21 @@ class UserDataManager with ChangeNotifier {
     }
     if (mileageToUse > 0) {
       _mileage -= mileageToUse;
+      _appendMileageLog(
+        title: '주문 사용',
+        delta: -mileageToUse,
+        description: createdOrder.id,
+        date: createdOrder.date,
+      );
     }
 
     _mileage += 500;
+    _appendMileageLog(
+      title: '주문 적립',
+      delta: 500,
+      description: createdOrder.id,
+      date: createdOrder.date,
+    );
     clearCart();
     _persist();
     notifyListeners();
@@ -1100,9 +1137,21 @@ class UserDataManager with ChangeNotifier {
     }
     if (mileageToUse > 0) {
       _mileage -= mileageToUse;
+      _appendMileageLog(
+        title: '주문 사용',
+        delta: -mileageToUse,
+        description: createdOrder.id,
+        date: createdOrder.date,
+      );
     }
 
     _mileage += 500;
+    _appendMileageLog(
+      title: '주문 적립',
+      delta: 500,
+      description: createdOrder.id,
+      date: createdOrder.date,
+    );
     _persist();
     notifyListeners();
   }
@@ -1132,6 +1181,7 @@ class UserDataManager with ChangeNotifier {
 
   void setOrderStatus(String orderId, String status, {String actor = '관리자'}) {
     final order = _orders.firstWhere((o) => o.id == orderId);
+    if (order.status == '취소완료' || order.status == '배송완료') return;
     if (order.status != status) {
       order.status = status;
       if (status == '배송중') {
@@ -1180,6 +1230,7 @@ class UserDataManager with ChangeNotifier {
     String actor = '판매자',
   }) {
     final order = _orders.firstWhere((o) => o.id == orderId);
+    if (order.status == '취소요청' || order.status == '취소완료') return;
     order.trackingNumber = trackingNumber.trim();
     final memo = (shippingMemo ?? '').trim();
     order.shippingMemo = memo.isEmpty ? null : memo;
@@ -1199,6 +1250,7 @@ class UserDataManager with ChangeNotifier {
     String actor = '판매자',
   }) {
     final order = _orders.firstWhere((o) => o.id == orderId);
+    if (order.status == '배송완료') return;
     final normalizedReason = reason.trim();
     order.cancelReason = normalizedReason.isEmpty ? '판매자 취소 처리' : normalizedReason;
     order.canceledAt = DateTime.now();
@@ -1213,6 +1265,8 @@ class UserDataManager with ChangeNotifier {
 
   final List<Review> _reviews = [];
   List<Review> get reviews => _reviews;
+  final List<MileageLog> _mileageLogs = [];
+  List<MileageLog> get mileageLogs => _mileageLogs;
 
   void removeReviewAt(int index) {
     _reviews.removeAt(index);
@@ -1250,16 +1304,24 @@ class UserDataManager with ChangeNotifier {
   void addReview(
       String productId, String productName, double rating, String comment,
       {String? imagePath}) {
-    _reviews.add(Review(
+    final createdReview = Review(
       productId: productId,
       productName: productName,
       rating: rating,
       comment: comment,
       date: DateTime.now(),
       imagePath: imagePath,
-    ));
+    );
+    _reviews.add(createdReview);
+    _upsertReview(createdReview);
 
     _mileage += 100;
+    _appendMileageLog(
+      title: '리뷰 적립',
+      delta: 100,
+      description: productName,
+      date: createdReview.date,
+    );
     _reviewCount = _reviews.length;
     _persist();
     notifyListeners();
@@ -1277,15 +1339,188 @@ class UserDataManager with ChangeNotifier {
         date: DateTime.now(),
         imagePath: imagePath,
       );
+      _upsertReview(_reviews[index]);
       _persist();
       notifyListeners();
+    }
+  }
+
+  Future<void> _loadAddressesFromSubcollection() async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    final snapshot = await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.addresses)
+        .get();
+    _addresses
+      ..clear()
+      ..addAll(snapshot.docs.map((doc) => _addressFromMap(doc.data())).toList());
+  }
+
+  Future<void> _loadPaymentMethodsFromSubcollection() async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    final snapshot = await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.paymentMethods)
+        .get();
+    _paymentMethods
+      ..clear()
+      ..addAll(snapshot.docs.map((doc) => _paymentFromMap(doc.data())).toList());
+  }
+
+  Future<void> _loadReviewsFromSubcollection() async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    final snapshot = await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.reviews)
+        .get();
+    _reviews
+      ..clear()
+      ..addAll(snapshot.docs.map((doc) => _reviewFromMap(doc.data())).toList());
+  }
+
+  Future<bool> _loadCouponsFromSubcollection() async {
+    if (!_firebaseReady || _db == null || _userId == null) return false;
+    final snapshot = await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.userCoupons)
+        .get();
+    if (snapshot.docs.isEmpty) return false;
+    _coupons
+      ..clear()
+      ..addAll(snapshot.docs.map((doc) => _couponFromMap(doc.data())).toList());
+    return true;
+  }
+
+  Future<void> _loadMileageLogsFromSubcollection() async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    final snapshot = await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.mileageLogs)
+        .orderBy('date', descending: true)
+        .get();
+    _mileageLogs
+      ..clear()
+      ..addAll(snapshot.docs.map((doc) => _mileageLogFromMap(doc.id, doc.data())).toList());
+  }
+
+  Future<void> _upsertAddress(Address address) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.addresses)
+        .doc(address.id)
+        .set(_addressToMap(address), SetOptions(merge: true));
+  }
+
+  Future<void> _deleteAddress(String addressId) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.addresses)
+        .doc(addressId)
+        .delete();
+  }
+
+  Future<void> _upsertPaymentMethod(PaymentMethod payment) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.paymentMethods)
+        .doc(payment.id)
+        .set(_paymentToMap(payment), SetOptions(merge: true));
+  }
+
+  Future<void> _deletePaymentMethod(String paymentId) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.paymentMethods)
+        .doc(paymentId)
+        .delete();
+  }
+
+  Future<void> _upsertReview(Review review) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    final reviewId =
+        '${review.productId}_${review.date.millisecondsSinceEpoch}';
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.reviews)
+        .doc(reviewId)
+        .set(_reviewToMap(review), SetOptions(merge: true));
+  }
+
+  Future<void> _upsertCoupon(Coupon coupon) async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.userCoupons)
+        .doc(coupon.id)
+        .set(_couponToMap(coupon), SetOptions(merge: true));
+  }
+
+  Future<void> _appendMileageLog({
+    required String title,
+    required int delta,
+    required String description,
+    DateTime? date,
+  }) async {
+    final log = MileageLog(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: title,
+      delta: delta,
+      date: date ?? DateTime.now(),
+      description: description,
+    );
+    _mileageLogs.insert(0, log);
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    await _db!
+        .collection(FirestorePaths.users)
+        .doc(_userId)
+        .collection(FirestorePaths.mileageLogs)
+        .doc(log.id)
+        .set(_mileageLogToMap(log), SetOptions(merge: true));
+  }
+
+  Future<void> _syncUserSubcollectionsFromMemory() async {
+    if (!_firebaseReady || _db == null || _userId == null) return;
+    for (final address in _addresses) {
+      await _upsertAddress(address);
+    }
+    for (final payment in _paymentMethods) {
+      await _upsertPaymentMethod(payment);
+    }
+    for (final review in _reviews) {
+      await _upsertReview(review);
+    }
+    for (final coupon in _coupons) {
+      await _upsertCoupon(coupon);
+    }
+    for (final log in _mileageLogs) {
+      await _db!
+          .collection(FirestorePaths.users)
+          .doc(_userId)
+          .collection(FirestorePaths.mileageLogs)
+          .doc(log.id)
+          .set(_mileageLogToMap(log), SetOptions(merge: true));
     }
   }
 
   Future<void> _loadFromBackend() async {
     if (!_firebaseReady || _userId == null) return;
     try {
-      final doc = await _db!.collection('users').doc(_userId).get();
+      final doc = await _db!.collection(FirestorePaths.users).doc(_userId).get();
       if (!doc.exists) {
         _backendError = null;
         return;
@@ -1297,18 +1532,29 @@ class UserDataManager with ChangeNotifier {
       final roleStr = data['role'] as String? ?? 'user';
       _role = _roleFromString(roleStr);
 
-      _addresses
-        ..clear()
-        ..addAll((data['addresses'] as List<dynamic>? ?? [])
-            .map((e) => _addressFromMap(Map<String, dynamic>.from(e))));
-      _paymentMethods
-        ..clear()
-        ..addAll((data['paymentMethods'] as List<dynamic>? ?? [])
-            .map((e) => _paymentFromMap(Map<String, dynamic>.from(e))));
-      _reviews
-        ..clear()
-        ..addAll((data['reviews'] as List<dynamic>? ?? [])
-            .map((e) => _reviewFromMap(Map<String, dynamic>.from(e))));
+      await _loadAddressesFromSubcollection();
+      if (_addresses.isEmpty) {
+        _addresses
+          ..clear()
+          ..addAll((data['addresses'] as List<dynamic>? ?? [])
+              .map((e) => _addressFromMap(Map<String, dynamic>.from(e))));
+      }
+      await _loadPaymentMethodsFromSubcollection();
+      if (_paymentMethods.isEmpty) {
+        _paymentMethods
+          ..clear()
+          ..addAll((data['paymentMethods'] as List<dynamic>? ?? [])
+              .map((e) => _paymentFromMap(Map<String, dynamic>.from(e))));
+      }
+      await _loadReviewsFromSubcollection();
+      if (_reviews.isEmpty) {
+        _reviews
+          ..clear()
+          ..addAll((data['reviews'] as List<dynamic>? ?? [])
+              .map((e) => _reviewFromMap(Map<String, dynamic>.from(e))));
+      }
+      final hasUserCoupons = await _loadCouponsFromSubcollection();
+      await _loadMileageLogsFromSubcollection();
       await _loadOrdersFromCollection();
 
       if (_orders.isEmpty && (data['orders'] as List<dynamic>? ?? []).isNotEmpty) {
@@ -1319,13 +1565,19 @@ class UserDataManager with ChangeNotifier {
         await _loadOrdersFromCollection();
       }
 
-      final usedCoupons = (data['usedCoupons'] as List<dynamic>? ?? [])
-          .map((e) => e.toString())
-          .toSet();
-      for (final c in _coupons) {
-        c.isUsed = usedCoupons.contains(c.id);
+      if (!hasUserCoupons) {
+        final usedCoupons = (data['usedCoupons'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toSet();
+        for (final c in _coupons) {
+          c.isUsed = usedCoupons.contains(c.id);
+        }
       }
+      _selectedAddressId = (data['selectedAddressId'] as String?) ?? _selectedAddressId;
+      _selectedPaymentId = (data['selectedPaymentId'] as String?) ?? _selectedPaymentId;
+      _selectedCouponId = data['selectedCouponId'] as String?;
       _reviewCount = _reviews.length;
+      await _syncUserSubcollectionsFromMemory();
       _backendError = null;
     } on FirebaseException catch (e) {
       _backendError = e.code;
@@ -1342,14 +1594,13 @@ class UserDataManager with ChangeNotifier {
       'mileage': _mileage,
       'reviewCount': _reviews.length,
       'role': _roleToString(_role),
-      'addresses': _addresses.map(_addressToMap).toList(),
-      'paymentMethods': _paymentMethods.map(_paymentToMap).toList(),
-      'reviews': _reviews.map(_reviewToMap).toList(),
-      'usedCoupons': _coupons.where((c) => c.isUsed).map((c) => c.id).toList(),
+      'selectedAddressId': _selectedAddressId,
+      'selectedPaymentId': _selectedPaymentId,
+      'selectedCouponId': _selectedCouponId,
     };
     try {
       await _db!
-          .collection('users')
+          .collection(FirestorePaths.users)
           .doc(_userId)
           .set(data, SetOptions(merge: true));
       _backendError = null;
@@ -1434,6 +1685,45 @@ class UserDataManager with ChangeNotifier {
         comment: m['comment'],
         date: DateTime.parse(m['date']),
         imagePath: m['imagePath'],
+      );
+
+  Map<String, dynamic> _couponToMap(Coupon c) => {
+        'id': c.id,
+        'title': c.title,
+        'discountAmount': c.discountAmount,
+        'minOrderAmount': c.minOrderAmount,
+        'allowedCategories': c.allowedCategories,
+        'allowedProductIds': c.allowedProductIds,
+        'isUsed': c.isUsed,
+      };
+
+  Coupon _couponFromMap(Map<String, dynamic> m) => Coupon(
+        id: m['id'] as String? ?? '',
+        title: m['title'] as String? ?? '쿠폰',
+        discountAmount: (m['discountAmount'] as num?)?.toInt() ?? 0,
+        minOrderAmount: (m['minOrderAmount'] as num?)?.toInt() ?? 0,
+        allowedCategories: (m['allowedCategories'] as List<dynamic>? ?? [])
+            .map((e) => '$e')
+            .toList(),
+        allowedProductIds: (m['allowedProductIds'] as List<dynamic>? ?? [])
+            .map((e) => '$e')
+            .toList(),
+        isUsed: m['isUsed'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> _mileageLogToMap(MileageLog log) => {
+        'title': log.title,
+        'delta': log.delta,
+        'date': log.date.toIso8601String(),
+        'description': log.description,
+      };
+
+  MileageLog _mileageLogFromMap(String id, Map<String, dynamic> map) => MileageLog(
+        id: id,
+        title: map['title'] as String? ?? '마일리지',
+        delta: (map['delta'] as num?)?.toInt() ?? 0,
+        date: DateTime.tryParse(map['date'] as String? ?? '') ?? DateTime.now(),
+        description: map['description'] as String? ?? '',
       );
 
   Map<String, dynamic> _orderItemToMap(OrderItem i) => {
