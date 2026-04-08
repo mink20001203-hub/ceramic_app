@@ -1013,7 +1013,7 @@ class UserDataManager with ChangeNotifier {
         .toList();
 
     final subtotal = items.fold<int>(
-        0, (sum, item) => sum + item.unitPrice * item.quantity);
+        0, (totalPrice, item) => totalPrice + item.unitPrice * item.quantity);
     final coupon = couponId == null
         ? null
         : _coupons.firstWhere((c) => c.id == couponId,
@@ -1182,6 +1182,7 @@ class UserDataManager with ChangeNotifier {
   void setOrderStatus(String orderId, String status, {String actor = '관리자'}) {
     final order = _orders.firstWhere((o) => o.id == orderId);
     if (order.status == '취소완료' || order.status == '배송완료') return;
+    if (!_isValidStatusTransition(order.status, status)) return;
     if (order.status != status) {
       order.status = status;
       if (status == '배송중') {
@@ -1200,6 +1201,28 @@ class UserDataManager with ChangeNotifier {
 
   bool canRequestCancellation(Order order) {
     return order.status == '결제완료' || order.status == '배송준비';
+  }
+
+  bool canSellerShip(Order order) {
+    return order.status == '결제완료' || order.status == '배송준비';
+  }
+
+  bool canSellerCancel(Order order) {
+    return order.status != '배송완료' && order.status != '취소완료';
+  }
+
+  bool _isValidStatusTransition(String from, String to) {
+    if (from == to) return true;
+    const transitions = <String, List<String>>{
+      '결제완료': ['배송준비', '배송중', '취소요청', '취소완료'],
+      '배송준비': ['배송중', '취소완료'],
+      '배송중': ['배송완료'],
+      '취소요청': ['취소완료'],
+      '배송완료': [],
+      '취소완료': [],
+    };
+    final allowed = transitions[from] ?? const <String>[];
+    return allowed.contains(to);
   }
 
   void requestOrderCancellation(
@@ -1230,6 +1253,7 @@ class UserDataManager with ChangeNotifier {
     String actor = '판매자',
   }) {
     final order = _orders.firstWhere((o) => o.id == orderId);
+    if (!canSellerShip(order)) return;
     if (order.status == '취소요청' || order.status == '취소완료') return;
     order.trackingNumber = trackingNumber.trim();
     final memo = (shippingMemo ?? '').trim();
@@ -1250,6 +1274,7 @@ class UserDataManager with ChangeNotifier {
     String actor = '판매자',
   }) {
     final order = _orders.firstWhere((o) => o.id == orderId);
+    if (!canSellerCancel(order)) return;
     if (order.status == '배송완료') return;
     final normalizedReason = reason.trim();
     order.cancelReason = normalizedReason.isEmpty ? '판매자 취소 처리' : normalizedReason;

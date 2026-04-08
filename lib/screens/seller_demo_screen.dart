@@ -317,7 +317,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                   '총 ${order.items.length}개 상품 · ₩${format.format(order.totalAmount)}',
                   style: const TextStyle(color: OudColors.mutedText),
                 ),
-                if (order.trackingNumber != null && order.trackingNumber!.trim().isNotEmpty)
+                if (order.trackingNumber != null &&
+                    order.trackingNumber!.trim().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
@@ -330,7 +331,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                   initialValue: order.status,
                   decoration: const InputDecoration(labelText: '주문 상태'),
                   items: _statusOptions
-                      .map((status) => DropdownMenuItem(value: status, child: Text(status)))
+                      .map((status) =>
+                          DropdownMenuItem(value: status, child: Text(status)))
                       .toList(),
                   onChanged: (value) {
                     if (value == null) return;
@@ -413,9 +415,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
       _categoryController.text = '컵';
       _salePriceController.text = '0';
       setState(() => _isSale = false);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('상품을 등록했습니다.')),
-      );
+      messenger.showSnackBar(const SnackBar(content: Text('상품을 등록했습니다.')));
     } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(

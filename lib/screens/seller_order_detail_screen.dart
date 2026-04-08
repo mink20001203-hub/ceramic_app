@@ -54,6 +54,8 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
       builder: (context, manager, _) {
         final order = manager.orders.firstWhere((o) => o.id == widget.orderId);
         _initControllers(order);
+        final canShip = manager.canSellerShip(order);
+        final canCancel = manager.canSellerCancel(order);
 
         return Scaffold(
           appBar: AppBar(title: const Text('주문 상세 관리')),
@@ -116,27 +118,37 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
-                          final tracking = _trackingController.text.trim();
-                          if (tracking.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('송장번호를 입력해 주세요.')),
-                            );
-                            return;
-                          }
-                          manager.markOrderShipped(
-                            order.id,
-                            trackingNumber: tracking,
-                            shippingMemo: _shippingMemoController.text,
-                            actor: '판매자',
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('발송 처리했습니다.')),
-                          );
-                        },
+                        onPressed: !canShip
+                            ? null
+                            : () {
+                                final tracking = _trackingController.text.trim();
+                                if (tracking.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('송장번호를 입력해 주세요.')),
+                                  );
+                                  return;
+                                }
+                                manager.markOrderShipped(
+                                  order.id,
+                                  trackingNumber: tracking,
+                                  shippingMemo: _shippingMemoController.text,
+                                  actor: '판매자',
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('발송 처리했습니다.')),
+                                );
+                              },
                         child: const Text('발송 처리'),
                       ),
                     ),
+                    if (!canShip)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          '현재 상태에서는 발송 처리를 할 수 없습니다.',
+                          style: TextStyle(color: OudColors.mutedText),
+                        ),
+                      ),
                     if (order.trackingNumber != null &&
                         order.trackingNumber!.trim().isNotEmpty) ...[
                       const SizedBox(height: 10),
@@ -174,19 +186,29 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
-                        onPressed: () {
-                          manager.markOrderCanceled(
-                            order.id,
-                            reason: _cancelReasonController.text,
-                            actor: '판매자',
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('취소 완료 처리했습니다.')),
-                          );
-                        },
+                        onPressed: !canCancel
+                            ? null
+                            : () {
+                                manager.markOrderCanceled(
+                                  order.id,
+                                  reason: _cancelReasonController.text,
+                                  actor: '판매자',
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('취소 완료 처리했습니다.')),
+                                );
+                              },
                         child: const Text('취소 완료 처리'),
                       ),
                     ),
+                    if (!canCancel)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          '현재 상태에서는 취소 처리를 할 수 없습니다.',
+                          style: TextStyle(color: OudColors.mutedText),
+                        ),
+                      ),
                     if (order.cancelReason != null &&
                         order.cancelReason!.trim().isNotEmpty) ...[
                       const SizedBox(height: 10),
@@ -212,19 +234,13 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   children: [
                     const Text('배송/결제 정보', style: TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 6),
-                    Text(
-                      order.addressSummary,
-                      style: const TextStyle(color: OudColors.mutedText),
-                    ),
+                    Text(order.addressSummary,
+                        style: const TextStyle(color: OudColors.mutedText)),
                     const SizedBox(height: 10),
-                    Text(
-                      '결제수단: ${order.paymentMethodLabel}',
-                      style: const TextStyle(color: OudColors.mutedText),
-                    ),
-                    Text(
-                      '결제상태: ${order.paymentStatus}',
-                      style: const TextStyle(color: OudColors.mutedText),
-                    ),
+                    Text('결제수단: ${order.paymentMethodLabel}',
+                        style: const TextStyle(color: OudColors.mutedText)),
+                    Text('결제상태: ${order.paymentStatus}',
+                        style: const TextStyle(color: OudColors.mutedText)),
                   ],
                 ),
               ),
