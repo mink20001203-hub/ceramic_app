@@ -41,7 +41,7 @@ test.before(async () => {
     await setDoc(doc(db, 'orders/order_1'), {
       id: 'order_1',
       buyerId: 'user_uid',
-      sellerId: 'seller_demo',
+      sellerId: 'seller_uid',
       status: '결제완료',
       date: '2026-04-03T10:00:00.000Z',
       items: [],
@@ -70,6 +70,7 @@ test('판매자는 products 문서를 생성할 수 있다', async () => {
   const sellerDb = testEnv.authenticatedContext('seller_uid').firestore();
   await assertSucceeds(
     setDoc(doc(sellerDb, 'products/p_test_1'), {
+      sellerId: 'seller_uid',
       title: '테스트 상품',
       subTitle: 'rules test',
       price: 10000,
@@ -86,6 +87,7 @@ test('일반 사용자는 products 문서를 생성할 수 없다', async () => 
   const userDb = testEnv.authenticatedContext('user_uid').firestore();
   await assertFails(
     setDoc(doc(userDb, 'products/p_test_2'), {
+      sellerId: 'user_uid',
       title: '차단 상품',
       subTitle: 'rules test',
       price: 10000,
@@ -139,4 +141,33 @@ test('관리자는 다른 사용자 role을 변경할 수 있다', async () => {
   const userDb = testEnv.authenticatedContext('user_uid').firestore();
   await assertFails(updateDoc(doc(userDb, 'users/user_uid'), { role: 'admin' }));
   assert.ok(true);
+});
+
+
+test('사용자는 자신의 주소 서브컬렉션을 쓸 수 있다', async () => {
+  const userDb = testEnv.authenticatedContext('user_uid').firestore();
+  await assertSucceeds(
+    setDoc(doc(userDb, 'users/user_uid/addresses/addr_1'), {
+      id: 'addr_1',
+      label: '집',
+      recipient: '구매자',
+      addressLine: '서울시 강남구',
+      phone: '010-0000-0000',
+      requestNote: '',
+    }),
+  );
+});
+
+test('다른 사용자는 타인의 주소 서브컬렉션을 쓸 수 없다', async () => {
+  const sellerDb = testEnv.authenticatedContext('seller_uid').firestore();
+  await assertFails(
+    setDoc(doc(sellerDb, 'users/user_uid/addresses/addr_2'), {
+      id: 'addr_2',
+      label: '회사',
+      recipient: '구매자',
+      addressLine: '서울시 서초구',
+      phone: '010-0000-0000',
+      requestNote: '',
+    }),
+  );
 });

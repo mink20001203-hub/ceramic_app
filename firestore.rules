@@ -44,26 +44,61 @@ service cloud.firestore {
       allow create: if isOwner(userId) && validSelfRoleOnCreate();
       allow update: if (isOwner(userId) && roleUnchanged()) || isAdmin();
       allow delete: if isAdmin();
+
+      match /addresses/{addressId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /paymentMethods/{paymentId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /reviews/{reviewId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /coupons/{couponId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
+
+      match /mileageLogs/{logId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if isSeller();
+      allow create: if isSeller() && (
+        isAdmin() || request.resource.data.sellerId == request.auth.uid
+      );
+      allow update, delete: if isSeller() && (
+        isAdmin() || resource.data.sellerId == request.auth.uid
+      );
     }
 
-    // Optional top-level orders collection for seller dashboard or migration.
     match /orders/{orderId} {
-      allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
-      allow read: if isSignedIn() &&
-          (resource.data.buyerId == request.auth.uid || isSeller() || isAdmin());
+      allow create: if isSignedIn() &&
+          request.resource.data.buyerId == request.auth.uid;
+
+      allow read: if isSignedIn() && (
+        resource.data.buyerId == request.auth.uid ||
+        resource.data.sellerId == request.auth.uid ||
+        isAdmin()
+      );
+
       allow update: if isSignedIn() && (
-          isSeller() ||
-          isAdmin() ||
-          (
-            resource.data.buyerId == request.auth.uid &&
-            request.resource.data.status == '취소요청'
-          )
-        );
+        // 판매자/관리자는 주문 처리 가능
+        isAdmin() ||
+        (isSeller() && resource.data.sellerId == request.auth.uid) ||
+        // 구매자는 취소요청 상태 전환만 가능
+        (
+          resource.data.buyerId == request.auth.uid &&
+          request.resource.data.buyerId == resource.data.buyerId &&
+          request.resource.data.sellerId == resource.data.sellerId &&
+          request.resource.data.status == '취소요청'
+        )
+      );
+
       allow delete: if isAdmin();
     }
 
