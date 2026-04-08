@@ -19,7 +19,7 @@ class DetailScreen extends StatefulWidget {
 
 class _DetailScreenState extends State<DetailScreen> {
   String? _selectedOption;
-  var _quantity = 1;
+  int _quantity = 1;
 
   @override
   void initState() {
@@ -32,8 +32,8 @@ class _DetailScreenState extends State<DetailScreen> {
   Widget build(BuildContext context) {
     final manager = context.watch<UserDataManager>();
     final product = widget.product;
-    final sale = product.isSale && product.salePrice != null;
-    final price = sale ? product.salePrice! : product.price;
+    final isSale = product.isSale && product.salePrice != null;
+    final effectivePrice = isSale ? product.salePrice! : product.price;
     final soldOut = product.stock == 0;
     final productReviews =
         manager.reviews.where((review) => review.productId == product.id).toList();
@@ -117,8 +117,8 @@ class _DetailScreenState extends State<DetailScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
                   child: OudPriceText(
-                    price: price,
-                    original: sale ? product.price : null,
+                    price: effectivePrice,
+                    original: isSale ? product.price : null,
                   ),
                 ),
               ],
@@ -135,8 +135,8 @@ class _DetailScreenState extends State<DetailScreen> {
             const OudSectionTitle(title: '상품 설명'),
             const SizedBox(height: 8),
             const Text(
-              '고령토의 따뜻한 질감을 살린 제작 방식으로, 식탁 위에 오래 남는 오브제를 제안합니다. '
-              '브러시 마감과 유약 흐름의 균형을 살려 하나씩 완성했습니다.',
+              '유약의 질감과 균형 잡힌 실루엣을 중심으로 제작했습니다. '
+              '선반 위 오브제로도, 일상 식기로도 오래 사용할 수 있도록 마감 완성도를 높였습니다.',
               style: TextStyle(height: 1.6),
             ),
             const SizedBox(height: 20),
@@ -153,18 +153,16 @@ class _DetailScreenState extends State<DetailScreen> {
                 return ChoiceChip(
                   selected: selected,
                   label: Text(option),
-                  onSelected: soldOut
-                      ? null
-                      : (_) => setState(() => _selectedOption = option),
+                  onSelected: soldOut ? null : (_) => setState(() => _selectedOption = option),
                 );
               }).toList(),
             ),
             const SizedBox(height: 20),
             const OudSectionTitle(title: '사이즈'),
             const SizedBox(height: 8),
-            Wrap(
+            const Wrap(
               spacing: 8,
-              children: const [
+              children: [
                 Chip(label: Text('Small (15cm)')),
                 Chip(label: Text('Medium (22cm)')),
                 Chip(label: Text('Large (30cm)')),
@@ -175,9 +173,7 @@ class _DetailScreenState extends State<DetailScreen> {
             const SizedBox(height: 8),
             OudQuantityStepper(
               value: _quantity,
-              onMinus: soldOut || _quantity <= 1
-                  ? null
-                  : () => setState(() => _quantity -= 1),
+              onMinus: soldOut || _quantity <= 1 ? null : () => setState(() => _quantity -= 1),
               onPlus: soldOut || _quantity >= product.stock
                   ? null
                   : () => setState(() => _quantity += 1),
@@ -195,7 +191,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '김지수 작가 · 14건 게시물',
+                      '김지은 작가 · 14개 게시물',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -323,10 +319,7 @@ class _DetailScreenState extends State<DetailScreen> {
       children: [
         OudSectionTitle(
           title: '리뷰 ${reviews.length}건',
-          trailing: TextButton(
-            onPressed: () {},
-            child: const Text('전체보기'),
-          ),
+          trailing: TextButton(onPressed: () {}, child: const Text('전체보기')),
         ),
         const SizedBox(height: 8),
         if (reviews.isEmpty)
@@ -378,29 +371,23 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Widget _shippingPolicySection() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         OudSectionTitle(title: '배송/교환/환불 안내'),
         SizedBox(height: 8),
         OudSectionCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '배송 안내',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
+              Text('배송 안내', style: TextStyle(fontWeight: FontWeight.w800)),
               SizedBox(height: 4),
               Text(
-                '주문 후 1~3일 내 발송되며, 도서산간 지역은 1~2일 추가 소요될 수 있습니다.',
+                '주문 후 1~3일 내 발송되며, 산간/도서 지역은 추가 기간이 필요할 수 있습니다.',
                 style: TextStyle(color: OudColors.mutedText, height: 1.4),
               ),
               SizedBox(height: 10),
-              Text(
-                '교환/환불',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
+              Text('교환/환불', style: TextStyle(fontWeight: FontWeight.w800)),
               SizedBox(height: 4),
               Text(
                 '수령 후 7일 이내 접수 가능하며, 사용 흔적이 있는 경우 교환/환불이 제한됩니다.',
@@ -437,9 +424,7 @@ class _DetailScreenState extends State<DetailScreen> {
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (_) => DetailScreen(product: item),
-                      ),
+                      MaterialPageRoute(builder: (_) => DetailScreen(product: item)),
                     );
                   },
                   child: SizedBox(
@@ -450,7 +435,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           ClipRRect(
-                            borderRadius: OudRadii.sm,
+                            borderRadius: OudRadii.md,
                             child: AspectRatio(
                               aspectRatio: 1.1,
                               child: item.image == null
@@ -469,14 +454,6 @@ class _DetailScreenState extends State<DetailScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '₩${NumberFormat('#,###', 'ko_KR').format(item.price)}',
-                            style: const TextStyle(
-                              color: OudColors.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
                           ),
                         ],
                       ),

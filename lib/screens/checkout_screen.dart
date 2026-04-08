@@ -38,7 +38,12 @@ class _CheckoutItem {
   final Product product;
   final String? option;
   final int quantity;
-  _CheckoutItem({required this.product, required this.quantity, required this.option});
+
+  _CheckoutItem({
+    required this.product,
+    required this.quantity,
+    required this.option,
+  });
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
@@ -95,6 +100,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             (coupon) => coupon.id == _couponId,
             orElse: () => manager.coupons.first,
           );
+
     final couponApplicable = selectedCoupon != null &&
         !selectedCoupon.isUsed &&
         subtotal >= selectedCoupon.minOrderAmount;
@@ -103,6 +109,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final maxMileage = manager.mileage < (subtotal + shippingFee - couponDiscount)
         ? manager.mileage
         : (subtotal + shippingFee - couponDiscount);
+
     if (_mileageToUse > maxMileage) _mileageToUse = maxMileage;
     final total = subtotal + shippingFee - couponDiscount - _mileageToUse;
 
@@ -119,7 +126,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Checkout', style: TextStyle(fontSize: 35, fontWeight: FontWeight.w900)),
+            const Text(
+              'Checkout',
+              style: TextStyle(fontSize: 35, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 3),
             const Text(
               '주문서를 작성하고 결제를 완료해 주세요.',
@@ -156,8 +166,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(item.product.title,
-                                  style: const TextStyle(fontWeight: FontWeight.w700)),
+                              Text(
+                                item.product.title,
+                                style: const TextStyle(fontWeight: FontWeight.w700),
+                              ),
                               Text(
                                 '${item.option ?? '기본'} / ${item.quantity}개',
                                 style: const TextStyle(color: OudColors.mutedText),
@@ -165,8 +177,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             ],
                           ),
                         ),
-                        Text('₩${format.format(unit * item.quantity)}',
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(
+                          '₩${format.format(unit * item.quantity)}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ],
                     ),
                   );
@@ -206,7 +220,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ...manager.coupons.where((coupon) => !coupon.isUsed).map(
                             (coupon) => DropdownMenuItem<String?>(
                               value: coupon.id,
-                              child: Text('${coupon.title} (₩${format.format(coupon.discountAmount)})'),
+                              child: Text(
+                                '${coupon.title} (₩${format.format(coupon.discountAmount)})',
+                              ),
                             ),
                           ),
                     ],
@@ -222,8 +238,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           onChanged: (value) => setState(() => _mileageToUse = value.toInt()),
                         ),
                       ),
-                      Text('${format.format(_mileageToUse)}P',
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(
+                        '${format.format(_mileageToUse)}P',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ],
                   ),
                   Align(
@@ -261,7 +279,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: OudColors.panelDark,
                 borderRadius: OudRadii.lg,
               ),
@@ -269,13 +287,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('결제 금액',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  const Text(
+                    '결제 금액',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                  ),
                   const SizedBox(height: 8),
                   OudAmountRow(label: '총 상품 금액', value: '₩${format.format(subtotal)}', dark: true),
                   OudAmountRow(label: '배송비', value: '₩${format.format(shippingFee)}', dark: true),
-                  OudAmountRow(label: '쿠폰 할인', value: '-₩${format.format(couponDiscount)}', dark: true),
-                  OudAmountRow(label: '마일리지 사용', value: '-₩${format.format(_mileageToUse)}', dark: true),
+                  OudAmountRow(
+                    label: '쿠폰 할인',
+                    value: '-₩${format.format(couponDiscount)}',
+                    dark: true,
+                  ),
+                  OudAmountRow(
+                    label: '마일리지 사용',
+                    value: '-₩${format.format(_mileageToUse)}',
+                    dark: true,
+                  ),
                   const Divider(color: OudColors.panelDarkDivider),
                   OudAmountRow(
                     label: '최종 결제 금액',
@@ -346,7 +374,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   payment: payment,
                                   agreementAccepted: true,
                                 );
-                                manager.removeFromCart(widget.product!, option: widget.selectedOption);
+                                manager.removeFromCart(
+                                  widget.product!,
+                                  option: widget.selectedOption,
+                                );
                               }
 
                               if (!mounted) return;
@@ -355,7 +386,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 MaterialPageRoute(
                                   builder: (_) => OrderCompleteScreen(
                                     finalAmount: total,
-                                    itemCount: items.fold<int>(0, (sum, item) => sum + item.quantity),
+                                    itemCount:
+                                        items.fold<int>(0, (count, item) => count + item.quantity),
                                   ),
                                 ),
                               );

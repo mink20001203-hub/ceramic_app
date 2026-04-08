@@ -135,8 +135,8 @@ class OudQuantityStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF2EFEA),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF2EFEA),
         borderRadius: OudRadii.pill,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),

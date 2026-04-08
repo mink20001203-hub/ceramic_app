@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'too-many-requests':
         return '요청이 많습니다. 잠시 후 다시 시도해주세요.';
       default:
-        return '로그인에 실패했습니다. (${code})';
+        return '로그인에 실패했습니다. ($code)';
     }
   }
 
@@ -144,6 +144,8 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () async {
+                final manager = context.read<UserDataManager>();
+                final navigator = Navigator.of(context);
                 final email = _emailController.text.trim();
                 final password = _passwordController.text;
 
@@ -153,23 +155,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 }
 
                 try {
-                  await Provider.of<UserDataManager>(context, listen: false)
-                      .login(email: email, password: password);
+                  await manager.login(email: email, password: password);
                   await _savePrefs(email: email);
-                  Navigator.pop(context);
+                  if (!mounted) return;
+                  navigator.pop();
                 } on FirebaseAuthException catch (e) {
+                  if (!mounted) return;
                   final detail = e.message ?? e.code;
                   _showMessage('로그인 실패: ${_messageForAuthCode(e.code)} ($detail)');
                 } on FirebaseException catch (e) {
+                  if (!mounted) return;
                   final detail = e.message ?? e.code;
                   _showMessage('로그인 실패: $detail');
                 } catch (e) {
+                  if (!mounted) return;
                   _showMessage('로그인 실패: ${e.toString()}');
                 }
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: Color(0xFFA53C2C),
+                backgroundColor: const Color(0xFFA53C2C),
               ),
               child: const Text('로그인',
                   style: TextStyle(color: Colors.white)),

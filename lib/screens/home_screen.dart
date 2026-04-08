@@ -14,8 +14,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   @override
@@ -68,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen>
                     key: ValueKey('home-loading'),
                     height: 240,
                     child: OudLoadingState(
-                      title: '작품을 불러오는 중입니다',
+                      title: '상품을 불러오는 중입니다',
                       subtitle: '최신 상품 데이터를 가져오고 있어요.',
                     ),
                   )
@@ -94,15 +93,14 @@ class _HomeScreenState extends State<HomeScreen>
                           crossAxisSpacing: 12,
                           childAspectRatio: 0.72,
                         ),
-                        itemBuilder: (_, index) =>
-                            ProductCard(product: products[index]),
+                        itemBuilder: (_, index) => ProductCard(product: products[index]),
                       ),
           ),
         ),
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: OudSectionTitle(title: '최근 포스트'),
+            child: OudSectionTitle(title: '최근 소식'),
           ),
         ),
         SliverList(
@@ -126,10 +124,7 @@ class _HomeScreenState extends State<HomeScreen>
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF7F3EE),
-              Color(0xFFF2EEE8),
-            ],
+            colors: [Color(0xFFF7F3EE), Color(0xFFF2EEE8)],
           ),
           border: Border.all(color: OudColors.border),
         ),
@@ -169,9 +164,9 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             const SizedBox(height: 13),
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 OudTag(
                   label: '팔로우',
                   bgColor: OudColors.primarySoft,
@@ -207,11 +202,7 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: OudColors.text,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           Text(label, style: OudTypography.label),
         ],
@@ -222,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _tabStrip() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: OudColors.surface,
         borderRadius: OudRadii.pill,
       ),
@@ -251,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen>
       padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: OudSectionCard(
         child: Text(
-          '대지를 닮은 컬러와 절제된 형태를 중심으로, 일상 테이블 위에 오래 머무는 세라믹을 만듭니다.',
+          '질감을 살린 유약과 간결한 형태를 중심으로, 일상 식탁에 오래 남는 세라믹을 만듭니다.',
           style: TextStyle(height: 1.6, color: OudColors.text),
         ),
       ),
@@ -321,10 +312,10 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('누적 리뷰 ${count}건', style: OudTypography.sectionTitle),
+            Text('누적 리뷰 $count건', style: OudTypography.sectionTitle),
             const SizedBox(height: 8),
             const Text(
-              '수공예 질감과 안정적인 형태, 패키징 완성도에 대한 긍정적인 평가가 많습니다.',
+              '질감과 형태, 패키지 완성도에 대한 긍정적인 피드백이 계속 쌓이고 있습니다.',
               style: TextStyle(color: OudColors.mutedText, height: 1.5),
             ),
           ],
@@ -354,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen>
                 children: [
                   const Text('OUD', style: TextStyle(fontWeight: FontWeight.w700)),
                   Text(
-                    '${product.title} 작업 스케치를 업로드했습니다.',
+                    '${product.title} 작업 소식을 업로드했습니다.',
                     style: const TextStyle(color: OudColors.mutedText),
                   ),
                 ],

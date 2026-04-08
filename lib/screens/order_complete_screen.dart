@@ -43,19 +43,19 @@ class OrderCompleteScreen extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             const Text(
-              '주문이 완료되었습니다',
+              '주문이 완료되었습니다.',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
-              '${manager.userName}님, 주문 내역을 확인해 주세요.',
+              '${manager.userName}님의 주문 내역을 확인해 주세요.',
               style: const TextStyle(color: OudColors.mutedText),
             ),
             const SizedBox(height: 20),
             OudSectionCard(
               child: Column(
                 children: [
-                  OudAmountRow(label: '주문 상품', value: '${itemCount}개'),
+                  OudAmountRow(label: '주문 상품', value: '$itemCount개'),
                   OudAmountRow(
                     label: '결제 금액',
                     value: '₩${format.format(finalAmount)}',

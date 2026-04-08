@@ -39,17 +39,17 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: OudRadii.lg),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: OudColors.surface,
-        hintStyle: const TextStyle(color: OudColors.mutedText),
+        hintStyle: TextStyle(color: OudColors.mutedText),
         enabledBorder: OutlineInputBorder(
           borderRadius: OudRadii.md,
-          borderSide: const BorderSide(color: OudColors.border),
+          borderSide: BorderSide(color: OudColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: OudRadii.md,
-          borderSide: const BorderSide(color: OudColors.primary),
+          borderSide: BorderSide(color: OudColors.primary),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(

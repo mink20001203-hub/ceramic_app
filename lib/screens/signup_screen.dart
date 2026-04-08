@@ -44,7 +44,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       case 'operation-not-allowed':
         return '이메일/비밀번호 회원가입이 비활성화되어 있습니다.';
       default:
-        return '회원가입에 실패했습니다. (${code})';
+        return '회원가입에 실패했습니다. ($code)';
     }
   }
 
@@ -121,6 +121,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ElevatedButton(
               onPressed: _isAgreed
                   ? () async {
+                      final manager = context.read<UserDataManager>();
+                      final navigator = Navigator.of(context);
                       final name = _nameController.text.trim();
                       final email = _emailController.text.trim();
                       final password = _passwordController.text;
@@ -142,24 +144,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       }
 
                       try {
-                        await Provider.of<UserDataManager>(context, listen: false)
-                            .register(
+                        await manager.register(
                           email: email,
                           password: password,
                           name: name,
                         );
 
                         _showMessage('회원가입이 완료되었습니다! 로그인해주세요.');
-                        Navigator.pop(context);
+                        if (!mounted) return;
+                        navigator.pop();
                       } on FirebaseAuthException catch (e) {
+                        if (!mounted) return;
                         _showMessage('회원가입 실패: ${_messageForAuthCode(e.code)}');
                       } catch (_) {
+                        if (!mounted) return;
                         _showMessage('회원가입에 실패했습니다.');
                       }
                     }
                   : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFA53C2C),
+                backgroundColor: const Color(0xFFA53C2C),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: const Text(
