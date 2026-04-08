@@ -27,9 +27,7 @@ class ProductCard extends StatelessWidget {
           : () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => DetailScreen(product: product),
-                ),
+                MaterialPageRoute(builder: (_) => DetailScreen(product: product)),
               );
             },
       child: Container(
@@ -46,15 +44,13 @@ class ProductCard extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(22)),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
                       child: product.image == null
                           ? Container(color: OudColors.surface)
                           : Image.asset(
                               product.image!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  Container(color: OudColors.surface),
+                              errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
                             ),
                     ),
                   ),
@@ -119,20 +115,14 @@ class ProductCard extends StatelessWidget {
                     product.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: OudColors.text,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: OudColors.text),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     product.subTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: OudColors.mutedText,
-                      fontSize: 12,
-                    ),
+                    style: const TextStyle(color: OudColors.mutedText, fontSize: 12),
                   ),
                   const SizedBox(height: 7),
                   Text(

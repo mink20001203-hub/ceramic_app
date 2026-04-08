@@ -24,36 +24,27 @@ class _DetailScreenState extends State<DetailScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedOption =
-        widget.product.options.isEmpty ? null : widget.product.options.first;
+    _selectedOption = widget.product.options.isEmpty ? null : widget.product.options.first;
   }
 
   @override
   Widget build(BuildContext context) {
     final manager = context.watch<UserDataManager>();
     final product = widget.product;
+    final soldOut = product.stock == 0;
     final isSale = product.isSale && product.salePrice != null;
     final effectivePrice = isSale ? product.salePrice! : product.price;
-    final soldOut = product.stock == 0;
-    final productReviews =
-        manager.reviews.where((review) => review.productId == product.id).toList();
-    final relatedProducts = manager.products
-        .where((item) => item.id != product.id)
-        .take(4)
-        .toList();
+    final productReviews = manager.reviews.where((review) => review.productId == product.id).toList();
+    final relatedProducts = manager.products.where((item) => item.id != product.id).take(4).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('OUD'),
+        title: const Text('상품 상세'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () {},
-          ),
           Consumer<UserDataManager>(
             builder: (_, data, __) {
               final favorite = data.isFavorite(product);
@@ -81,8 +72,7 @@ class _DetailScreenState extends State<DetailScreen> {
                     : Image.asset(
                         product.image!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(color: OudColors.surface),
+                        errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
                       ),
               ),
             ),
@@ -104,11 +94,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       const SizedBox(height: 4),
                       Text(
                         product.title,
-                        style: const TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          height: 1.05,
-                        ),
+                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900, height: 1.1),
                       ),
                     ],
                   ),
@@ -116,16 +102,13 @@ class _DetailScreenState extends State<DetailScreen> {
                 const SizedBox(width: 10),
                 Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: OudPriceText(
-                    price: effectivePrice,
-                    original: isSale ? product.price : null,
-                  ),
+                  child: OudPriceText(price: effectivePrice, original: isSale ? product.price : null),
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Text(
-              soldOut ? '현재 품절된 상품입니다.' : '재고 ${product.stock}개',
+              soldOut ? '현재 품절된 상품입니다' : '재고 ${product.stock}개',
               style: TextStyle(
                 color: soldOut ? OudColors.danger : OudColors.mutedText,
                 fontWeight: FontWeight.w600,
@@ -135,8 +118,8 @@ class _DetailScreenState extends State<DetailScreen> {
             const OudSectionTitle(title: '상품 설명'),
             const SizedBox(height: 8),
             const Text(
-              '유약의 질감과 균형 잡힌 실루엣을 중심으로 제작했습니다. '
-              '선반 위 오브제로도, 일상 식기로도 오래 사용할 수 있도록 마감 완성도를 높였습니다.',
+              '핸드메이드 제작 특성상 미세한 질감 차이가 있을 수 있으며, 이는 공정상 자연스러운 특성입니다. '
+              '가벼운 생활 스크래치와 세척 내구성을 고려해 실사용 중심으로 마감했습니다.',
               style: TextStyle(height: 1.6),
             ),
             const SizedBox(height: 20),
@@ -174,34 +157,7 @@ class _DetailScreenState extends State<DetailScreen> {
             OudQuantityStepper(
               value: _quantity,
               onMinus: soldOut || _quantity <= 1 ? null : () => setState(() => _quantity -= 1),
-              onPlus: soldOut || _quantity >= product.stock
-                  ? null
-                  : () => setState(() => _quantity += 1),
-            ),
-            const SizedBox(height: 18),
-            const OudSectionCard(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: OudColors.primarySoft,
-                    child: Icon(Icons.person, size: 18, color: OudColors.primary),
-                  ),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '김지은 작가 · 14개 게시물',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  OudTag(
-                    label: 'Follow',
-                    bgColor: OudColors.sage,
-                    textColor: Color(0xFF32502E),
-                  ),
-                ],
-              ),
+              onPlus: soldOut || _quantity >= product.stock ? null : () => setState(() => _quantity += 1),
             ),
             const SizedBox(height: 18),
             _reviewSection(productReviews),
@@ -220,44 +176,30 @@ class _DetailScreenState extends State<DetailScreen> {
           child: Row(
             children: [
               Expanded(
-                child: OudTapScale(
-                  onTap: soldOut
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFA6D388),
+                    foregroundColor: const Color(0xFF24461B),
+                  ),
+                  onPressed: soldOut
                       ? null
                       : () {
-                          manager.addToCartMultiple(
-                            product,
-                            _quantity,
-                            selectedOption: _selectedOption,
-                          );
+                          manager.addToCartMultiple(product, _quantity, selectedOption: _selectedOption);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('장바구니에 담았습니다.')),
                           );
                         },
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFA6D388),
-                      foregroundColor: const Color(0xFF24461B),
-                    ),
-                    onPressed: soldOut
-                        ? null
-                        : () {
-                            manager.addToCartMultiple(
-                              product,
-                              _quantity,
-                              selectedOption: _selectedOption,
-                            );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('장바구니에 담았습니다.')),
-                            );
-                          },
-                    child: const Text('장바구니'),
-                  ),
+                  child: const Text('장바구니'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: OudTapScale(
-                  onTap: soldOut
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB34230),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: soldOut
                       ? null
                       : () {
                           if (!manager.isLoggedIn) {
@@ -277,33 +219,7 @@ class _DetailScreenState extends State<DetailScreen> {
                             ),
                           );
                         },
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFB34230),
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: soldOut
-                        ? null
-                        : () {
-                            if (!manager.isLoggedIn) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('로그인 후 결제할 수 있습니다.')),
-                              );
-                              return;
-                            }
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CheckoutScreen.single(
-                                  product: product,
-                                  selectedOption: _selectedOption,
-                                  quantity: _quantity,
-                                ),
-                              ),
-                            );
-                          },
-                    child: Text(soldOut ? '품절' : '바로 구매하기'),
-                  ),
+                  child: Text(soldOut ? '품절' : '바로 구매하기'),
                 ),
               ),
             ],
@@ -346,13 +262,7 @@ class _DetailScreenState extends State<DetailScreen> {
           children: [
             Row(
               children: [
-                Text(
-                  stars,
-                  style: const TextStyle(
-                    color: OudColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                Text(stars, style: const TextStyle(color: OudColors.primary, fontWeight: FontWeight.w700)),
                 const SizedBox(width: 8),
                 Text(dateLabel, style: OudTypography.bodyMuted),
               ],
@@ -383,14 +293,14 @@ class _DetailScreenState extends State<DetailScreen> {
               Text('배송 안내', style: TextStyle(fontWeight: FontWeight.w800)),
               SizedBox(height: 4),
               Text(
-                '주문 후 1~3일 내 발송되며, 산간/도서 지역은 추가 기간이 필요할 수 있습니다.',
+                '주문 후 1~3일 내 출고되며, 주말/공휴일에는 출고 일정이 연장될 수 있습니다.',
                 style: TextStyle(color: OudColors.mutedText, height: 1.4),
               ),
               SizedBox(height: 10),
               Text('교환/환불', style: TextStyle(fontWeight: FontWeight.w800)),
               SizedBox(height: 4),
               Text(
-                '수령 후 7일 이내 접수 가능하며, 사용 흔적이 있는 경우 교환/환불이 제한됩니다.',
+                '수령 후 7일 이내 접수 가능하며 사용 흔적이 있는 경우 교환/환불이 제한됩니다.',
                 style: TextStyle(color: OudColors.mutedText, height: 1.4),
               ),
             ],
@@ -401,24 +311,25 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   Widget _relatedProductsSection(List<Product> relatedProducts) {
+    final format = NumberFormat('#,###', 'ko_KR');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const OudSectionTitle(title: '함께 보면 좋은 상품'),
         const SizedBox(height: 8),
         if (relatedProducts.isEmpty)
-          const OudSectionCard(
-            child: Text('추천 상품이 없습니다.', style: OudTypography.bodyMuted),
-          )
+          const OudSectionCard(child: Text('추천 상품이 없습니다.', style: OudTypography.bodyMuted))
         else
           SizedBox(
-            height: 188,
+            height: 198,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: relatedProducts.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (_, index) {
                 final item = relatedProducts[index];
+                final sale = item.isSale && item.salePrice != null;
+                final price = sale ? item.salePrice! : item.price;
                 return InkWell(
                   borderRadius: OudRadii.md,
                   onTap: () {
@@ -443,8 +354,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                   : Image.asset(
                                       item.image!,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) =>
-                                          Container(color: OudColors.surface),
+                                      errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
                                     ),
                             ),
                           ),
@@ -454,6 +364,15 @@ class _DetailScreenState extends State<DetailScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₩${format.format(price)}',
+                            style: const TextStyle(
+                              color: OudColors.primary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),

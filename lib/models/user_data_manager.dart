@@ -341,7 +341,7 @@ class UserDataManager with ChangeNotifier {
           .where('buyerId', isEqualTo: _userId)
           .get();
     } else if (_role == UserRole.seller) {
-      final sellerIds = _currentSellerIdsForQuery();
+      final sellerIds = currentSellerScopeIds();
       if (sellerIds.length == 1) {
         snapshot = await _db!
             .collection(FirestorePaths.orders)
@@ -369,15 +369,28 @@ class UserDataManager with ChangeNotifier {
       ..addAll(loaded);
   }
 
-  List<String> _currentSellerIdsForQuery() {
+  List<String> currentSellerScopeIds() {
     final userId = _userId;
     if (userId == null) return <String>[_defaultSellerId];
     final ids = <String>{userId};
-    if (_userEmail.toLowerCase() == 'seller@ceramic.com') {
-      // Backward compatibility for demo data created before sellerId migration.
+    final email = _userEmail.toLowerCase();
+    if (email == 'seller@ceramic.com') {
+      // Backward compatibility for demo data created before sellerId migration
+      // and for seed alias IDs.
       ids.add(_defaultSellerId);
+      ids.add('seller_uid');
+    }
+    if (email == 'seller2@ceramic.com') {
+      ids.add('seller_uid_2');
     }
     return ids.toList();
+  }
+
+  bool canAccessSellerRecord(String? sellerId) {
+    if (_role == UserRole.admin) return true;
+    if (_role != UserRole.seller) return false;
+    if (sellerId == null || sellerId.trim().isEmpty) return false;
+    return currentSellerScopeIds().contains(sellerId);
   }
 
   String _resolveOrderSellerId(List<OrderItem> items) {

@@ -21,7 +21,7 @@ class CartScreen extends StatelessWidget {
             child: OudEmptyState(
               key: ValueKey('cart-empty'),
               title: '장바구니가 비어 있습니다',
-              subtitle: '마음에 드는 상품을 담아보세요.',
+              subtitle: '원하는 상품을 담아 결제를 진행해 보세요',
               icon: Icons.shopping_bag_outlined,
             ),
           );
@@ -37,26 +37,16 @@ class CartScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.radio_button_checked,
-                    size: 18,
-                    color: OudColors.primary,
-                  ),
+                  const Icon(Icons.radio_button_checked, size: 18, color: OudColors.primary),
                   const SizedBox(width: 6),
                   Text(
                     '전체 선택 (${items.length})',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: OudColors.text,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: OudColors.text),
                   ),
                   const Spacer(),
                   TextButton(
                     onPressed: manager.clearCart,
-                    child: const Text(
-                      '선택 삭제',
-                      style: TextStyle(color: OudColors.primary),
-                    ),
+                    child: const Text('선택 삭제', style: TextStyle(color: OudColors.primary)),
                   ),
                 ],
               ),
@@ -67,8 +57,7 @@ class CartScreen extends StatelessWidget {
                 itemCount: items.length,
                 itemBuilder: (_, index) {
                   final item = items[index];
-                  final sale =
-                      item.product.isSale && item.product.salePrice != null;
+                  final sale = item.product.isSale && item.product.salePrice != null;
                   final unit = sale ? item.product.salePrice! : item.product.price;
                   final total = unit * item.quantity;
 
@@ -79,11 +68,7 @@ class CartScreen extends StatelessWidget {
                       children: [
                         const Padding(
                           padding: EdgeInsets.only(top: 8),
-                          child: Icon(
-                            Icons.radio_button_checked,
-                            size: 18,
-                            color: OudColors.primary,
-                          ),
+                          child: Icon(Icons.radio_button_checked, size: 18, color: OudColors.primary),
                         ),
                         const SizedBox(width: 8),
                         ClipRRect(
@@ -96,8 +81,7 @@ class CartScreen extends StatelessWidget {
                                 : Image.asset(
                                     item.product.image!,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        Container(color: OudColors.surface),
+                                    errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
                                   ),
                           ),
                         ),
@@ -112,33 +96,27 @@ class CartScreen extends StatelessWidget {
                                     child: Text(
                                       item.product.title,
                                       style: const TextStyle(
-                                        fontSize: 25,
+                                        fontSize: 22,
                                         fontWeight: FontWeight.w800,
                                         height: 1.1,
                                       ),
                                     ),
                                   ),
                                   IconButton(
-                                    icon: const Icon(
-                                      Icons.close_rounded,
-                                      color: OudColors.mutedText,
-                                    ),
-                                    onPressed: () => manager.removeSingleItem(
-                                      item.product.id,
-                                      item.option,
-                                    ),
+                                    icon: const Icon(Icons.close_rounded, color: OudColors.mutedText),
+                                    onPressed: () => manager.removeSingleItem(item.product.id, item.option),
                                   ),
                                 ],
                               ),
                               Text(
-                                item.product.subTitle,
+                                item.option == null ? item.product.subTitle : '${item.product.subTitle} / ${item.option}',
                                 style: const TextStyle(color: OudColors.mutedText),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 '₩${format.format(total)}',
                                 style: const TextStyle(
-                                  fontSize: 28,
+                                  fontSize: 26,
                                   color: OudColors.primary,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -146,14 +124,8 @@ class CartScreen extends StatelessWidget {
                               const SizedBox(height: 4),
                               OudQuantityStepper(
                                 value: item.quantity,
-                                onMinus: () => manager.decrementQuantity(
-                                  item.product.id,
-                                  item.option,
-                                ),
-                                onPlus: () => manager.incrementQuantity(
-                                  item.product.id,
-                                  item.option,
-                                ),
+                                onMinus: () => manager.decrementQuantity(item.product.id, item.option),
+                                onPlus: () => manager.incrementQuantity(item.product.id, item.option),
                               ),
                             ],
                           ),
@@ -176,14 +148,8 @@ class CartScreen extends StatelessWidget {
                 children: [
                   const Text('결제 요약', style: OudTypography.headingMd),
                   const SizedBox(height: 10),
-                  OudAmountRow(
-                    label: '총 상품 금액',
-                    value: '₩${format.format(subtotal)}',
-                  ),
-                  OudAmountRow(
-                    label: '배송비',
-                    value: '₩${format.format(shippingFee)}',
-                  ),
+                  OudAmountRow(label: '총 상품 금액', value: '₩${format.format(subtotal)}'),
+                  OudAmountRow(label: '배송비', value: '₩${format.format(shippingFee)}'),
                   const SizedBox(height: 10),
                   OudAmountRow(
                     label: '결제 예정 금액',
@@ -196,25 +162,20 @@ class CartScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         final soldOut = items.any((item) => item.product.stock == 0);
-                        final overStock =
-                            items.any((item) => item.quantity > item.product.stock);
+                        final overStock = items.any((item) => item.quantity > item.product.stock);
                         if (soldOut || overStock) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('재고를 먼저 확인해 주세요.')),
+                            const SnackBar(content: Text('재고 상태를 먼저 확인해 주세요.')),
                           );
                           return;
                         }
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const CheckoutScreen.cart(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const CheckoutScreen.cart()),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(56),
-                      ),
-                      child: Text('결제하기  ₩${format.format(finalAmount)}  →'),
+                      style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                      child: Text('결제하기  ₩${format.format(finalAmount)}'),
                     ),
                   ),
                 ],

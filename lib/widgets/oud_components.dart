@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/app_tokens.dart';
@@ -395,8 +395,8 @@ class OudLoadingState extends StatelessWidget {
 
   const OudLoadingState({
     super.key,
-    this.title = '불러오는 중입니다',
-    this.subtitle = '잠시만 기다려 주세요.',
+    this.title = '遺덈윭?ㅻ뒗 以묒엯?덈떎',
+    this.subtitle = '?좎떆留?湲곕떎??二쇱꽭??',
   });
 
   @override
@@ -490,3 +490,4 @@ class _OudTapScaleState extends State<OudTapScale> {
     );
   }
 }
+

@@ -86,20 +86,19 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
 
   Widget _buildProductsTab(BuildContext context) {
     final manager = context.watch<UserDataManager>();
-    final sellerId = manager.userId;
+    final sellerScope = manager.currentSellerScopeIds().toSet();
     final products = List<Product>.from(manager.products).where((p) {
       if (manager.isAdmin) return true;
-      if (sellerId == null) return false;
-      return p.sellerId == sellerId ||
-          (manager.userEmail.toLowerCase() == 'seller@ceramic.com' &&
-              p.sellerId == 'seller_demo');
+      final sellerId = p.sellerId;
+      if (sellerId == null || sellerId.trim().isEmpty) return false;
+      return sellerScope.contains(sellerId);
     }).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         const Text(
-          '새 상품 등록과 기존 상품 수정/삭제를 이 화면에서 처리합니다.',
+          '새 상품을 등록하거나 기존 상품 정보를 수정/삭제할 수 있습니다.',
           style: TextStyle(color: OudColors.mutedText),
         ),
         const SizedBox(height: 12),
@@ -111,7 +110,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(labelText: '상품명'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? '필수 입력' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? '필수 입력' : null,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(
@@ -122,7 +122,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 TextFormField(
                   controller: _categoryController,
                   decoration: const InputDecoration(labelText: '카테고리'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? '필수 입력' : null,
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? '필수 입력' : null,
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -199,7 +200,7 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
             height: 160,
             child: OudEmptyState(
               title: '등록된 상품이 없습니다',
-              subtitle: '위 폼에서 새 상품을 추가해 주세요.',
+              subtitle: '위 폼에서 새 상품을 추가해 주세요',
               icon: Icons.inventory_2_outlined,
             ),
           )
@@ -227,7 +228,10 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                     children: [
                       Text(
                         product.title,
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       Text(
                         '${product.category} · 재고 ${product.stock}',
@@ -238,7 +242,10 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                 ),
                 Text(
                   '₩${format.format(displayPrice)}',
-                  style: const TextStyle(color: OudColors.primary, fontWeight: FontWeight.w800),
+                  style: const TextStyle(
+                    color: OudColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),
@@ -269,20 +276,19 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
   Widget _buildOrderManagement(BuildContext context) {
     final manager = context.watch<UserDataManager>();
     final format = NumberFormat('#,###', 'ko_KR');
-    final sellerId = manager.userId;
+    final sellerScope = manager.currentSellerScopeIds().toSet();
     final orders = List<Order>.from(manager.orders).where((o) {
       if (manager.isAdmin) return true;
-      if (sellerId == null) return false;
-      return o.sellerId == sellerId ||
-          (manager.userEmail.toLowerCase() == 'seller@ceramic.com' &&
-              o.sellerId == 'seller_demo');
+      final sellerId = o.sellerId;
+      if (sellerId == null || sellerId.trim().isEmpty) return false;
+      return sellerScope.contains(sellerId);
     }).toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
     if (orders.isEmpty) {
       return const OudEmptyState(
         title: '주문 데이터가 없습니다',
-        subtitle: '구매 테스트를 진행하면 주문 목록이 표시됩니다.',
+        subtitle: '구매자 테스트를 진행하면 주문 목록이 표시됩니다',
         icon: Icons.receipt_long_outlined,
       );
     }
@@ -351,7 +357,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                         spacing: 6,
                         runSpacing: 6,
                         children: order.items
-                            .map((item) => OudTag(label: '${item.product.title} x${item.quantity}'))
+                            .map((item) =>
+                                OudTag(label: '${item.product.title} x${item.quantity}'))
                             .toList(),
                       ),
                     ),
@@ -361,7 +368,8 @@ class _SellerDemoScreenState extends State<SellerDemoScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => SellerOrderDetailScreen(orderId: order.id),
+                            builder: (_) =>
+                                SellerOrderDetailScreen(orderId: order.id),
                           ),
                         );
                       },
