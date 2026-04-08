@@ -3,82 +3,64 @@
 Date: 2026-04-08
 
 ## Scope
-- Seller product list filtering
-- Seller order list filtering
-- Seller detail screen access consistency
+
+- seller product list filtering
+- seller order list filtering
+- seller detail screen access consistency
 
 ## Current Logic Summary
 
-1. Orders collection load for seller role
-- query by `orders.sellerId`
-- source: `UserDataManager._loadOrdersFromCollection()`
+1. Seller orders are loaded by `orders.sellerId` query.
+2. Seller scope IDs are unified via `currentSellerScopeIds()` in `UserDataManager`.
+3. Legacy/seed aliases are supported:
+- `seller@ceramic.com`: own UID + `seller_demo` + `seller_uid`
+- `seller2@ceramic.com`: own UID + `seller_uid_2`
+4. Seller dashboard list filtering uses the same scope IDs for products and orders.
 
-2. Seller IDs used for query
-- default: current user uid
-- compatibility: `seller@ceramic.com` includes `seller_demo`
-- source: `UserDataManager._currentSellerIdsForQuery()`
+## Data Snapshot (audit:sellers)
 
-3. Seller dashboard list filtering
-- products: `product.sellerId == currentUserId` (and legacy `seller_demo` for demo seller)
-- orders: `order.sellerId == currentUserId` (and legacy `seller_demo` for demo seller)
-- source: `SellerDemoScreen`
+- products total: 12
+- orders total: 20
+- products by seller:
+  - `seller_uid`: 5
+  - `seller_uid_2`: 5
+  - `seller_demo`: 2
+- orders by seller:
+  - `seller_demo`: 17
+  - `seller_uid`: 2
+  - `seller_uid_2`: 1
+- unknown seller docs: none
 
-## Data Preconditions
+## Audit Command
 
-Seed data currently includes seller split:
-- `seller_uid`: `p_oud_001` to `p_oud_005`
-- `seller_uid_2`: `p_oud_006` to `p_oud_010`
-- `seller_demo`: `p_oud_011`, `p_oud_012`
+Run from `C:\ceramic_app\scripts`:
 
-## Read-only Verification Snapshot
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\ceramic_app\keys\ceramic-app-aadcb-firebase-adminsdk-fbsvc-63445c802e.json"
+$env:GOOGLE_CLOUD_PROJECT="ceramic-app-aadcb"
+npm run audit:sellers
+```
 
-### Products by sellerId
-- total: `12`
-- `seller_uid`: `5`
-- `seller_uid_2`: `5`
-- `seller_demo`: `2`
-
-### Orders by sellerId (existing legacy data)
-- total: `18`
-- `seller_demo`: `17`
-- `seller_uid`: `1`
-
-Note:
-- Existing historical orders still mostly point to `seller_demo`.
-- For strict seller isolation demo, create fresh orders from new seeded products for each seller.
+Pass criteria:
+- `unknownProductSellerDocs` = `[]`
+- `unknownOrderSellerDocs` = `[]`
 
 ## Manual Verification Steps
 
-### seller_uid
-1. Login as seller account mapped to uid `seller_uid`
-2. Open seller dashboard
-3. Confirm products from `seller_uid_2` are not visible
-4. Create new user order for `seller_uid` product
-5. Confirm order appears in seller list
+### seller1
+1. login as `seller@ceramic.com`
+2. open seller dashboard
+3. verify only seller1 scope orders/products are visible
+4. open order detail and process status
 
-### seller_uid_2
-1. Login as seller2 account mapped to uid `seller_uid_2`
-2. Open seller dashboard
-3. Confirm products from `seller_uid` are not visible
-4. Create new user order for `seller_uid_2` product
-5. Confirm seller_uid orders are not visible
+### seller2
+1. login as `seller2@ceramic.com`
+2. open seller dashboard
+3. verify seller1-only records are not visible
+4. open order detail and process status
 
-### seller_demo compatibility
-1. Login as `seller@ceramic.com`
-2. Confirm legacy `seller_demo` products/orders are visible
-3. Confirm non-legacy unrelated seller data is not visible
+## Final PASS Criteria
 
-## PASS Criteria
-
-1. Seller can only see own `sellerId` records
-2. seller1 and seller2 datasets are isolated
-3. Legacy `seller_demo` compatibility only applies to demo seller account
-4. Seller order detail actions (ship/cancel) only apply to visible orders
-
-## Troubleshooting
-
-1. If seller sees all orders, check role in `users/{uid}.role`
-2. If seller sees no orders, check `orders.sellerId` values
-3. If seller_demo legacy does not appear, confirm login email is exactly `seller@ceramic.com`
-4. If product split is wrong, rerun seed:
-- `npm run seed:products:wipe` (with project env set)
+1. Seller cannot access other seller's records.
+2. Seller detail actions (ship/cancel) apply only to visible orders.
+3. Alias compatibility (`seller_uid`, `seller_uid_2`, `seller_demo`) works without leakage.

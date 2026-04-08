@@ -1,19 +1,26 @@
-﻿{
-    "name":  "ceramic-app-firestore-seed",
-    "private":  true,
-    "type":  "module",
-    "scripts":  {
-                    "seed:products":  "node seed_products_firestore.mjs",
-                    "seed:products:wipe":  "node seed_products_firestore.mjs --wipe",
-                    "test:rules":  "firebase emulators:exec --project demo-ceramic-app --only firestore \"node --test firestore_rules.test.mjs\"",
-                    "test:rules:localjdk":  "powershell -ExecutionPolicy Bypass -File .\\\\run_rules_test.ps1"
-                },
-    "dependencies":  {
-                         "firebase":  "^10.14.1",
-                         "firebase-admin":  "^12.7.0"
-                     },
-    "devDependencies":  {
-                            "@firebase/rules-unit-testing":  "^3.0.1",
-                            "firebase-tools":  "^13.23.0"
-                        }
+{
+    "name": "ceramic-app-firestore-seed",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "seed:products": "node seed_products_firestore.mjs",
+        "seed:products:wipe": "node seed_products_firestore.mjs --wipe",
+        "test:rules": "firebase emulators:exec --project demo-ceramic-app --only firestore \"node --test firestore_rules.test.mjs\"",
+        "test:rules:localjdk": "powershell -ExecutionPolicy Bypass -File .\\\\run_rules_test.ps1",
+        "seed:orders:e2e": "node seed_orders_firestore.mjs",
+        "seed:orders:e2e:wipe": "node seed_orders_firestore.mjs --wipe",
+        "check:accounts": "node check_demo_accounts.mjs",
+        "setup:accounts": "node bootstrap_demo_accounts.mjs",
+        "audit:orders": "node audit_orders_integrity.mjs",
+        "audit:sellers": "node audit_seller_partition.mjs",
+        "audit:strings": "node audit_mojibake_strings.mjs"
+    },
+    "dependencies": {
+        "firebase": "^10.14.1",
+        "firebase-admin": "^12.7.0"
+    },
+    "devDependencies": {
+        "@firebase/rules-unit-testing": "^3.0.1",
+        "firebase-tools": "^13.23.0"
+    }
 }

@@ -3,91 +3,83 @@
 Date: 2026-04-08
 Project: `ceramic-app-aadcb`
 
-## 1. Account Setup
+## 1. Target Accounts
 
-Prepare four test accounts in Firestore `users/{uid}`.
+1. admin: `admin@ceramic.com`
+2. seller: `seller@ceramic.com`
+3. seller2: `seller2@ceramic.com`
+4. user: `user@ceramic.com`
 
-1. `admin`
-- email: `admin@ceramic.com`
-- role: `admin`
-- purpose: role change, global visibility
+## 2. Pre-run Commands
 
-2. `seller`
-- email: `seller@ceramic.com`
-- role: `seller`
-- uid example: `seller_uid`
-- purpose: seller order processing
+Run from `C:\ceramic_app\scripts`:
 
-3. `seller2`
-- email: `seller2@ceramic.com`
-- role: `seller`
-- uid example: `seller_uid_2`
-- purpose: seller isolation verification
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\ceramic_app\keys\ceramic-app-aadcb-firebase-adminsdk-fbsvc-63445c802e.json"
+$env:GOOGLE_CLOUD_PROJECT="ceramic-app-aadcb"
+npm run check:accounts
+npm run seed:orders:e2e:wipe
+npm run audit:orders
+npm run audit:sellers
+```
 
-4. `user`
-- email: `user@ceramic.com`
-- role: `user`
-- uid example: `user_uid`
-- purpose: purchase and cancel request flow
+Expected:
+- account check `PASS`
+- order audit `issueOrders=0`, `warningOrders=0`
+- seller audit unknown docs empty
 
-## 2. E2E Checklist
+## 3. E2E Checklist
 
 ### A. User flow
-1. Login as `user`
-2. Create order from checkout
-3. Open order detail
-4. Tap `취소 요청`
-5. Verify order status becomes `취소요청`
-6. Verify status log has a new row with actor `구매자`
+1. login as `user`
+2. create order from checkout
+3. open order detail
+4. tap `취소 요청`
+5. verify status = `취소요청`
+6. verify status log actor includes `구매자`
 
 ### B. Seller flow
-1. Login as `seller`
-2. Open seller order list
-3. Verify only own seller orders are visible
-4. Open seller order detail
-5. Enter tracking number and tap `발송 처리`
-6. Verify status is `배송중` and tracking number is saved
-7. For cancel scenario, tap `취소 완료 처리`
-8. Verify status is `취소완료` and cancel reason is saved
+1. login as `seller`
+2. open seller order list
+3. verify only own scope orders are visible
+4. open seller order detail
+5. input tracking number and tap `발송 처리`
+6. verify status = `배송중`
+7. process cancel complete for cancel-requested order
+8. verify status = `취소완료` with reason
 
 ### C. Admin flow
-1. Login as `admin`
-2. Open `판매자 권한 관리`
-3. Change a test user role `user -> seller`
-4. Verify role is updated in `users/{uid}.role`
-5. Revert role to original value
+1. login as `admin`
+2. open role management
+3. change a test user role (`user -> seller`)
+4. verify role update in `users/{uid}.role`
+5. revert to original role
 
-## 3. Screenshot Rules
+## 4. Screenshot Rules
 
-### Folder
+Folder:
 - `C:\ceramic_app\captures\YYYYMMDD_e2e`
 
-### Naming
-- Format: `NN_role_action_result.png`
-- Examples:
-  - `01_user_login_pass.png`
-  - `02_user_cancel_request_pass.png`
-  - `03_seller_order_list_own_only_pass.png`
-  - `04_seller_ship_complete_pass.png`
-  - `05_seller_cancel_complete_pass.png`
-  - `06_admin_role_change_pass.png`
+Naming format:
+- `NN_role_action_result.png`
 
-### Required captures
-1. User order detail with `취소요청`
-2. Seller order detail with tracking number
-3. Seller order detail with `취소완료`
-4. Admin role dropdown before/after change
+Required captures:
+1. `01_user_cancel_request_pass.png`
+2. `02_seller_order_list_own_only_pass.png`
+3. `03_seller_ship_complete_pass.png`
+4. `04_seller_cancel_complete_pass.png`
+5. `05_admin_role_change_pass.png`
 
-## 4. PASS Criteria
+## 5. PASS Criteria
 
-1. User cannot set `취소완료` directly
-2. Seller can process ship and cancel for own orders
-3. Seller list shows only own orders
-4. Admin can change role and non-admin cannot
-5. Every status change appends `statusLogs`
+1. user cannot set `취소완료` directly
+2. seller can process ship/cancel only in own scope
+3. admin can change role and non-admin cannot
+4. status changes append `statusLogs`
+5. all required captures saved
 
-## 5. Fail Handling
+## 6. Fail Handling
 
-1. Save screenshot with suffix `_fail`
-2. Record repro steps in `docs/e2e_capture_report_template.md`
-3. Mark final decision as `NO-GO` until fixed
+1. Save screenshot with `_fail` suffix.
+2. Log reproduction steps in `docs/e2e_capture_report_template.md`.
+3. Mark final decision as `NO-GO` until fixed.
