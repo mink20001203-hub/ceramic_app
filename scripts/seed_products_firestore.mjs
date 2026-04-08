@@ -55,6 +55,7 @@ async function main() {
       isNew: Boolean(item.isNew ?? false),
       isSale: Boolean(item.isSale ?? false),
       options: Array.isArray(item.options) ? item.options : [],
+      sellerId: item.sellerId ?? 'seller_demo',
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -69,3 +70,4 @@ main().catch((error) => {
   console.error('[seed] failed:', error.message);
   process.exitCode = 1;
 });
+
