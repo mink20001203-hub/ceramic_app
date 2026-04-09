@@ -190,6 +190,31 @@ class AdminUserSummary {
 class UserDataManager with ChangeNotifier {
   static const String _defaultSellerId = 'seller_demo';
 
+  static List<Address> _defaultAddresses() => [
+        Address(
+          id: 'addr1',
+          label: '집',
+          recipient: '손님',
+          addressLine: '서울시 강남구 테헤란로 123',
+          phone: '010-1234-5678',
+          requestNote: '문 앞에 놓아주세요',
+        ),
+        Address(
+          id: 'addr2',
+          label: '회사',
+          recipient: '손님',
+          addressLine: '서울시 서초구 서초대로 45',
+          phone: '010-9876-5432',
+          requestNote: '경비실에 맡겨주세요',
+        ),
+      ];
+
+  static List<PaymentMethod> _defaultPaymentMethods() => [
+        PaymentMethod(id: 'pm1', label: '신용카드', type: 'CARD'),
+        PaymentMethod(id: 'pm2', label: '네이버페이', type: 'NAVER'),
+        PaymentMethod(id: 'pm3', label: '카카오페이', type: 'KAKAO'),
+      ];
+
   bool _isLoggedIn = false;
   String? _userId;
   UserRole _role = UserRole.user;
@@ -223,29 +248,8 @@ class UserDataManager with ChangeNotifier {
   bool get productsLoading => _productsLoading;
   bool get remoteProductsEnabled => _remoteProductsEnabled;
 
-  final List<Address> _addresses = [
-    Address(
-      id: 'addr1',
-      label: '집',
-      recipient: '손님',
-      addressLine: '서울시 강남구 테헤란로 123',
-      phone: '010-1234-5678',
-      requestNote: '문 앞에 놓아주세요',
-    ),
-    Address(
-      id: 'addr2',
-      label: '회사',
-      recipient: '손님',
-      addressLine: '서울시 서초구 서초대로 45',
-      phone: '010-9876-5432',
-      requestNote: '경비실에 맡겨주세요',
-    ),
-  ];
-  final List<PaymentMethod> _paymentMethods = [
-    PaymentMethod(id: 'pm1', label: '신용카드', type: 'CARD'),
-    PaymentMethod(id: 'pm2', label: '네이버페이', type: 'NAVER'),
-    PaymentMethod(id: 'pm3', label: '카카오페이', type: 'KAKAO'),
-  ];
+  final List<Address> _addresses = _defaultAddresses();
+  final List<PaymentMethod> _paymentMethods = _defaultPaymentMethods();
   final List<Coupon> _coupons = [
     Coupon(
         id: 'c1',
@@ -1555,6 +1559,31 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
+  void _ensureCheckoutDefaults() {
+    if (_addresses.isEmpty) {
+      _addresses
+        ..clear()
+        ..addAll(_defaultAddresses());
+    }
+    if (_paymentMethods.isEmpty) {
+      _paymentMethods
+        ..clear()
+        ..addAll(_defaultPaymentMethods());
+    }
+
+    if (_addresses.any((address) => address.id == _selectedAddressId)) {
+      // keep current selection
+    } else {
+      _selectedAddressId = _addresses.isEmpty ? '' : _addresses.first.id;
+    }
+
+    if (_paymentMethods.any((payment) => payment.id == _selectedPaymentId)) {
+      // keep current selection
+    } else {
+      _selectedPaymentId = _paymentMethods.isEmpty ? '' : _paymentMethods.first.id;
+    }
+  }
+
   Future<void> _loadFromBackend() async {
     if (!_firebaseReady || _userId == null) return;
     try {
@@ -1614,6 +1643,7 @@ class UserDataManager with ChangeNotifier {
       _selectedAddressId = (data['selectedAddressId'] as String?) ?? _selectedAddressId;
       _selectedPaymentId = (data['selectedPaymentId'] as String?) ?? _selectedPaymentId;
       _selectedCouponId = data['selectedCouponId'] as String?;
+      _ensureCheckoutDefaults();
       _reviewCount = _reviews.length;
       await _syncUserSubcollectionsFromMemory();
       _backendError = null;
