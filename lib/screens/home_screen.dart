@@ -7,15 +7,37 @@ import '../theme/app_tokens.dart';
 import '../widgets/oud_components.dart';
 import '../widgets/product_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  static const List<String> _categories = <String>[
+    '전체',
+    '컵',
+    '접시',
+    '볼',
+    '화병',
+    '트레이',
+    '세트',
+  ];
+
+  String _selectedCategory = '전체';
 
   @override
   Widget build(BuildContext context) {
     final manager = context.watch<UserDataManager>();
     final products = manager.products;
-    final featured = products.take(4).toList();
-    final newArrivals = products.where((product) => product.isNew).take(6).toList();
+    final filtered = _selectedCategory == '전체'
+        ? products
+        : products.where((p) => p.category == _selectedCategory).toList();
+
+    final highlighted = filtered.where((p) => p.isNew || p.isSale).take(6).toList();
+    final bestByStock = List<Product>.from(filtered)
+      ..sort((a, b) => b.stock.compareTo(a.stock));
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -23,7 +45,7 @@ class HomeScreen extends StatelessWidget {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: _heroCard(manager),
+            child: _heroCard(filtered.length, manager.products.length, manager.reviewCount),
           ),
         ),
         SliverToBoxAdapter(
@@ -34,7 +56,7 @@ class HomeScreen extends StatelessWidget {
         ),
         const SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 10),
+            padding: EdgeInsets.fromLTRB(16, 22, 16, 10),
             child: OudSectionTitle(title: '추천 상품'),
           ),
         ),
@@ -45,84 +67,89 @@ class HomeScreen extends StatelessWidget {
                     key: ValueKey('home-loading'),
                     height: 220,
                     child: OudLoadingState(
-                      title: '상품 목록을 불러오는 중입니다',
-                      subtitle: '잠시만 기다려 주세요',
+                      title: '상품을 불러오는 중입니다',
+                      subtitle: '잠시만 기다려 주세요.',
                     ),
                   )
-                : products.isEmpty
+                : filtered.isEmpty
                     ? const SizedBox(
                         key: ValueKey('home-empty'),
                         height: 220,
                         child: OudEmptyState(
-                          title: '등록된 상품이 없습니다',
-                          subtitle: '관리자 또는 판매자에서 상품을 먼저 등록해 주세요',
+                          title: '조건에 맞는 상품이 없습니다',
+                          subtitle: '카테고리를 바꿔서 다시 확인해 주세요.',
                           icon: Icons.inventory_2_outlined,
                         ),
                       )
                     : GridView.builder(
-                        key: const ValueKey('home-grid'),
+                        key: ValueKey('home-grid-$_selectedCategory'),
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
-                        itemCount: products.length,
+                        itemCount: filtered.length,
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
                           childAspectRatio: 0.72,
                         ),
-                        itemBuilder: (_, index) => ProductCard(product: products[index]),
+                        itemBuilder: (_, index) => ProductCard(product: filtered[index]),
                       ),
           ),
         ),
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, 22, 16, 10),
-            child: OudSectionTitle(title: '신상품'),
+            child: OudSectionTitle(title: '신상 · 할인'),
           ),
         ),
-        SliverToBoxAdapter(
-          child: _newArrivalsSection(newArrivals.isEmpty ? featured : newArrivals),
+        SliverToBoxAdapter(child: _highlightSection(highlighted)),
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 22, 16, 10),
+            child: OudSectionTitle(title: '카테고리 베스트'),
+          ),
         ),
+        SliverToBoxAdapter(child: _bestSellerSection(bestByStock.take(5).toList())),
         const SliverToBoxAdapter(child: SizedBox(height: 110)),
       ],
     );
   }
 
-  Widget _heroCard(UserDataManager manager) {
+  Widget _heroCard(int filteredCount, int totalCount, int reviewCount) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFF7F3EE), Color(0xFFEFE7DD)],
+          colors: [Color(0xFFF8F3EC), Color(0xFFEFE3D6)],
         ),
         borderRadius: OudRadii.xl,
         border: Border.all(color: OudColors.border),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '오늘의 도자기 큐레이션',
+            'OUD 컬렉션',
             style: TextStyle(fontSize: 13, color: OudColors.mutedText, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
-          const Text('핸드메이드 감성을 일상에 담다', style: OudTypography.headingMd),
+          const Text('오늘 고르기 좋은 도자기', style: OudTypography.headingMd),
           const SizedBox(height: 10),
           const Text(
-            '작가의 감성과 실사용 품질을 함께 담은 도자기 상품을 둘러보세요.',
-            style: TextStyle(height: 1.5, color: OudColors.text),
+            '머그, 접시, 볼, 화병까지 카테고리별로 빠르게 둘러보세요.',
+            style: TextStyle(height: 1.45, color: OudColors.text),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             children: [
-              _heroStat('상품', '${manager.products.length}'),
+              _heroStat('노출 상품', '$filteredCount'),
               const SizedBox(width: 8),
-              _heroStat('리뷰', '${manager.reviewCount}'),
+              _heroStat('전체 상품', '$totalCount'),
               const SizedBox(width: 8),
-              _heroStat('마일리지', '${manager.mileage}'),
+              _heroStat('리뷰', '$reviewCount'),
             ],
           ),
         ],
@@ -135,7 +162,7 @@ class HomeScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.75),
+          color: Colors.white.withValues(alpha: 0.78),
           borderRadius: OudRadii.md,
         ),
         child: Column(
@@ -149,39 +176,39 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _categoryChips() {
-    const categories = <String>['전체', '머그', '볼', '화병', '플레이트', '인테리어'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: categories
-            .map(
-              (category) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Chip(
-                  label: Text(category),
-                  side: const BorderSide(color: OudColors.border),
-                  backgroundColor: category == '전체' ? OudColors.primarySoft : Colors.white,
-                  labelStyle: TextStyle(
-                    color: category == '전체' ? OudColors.primary : OudColors.text,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+        children: _categories.map((category) {
+          final selected = _selectedCategory == category;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(category),
+              selected: selected,
+              selectedColor: OudColors.primarySoft,
+              side: const BorderSide(color: OudColors.border),
+              labelStyle: TextStyle(
+                color: selected ? OudColors.primary : OudColors.text,
+                fontWeight: FontWeight.w700,
               ),
-            )
-            .toList(),
+              onSelected: (_) => setState(() => _selectedCategory = category),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  Widget _newArrivalsSection(List<Product> products) {
+  Widget _highlightSection(List<Product> products) {
     if (products.isEmpty) {
       return const Padding(
         padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: SizedBox(
-          height: 120,
+          height: 100,
           child: OudEmptyState(
-            title: '신상품이 아직 없습니다',
-            subtitle: '다음 업데이트에서 새 상품이 추가됩니다',
+            title: '신상/할인 상품이 없습니다',
+            subtitle: '다른 카테고리에서 확인해 보세요.',
             icon: Icons.new_releases_outlined,
           ),
         ),
@@ -189,7 +216,7 @@ class HomeScreen extends StatelessWidget {
     }
 
     return SizedBox(
-      height: 140,
+      height: 146,
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         scrollDirection: Axis.horizontal,
@@ -206,8 +233,8 @@ class HomeScreen extends StatelessWidget {
                   ClipRRect(
                     borderRadius: OudRadii.md,
                     child: SizedBox(
-                      width: 78,
-                      height: 78,
+                      width: 82,
+                      height: 82,
                       child: item.image == null
                           ? Container(color: OudColors.surface)
                           : Image.asset(
@@ -234,13 +261,27 @@ class HomeScreen extends StatelessWidget {
                           item.subTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12, color: OudColors.mutedText),
+                          style: const TextStyle(color: OudColors.mutedText),
                         ),
-                        const SizedBox(height: 8),
-                        const OudTag(
-                          label: '신상품',
-                          bgColor: OudColors.sage,
-                          textColor: OudColors.successText,
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            if (item.isNew)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 6),
+                                child: OudTag(
+                                  label: '신상',
+                                  bgColor: OudColors.sage,
+                                  textColor: Color(0xFF32502E),
+                                ),
+                              ),
+                            if (item.isSale)
+                              const OudTag(
+                                label: '할인',
+                                bgColor: OudColors.primarySoft,
+                                textColor: OudColors.primary,
+                              ),
+                          ],
                         ),
                       ],
                     ),
@@ -250,6 +291,58 @@ class HomeScreen extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _bestSellerSection(List<Product> products) {
+    if (products.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: OudSectionCard(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: products.asMap().entries.map((entry) {
+            final rank = entry.key + 1;
+            final item = entry.value;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 7),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: OudColors.surface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '$rank',
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  Text(
+                    '재고 ${item.stock}',
+                    style: const TextStyle(color: OudColors.mutedText),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
