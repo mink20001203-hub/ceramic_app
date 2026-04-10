@@ -116,6 +116,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         : (subtotal + shippingFee - couponDiscount);
     if (_mileageToUse > maxMileage) _mileageToUse = maxMileage;
     final finalAmount = subtotal + shippingFee - couponDiscount - _mileageToUse;
+    final estimatedDelivery = DateFormat('M/d(EEE)', 'ko_KR').format(
+      DateTime.now().add(const Duration(days: 3)),
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -123,7 +126,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 156),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 168),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -133,10 +136,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 4),
             const Text(
-              '주문 정보를 확인하고 결제를 진행해 주세요.',
+              '배송/쿠폰/결제 정보를 확인하고 안전하게 주문하세요.',
               style: TextStyle(color: OudColors.mutedText),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                const OudTag(label: '50,000원 이상 무료배송'),
+                OudTag(label: '예상 도착 $estimatedDelivery'),
+                const OudTag(label: '파손 시 재배송 지원'),
+              ],
+            ),
+            if (manager.backendError != null) ...[
+              const SizedBox(height: 10),
+              _warnBanner('백엔드 동기화 이슈가 감지되었습니다. 결제 후 주문내역을 꼭 확인해 주세요.'),
+            ],
+            const SizedBox(height: 16),
             const OudStepTitle(step: 1, title: '주문 상품'),
             OudSectionCard(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
@@ -144,6 +161,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 children: items.map((item) {
                   final sale = item.product.isSale && item.product.salePrice != null;
                   final unit = sale ? item.product.salePrice! : item.product.price;
+                  final lineSoldOut = item.product.stock == 0;
+                  final lineOver = item.quantity > item.product.stock;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
@@ -178,6 +197,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 '${item.option ?? '기본'} / ${item.quantity}개',
                                 style: const TextStyle(color: OudColors.mutedText, fontSize: 12),
                               ),
+                              if (lineSoldOut)
+                                const Text(
+                                  '품절 상품입니다.',
+                                  style: TextStyle(color: OudColors.danger, fontSize: 12, fontWeight: FontWeight.w700),
+                                ),
+                              if (!lineSoldOut && lineOver)
+                                Text(
+                                  '재고 부족: 최대 ${item.product.stock}개 주문 가능',
+                                  style: const TextStyle(color: OudColors.danger, fontSize: 12, fontWeight: FontWeight.w700),
+                                ),
                             ],
                           ),
                         ),
@@ -194,21 +223,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const SizedBox(height: 14),
             const OudStepTitle(step: 2, title: '배송 정보'),
             OudSectionCard(
-              child: DropdownButtonFormField<String>(
-                initialValue: _addressId,
-                decoration: const InputDecoration(
-                  labelText: '배송지 선택',
-                  border: OutlineInputBorder(borderRadius: OudRadii.md),
-                ),
-                items: manager.addresses
-                    .map(
-                      (address) => DropdownMenuItem<String>(
-                        value: address.id,
-                        child: Text('${address.recipient} | ${address.addressLine}'),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => _addressId = value),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: _addressId,
+                    decoration: const InputDecoration(
+                      labelText: '배송지 선택',
+                      border: OutlineInputBorder(borderRadius: OudRadii.md),
+                    ),
+                    items: manager.addresses
+                        .map(
+                          (address) => DropdownMenuItem<String>(
+                            value: address.id,
+                            child: Text('${address.recipient} | ${address.addressLine}'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => setState(() => _addressId = value),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '배송비 규칙: 50,000원 미만 3,000원 / 이상 무료',
+                    style: TextStyle(fontSize: 12, color: OudColors.mutedText),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 14),
@@ -236,6 +275,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                     ],
                     onChanged: (value) => setState(() => _couponId = value),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectedCoupon == null
+                        ? '쿠폰 조건: 최소 주문금액 충족 시 자동 반영'
+                        : couponApplicable
+                            ? '쿠폰 적용 가능: 할인 금액이 결제금액에 반영됩니다.'
+                            : '쿠폰 미적용: 최소 주문금액 ${format.format(selectedCoupon.minOrderAmount)}원 필요',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: couponApplicable || selectedCoupon == null ? OudColors.mutedText : OudColors.danger,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -285,8 +336,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 value: _agreed,
                 onChanged: (value) => setState(() => _agreed = value ?? false),
                 title: const Text(
-                  '구매 조건 및 결제 진행에 동의합니다.',
-                  style: TextStyle(fontSize: 14),
+                  '주문 정보, 환불 정책, 배송 지연 가능성 안내를 확인하고 결제에 동의합니다.',
+                  style: TextStyle(fontSize: 13.5, height: 1.35),
                 ),
                 controlAffinity: ListTileControlAffinity.leading,
               ),
@@ -338,24 +389,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ? null
                         : () async {
                             if (_addressId == null || _paymentId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('배송지와 결제 수단을 선택해 주세요.')),
-                              );
+                              _toast('배송지와 결제 수단을 선택해 주세요.');
                               return;
                             }
                             if (!_agreed) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('결제 동의 체크가 필요합니다.')),
-                              );
+                              _toast('주문 동의 체크가 필요합니다.');
+                              return;
+                            }
+
+                            final soldOut = items.any((line) => line.product.stock == 0);
+                            if (soldOut) {
+                              _toast('품절 상품이 포함되어 결제를 진행할 수 없습니다.');
+                              return;
+                            }
+
+                            final overStock = items.any((line) => line.quantity > line.product.stock);
+                            if (overStock) {
+                              _toast('재고 수량을 초과한 상품이 있습니다. 수량을 조정해 주세요.');
                               return;
                             }
 
                             final addresses = manager.addresses;
                             final payments = manager.paymentMethods;
                             if (addresses.isEmpty || payments.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('배송지 또는 결제수단 정보가 없습니다.')),
-                              );
+                              _toast('배송지 또는 결제수단 정보가 없습니다.');
                               return;
                             }
 
@@ -407,6 +464,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   ),
                                 ),
                               );
+                            } catch (_) {
+                              if (!mounted) return;
+                              _toast('결제 처리 중 오류가 발생했습니다. 네트워크 상태를 확인 후 다시 시도해 주세요.');
                             } finally {
                               if (mounted) setState(() => _submitting = false);
                             }
@@ -428,5 +488,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       ),
     );
+  }
+
+  Widget _warnBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCE8E3),
+        borderRadius: OudRadii.md,
+        border: Border.all(color: const Color(0xFFF1C5B7)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: OudColors.primary, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF7B3B2A), height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

@@ -34,10 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final filtered = _selectedCategory == '전체'
         ? products
         : products.where((p) => p.category == _selectedCategory).toList();
-
     final highlighted = filtered.where((p) => p.isNew || p.isSale).take(6).toList();
-    final bestByStock = List<Product>.from(filtered)
-      ..sort((a, b) => b.stock.compareTo(a.stock));
+    final bestByStock = List<Product>.from(filtered)..sort((a, b) => b.stock.compareTo(a.stock));
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
@@ -45,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: _heroCard(filtered.length, manager.products.length, manager.reviewCount),
+            child: _heroCard(manager, filtered.length),
           ),
         ),
         SliverToBoxAdapter(
@@ -54,6 +52,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _categoryChips(),
           ),
         ),
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 18, 16, 10),
+            child: OudSectionTitle(title: '왜 OUD인가요'),
+          ),
+        ),
+        SliverToBoxAdapter(child: _whyOudSection()),
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, 22, 16, 10),
@@ -77,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 220,
                         child: OudEmptyState(
                           title: '조건에 맞는 상품이 없습니다',
-                          subtitle: '카테고리를 바꿔서 다시 확인해 주세요.',
+                          subtitle: '카테고리를 변경하거나 전체 탭을 확인해 주세요.',
                           icon: Icons.inventory_2_outlined,
                         ),
                       )
@@ -107,22 +112,28 @@ class _HomeScreenState extends State<HomeScreen> {
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, 22, 16, 10),
-            child: OudSectionTitle(title: '카테고리 베스트'),
+            child: OudSectionTitle(title: '카테고리 베스트 근거'),
           ),
         ),
-        SliverToBoxAdapter(child: _bestSellerSection(bestByStock.take(5).toList())),
-        const SliverToBoxAdapter(child: SizedBox(height: 110)),
+        SliverToBoxAdapter(child: _bestEvidenceSection(bestByStock.take(5).toList())),
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 22, 16, 0),
+            child: SizedBox(height: 102, child: _RestockPromptCard()),
+          ),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 96)),
       ],
     );
   }
 
-  Widget _heroCard(int filteredCount, int totalCount, int reviewCount) {
+  Widget _heroCard(UserDataManager manager, int filteredCount) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFF8F3EC), Color(0xFFEFE3D6)],
+          colors: [Color(0xFFF8F3EC), Color(0xFFEDE0D0)],
         ),
         borderRadius: OudRadii.xl,
         border: Border.all(color: OudColors.border),
@@ -132,24 +143,34 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'OUD 컬렉션',
+            'OUD 큐레이션',
             style: TextStyle(fontSize: 13, color: OudColors.mutedText, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
-          const Text('오늘 고르기 좋은 도자기', style: OudTypography.headingMd),
-          const SizedBox(height: 10),
+          const Text('지속 가능한 핸드메이드 도자기', style: OudTypography.headingMd),
+          const SizedBox(height: 8),
           const Text(
-            '머그, 접시, 볼, 화병까지 카테고리별로 빠르게 둘러보세요.',
+            '작가별 스토리와 실사용 후기를 함께 보고, 오늘 바로 쓸 수 있는 그릇을 선택하세요.',
             style: TextStyle(height: 1.45, color: OudColors.text),
+          ),
+          const SizedBox(height: 12),
+          const Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OudTag(label: '당일 발송 상품 운영'),
+              OudTag(label: '파손 재배송 보장'),
+              OudTag(label: '작가 검수 완료'),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               _heroStat('노출 상품', '$filteredCount'),
               const SizedBox(width: 8),
-              _heroStat('전체 상품', '$totalCount'),
+              _heroStat('전체 상품', '${manager.products.length}'),
               const SizedBox(width: 8),
-              _heroStat('리뷰', '$reviewCount'),
+              _heroStat('리뷰', '${manager.reviewCount}'),
             ],
           ),
         ],
@@ -200,6 +221,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _whyOudSection() {
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _PitchCard(
+              icon: Icons.verified_user_outlined,
+              title: '품질 기준',
+              subtitle: '작가 검수 + 출고 전 2차 확인',
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: _PitchCard(
+              icon: Icons.local_shipping_outlined,
+              title: '배송 신뢰',
+              subtitle: '파손 시 즉시 재출고 지원',
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: _PitchCard(
+              icon: Icons.chat_bubble_outline,
+              title: '실사용 리뷰',
+              subtitle: '실제 사용 맥락 중심 후기',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _highlightSection(List<Product> products) {
     if (products.isEmpty) {
       return const Padding(
@@ -225,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
         itemBuilder: (_, index) {
           final item = products[index];
           return SizedBox(
-            width: 260,
+            width: 262,
             child: OudSectionCard(
               padding: const EdgeInsets.all(10),
               child: Row(
@@ -295,10 +349,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _bestSellerSection(List<Product> products) {
-    if (products.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  Widget _bestEvidenceSection(List<Product> products) {
+    if (products.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -308,6 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: products.asMap().entries.map((entry) {
             final rank = entry.key + 1;
             final item = entry.value;
+            final proof = item.stock > 8 ? '재구매 비중 높음' : (item.stock > 3 ? '안정 재고 운영' : '소량 리미티드');
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 7),
               child: Row(
@@ -316,33 +369,100 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 24,
                     height: 24,
                     alignment: Alignment.center,
-                    decoration: const BoxDecoration(
-                      color: OudColors.surface,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '$rank',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
-                    ),
+                    decoration: const BoxDecoration(color: OudColors.surface, shape: BoxShape.circle),
+                    child: Text('$rank', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          proof,
+                          style: const TextStyle(fontSize: 12, color: OudColors.mutedText),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    '재고 ${item.stock}',
-                    style: const TextStyle(color: OudColors.mutedText),
-                  ),
+                  Text('재고 ${item.stock}', style: const TextStyle(color: OudColors.mutedText)),
                 ],
               ),
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+}
+
+class _PitchCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _PitchCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 110,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: OudRadii.lg,
+        border: Border.all(color: OudColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: OudColors.primary),
+          const SizedBox(height: 6),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 12, color: OudColors.mutedText, height: 1.3),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RestockPromptCard extends StatelessWidget {
+  const _RestockPromptCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const OudSectionCard(
+      padding: EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '재입고 알림 & 신상 소식',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          ),
+          SizedBox(height: 6),
+          Text(
+            '인기 상품 품절 시 알림을 받고, 신상 오픈 소식을 먼저 확인하세요.',
+            style: TextStyle(color: OudColors.mutedText, height: 1.4),
+          ),
+          SizedBox(height: 8),
+          OudTag(label: '다음 업데이트: 금요일 10:00'),
+        ],
       ),
     );
   }

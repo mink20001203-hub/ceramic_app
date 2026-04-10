@@ -41,6 +41,7 @@ class _DetailScreenState extends State<DetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('OUD'),
+        centerTitle: true,
         actions: [
           IconButton(
             onPressed: () => manager.toggleWishlist(product),
@@ -58,22 +59,26 @@ class _DetailScreenState extends State<DetailScreen> {
           children: [
             _imageCard(product, soldOut),
             const SizedBox(height: 16),
-            Row(
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
               children: [
-                if (product.isNew) const OudTag(label: '신상', bgColor: OudColors.sage, textColor: Color(0xFF32502E)),
-                if (product.isNew && product.isSale) const SizedBox(width: 6),
-                if (product.isSale) const OudTag(label: '할인', bgColor: OudColors.primarySoft, textColor: OudColors.primary),
+                if (product.isNew)
+                  const OudTag(label: '신상', bgColor: OudColors.sage, textColor: Color(0xFF32502E)),
+                if (product.isSale)
+                  const OudTag(label: '할인', bgColor: OudColors.primarySoft, textColor: OudColors.primary),
+                const OudTag(label: '파손 재배송 보장'),
               ],
             ),
-            if (product.isNew || product.isSale) const SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(product.title, style: OudTypography.headingLg),
             const SizedBox(height: 4),
             Text(product.subTitle, style: const TextStyle(color: OudColors.mutedText, height: 1.4)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             OudPriceText(price: unitPrice, original: sale ? product.price : null),
             const SizedBox(height: 6),
             Text(
-              soldOut ? '현재 품절 상품입니다.' : '재고 ${product.stock}개',
+              soldOut ? '현재 품절 상품입니다. 재입고 알림 신청을 권장합니다.' : '재고 ${product.stock}개 · 오늘 출고 가능',
               style: TextStyle(
                 color: soldOut ? OudColors.danger : OudColors.mutedText,
                 fontWeight: FontWeight.w600,
@@ -81,9 +86,13 @@ class _DetailScreenState extends State<DetailScreen> {
             ),
             const SizedBox(height: 18),
             _orderInfoCard(format, unitPrice, totalPrice, soldOut),
-            const SizedBox(height: 14),
-            _descriptionCard(),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
+            const _TrustInfoCard(),
+            const SizedBox(height: 12),
+            _sizeMaterialCard(),
+            const SizedBox(height: 12),
+            _reviewCard(),
+            const SizedBox(height: 12),
             _relatedCard(manager),
           ],
         ),
@@ -208,7 +217,15 @@ class _DetailScreenState extends State<DetailScreen> {
           OudQuantityStepper(
             value: _quantity,
             onMinus: _quantity > 1 ? () => setState(() => _quantity--) : null,
-            onPlus: soldOut || _quantity >= widget.product.stock ? null : () => setState(() => _quantity++),
+            onPlus: soldOut
+                ? null
+                : _quantity >= widget.product.stock
+                    ? () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('현재 재고보다 많은 수량은 선택할 수 없습니다.')),
+                        );
+                      }
+                    : () => setState(() => _quantity++),
           ),
           const SizedBox(height: 14),
           const Divider(height: 1, color: OudColors.border),
@@ -221,17 +238,45 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  Widget _descriptionCard() {
+  Widget _sizeMaterialCard() {
     return const OudSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          OudSectionTitle(title: '상품 설명'),
+          OudSectionTitle(title: '사이즈 · 재질 · 수작업 안내'),
           SizedBox(height: 10),
+          Text('• 재질: 스톤웨어 기반 수작업 도자기', style: TextStyle(height: 1.45)),
+          Text('• 특징: 유약 흐름, 점/결 무늬가 개체마다 다를 수 있음', style: TextStyle(height: 1.45)),
+          Text('• 권장: 첫 사용 전 미온수 세척 후 건조', style: TextStyle(height: 1.45)),
+          Text('• 주의: 급격한 온도 변화는 피하고, 파손 흔적 시 사용 중단', style: TextStyle(height: 1.45)),
+          SizedBox(height: 8),
           Text(
-            '작가의 수작업 공정으로 제작된 도자기입니다. 유약의 흐름과 색감은 개체마다 차이가 있으며, 전자레인지/식기세척기 사용 가능 여부는 상세 옵션에서 확인해 주세요.',
-            style: TextStyle(height: 1.55, color: OudColors.text),
+            '실사용 팁: 컵/볼류는 밝은 조명 아래에서 표면 색감을 먼저 확인하면 만족도가 높습니다.',
+            style: TextStyle(color: OudColors.mutedText, height: 1.45),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewCard() {
+    return const OudSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          OudSectionTitle(title: '리뷰 요약'),
+          SizedBox(height: 8),
+          Row(
+            children: [
+              Text('평점 4.8', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 22, color: OudColors.primary)),
+              SizedBox(width: 8),
+              Text('(최근 30일 후기 기준)', style: TextStyle(color: OudColors.mutedText)),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text('• “색감이 사진과 거의 같아서 만족”', style: TextStyle(height: 1.4)),
+          Text('• “포장 상태가 꼼꼼해 파손 없이 도착”', style: TextStyle(height: 1.4)),
+          Text('• “일상 식탁에 잘 어울려 재구매 의사 있음”', style: TextStyle(height: 1.4)),
         ],
       ),
     );
@@ -282,6 +327,27 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrustInfoCard extends StatelessWidget {
+  const _TrustInfoCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const OudSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          OudSectionTitle(title: '배송 · 교환/반품'),
+          SizedBox(height: 10),
+          Text('• 기본 배송비 3,000원 / 50,000원 이상 무료배송', style: TextStyle(height: 1.45)),
+          Text('• 평균 출고 1~2일, 도착 예상 2~4일', style: TextStyle(height: 1.45)),
+          Text('• 파손/오배송은 수령 후 7일 이내 무상 처리', style: TextStyle(height: 1.45)),
+          Text('• 단순 변심 교환/반품은 미사용 상태에서 신청 가능', style: TextStyle(height: 1.45)),
         ],
       ),
     );
