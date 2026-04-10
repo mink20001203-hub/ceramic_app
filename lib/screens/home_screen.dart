@@ -119,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.fromLTRB(16, 22, 16, 0),
-            child: SizedBox(height: 102, child: _RestockPromptCard()),
+            child: _RestockPromptCard(),
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: 96)),
@@ -204,16 +204,42 @@ class _HomeScreenState extends State<HomeScreen> {
           final selected = _selectedCategory == category;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(category),
-              selected: selected,
-              selectedColor: OudColors.primarySoft,
-              side: const BorderSide(color: OudColors.border),
-              labelStyle: TextStyle(
-                color: selected ? OudColors.primary : OudColors.text,
-                fontWeight: FontWeight.w700,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: OudRadii.pill,
+                onTap: () => setState(() => _selectedCategory = category),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  curve: Curves.easeOutCubic,
+                  constraints: const BoxConstraints(minHeight: 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: selected ? OudColors.primarySoft : Colors.white,
+                    borderRadius: OudRadii.pill,
+                    border: Border.all(
+                      color: selected ? const Color(0xFFD9B6A8) : OudColors.border,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (selected) ...[
+                        const Icon(Icons.check_rounded, size: 14, color: OudColors.primary),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        category,
+                        style: TextStyle(
+                          color: selected ? OudColors.primary : OudColors.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              onSelected: (_) => setState(() => _selectedCategory = category),
             ),
           );
         }).toList(),
@@ -450,6 +476,7 @@ class _RestockPromptCard extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '재입고 알림 & 신상 소식',

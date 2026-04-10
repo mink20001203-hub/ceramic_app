@@ -118,6 +118,8 @@ class OrderDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
+                _statusGuideCard(order.status),
+                const SizedBox(height: 10),
                 OudSectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,6 +234,11 @@ class OrderDetailScreen extends StatelessWidget {
                     child: const Text('재주문(장바구니 담기)'),
                   ),
                 ),
+                const SizedBox(height: 8),
+                const Text(
+                  '예외 안내: 품절/재고 부족 시 일부 품목은 재주문에서 제외될 수 있습니다.',
+                  style: TextStyle(fontSize: 12, color: OudColors.mutedText),
+                ),
               ],
             ),
           ),
@@ -248,6 +255,49 @@ class OrderDetailScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(color: bg, borderRadius: OudRadii.pill),
       child: Text(status, style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w700)),
+    );
+  }
+
+  Widget _statusGuideCard(String status) {
+    String message;
+    Color tone;
+    if (status == '결제완료' || status == '배송준비') {
+      message = '현재 취소요청이 가능한 상태입니다. 상세 하단 버튼에서 바로 요청할 수 있습니다.';
+      tone = const Color(0xFF5A6D46);
+    } else if (status == '배송중') {
+      message = '배송중 상태에서는 취소요청이 제한될 수 있습니다. 배송 완료 후 교환/반품 정책을 확인해 주세요.';
+      tone = const Color(0xFF6A4A35);
+    } else if (status == '취소요청') {
+      message = '취소요청이 접수되었습니다. 판매자 확인 후 취소완료로 변경됩니다.';
+      tone = const Color(0xFF8A4A3A);
+    } else if (status == '취소완료') {
+      message = '취소가 완료된 주문입니다. 환불 처리 상태는 결제수단별 영업일 기준으로 반영됩니다.';
+      tone = const Color(0xFF8A4A3A);
+    } else {
+      message = '주문 상태를 확인할 수 있습니다. 상태 로그를 기준으로 처리 진행 상황을 확인해 주세요.';
+      tone = const Color(0xFF6A4A35);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F1E8),
+        borderRadius: OudRadii.md,
+        border: Border.all(color: const Color(0xFFE9D7C6)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, size: 18, color: OudColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 12.5, color: tone, height: 1.35, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
