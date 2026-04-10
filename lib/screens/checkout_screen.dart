@@ -61,13 +61,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     final items = widget.mode == CheckoutMode.cart
         ? manager.items
-            .map((item) => _CheckoutItem(
-                  product: item.product,
-                  quantity: item.quantity,
-                  option: item.option,
-                ))
+            .map(
+              (item) => _CheckoutItem(
+                product: item.product,
+                quantity: item.quantity,
+                option: item.option,
+              ),
+            )
             .toList()
-        : [
+        : <_CheckoutItem>[
             _CheckoutItem(
               product: widget.product!,
               quantity: widget.quantity,
@@ -79,7 +81,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return const Scaffold(
         body: OudEmptyState(
           title: '결제할 상품이 없습니다',
-          subtitle: '장바구니에서 상품을 담아 주세요.',
+          subtitle: '장바구니에서 상품을 담은 뒤 다시 시도해 주세요.',
           icon: Icons.shopping_bag_outlined,
         ),
       );
@@ -94,12 +96,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       subtotal += (sale ? item.product.salePrice! : item.product.price) * item.quantity;
     }
 
-    final selectedCoupon = _couponId == null
-        ? null
-        : manager.coupons.firstWhere(
-            (coupon) => coupon.id == _couponId,
-            orElse: () => manager.coupons.first,
-          );
+    Coupon? selectedCoupon;
+    if (_couponId != null) {
+      for (final coupon in manager.coupons) {
+        if (coupon.id == _couponId) {
+          selectedCoupon = coupon;
+          break;
+        }
+      }
+    }
 
     final couponApplicable = selectedCoupon != null &&
         !selectedCoupon.isUsed &&
@@ -109,35 +114,32 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final maxMileage = manager.mileage < (subtotal + shippingFee - couponDiscount)
         ? manager.mileage
         : (subtotal + shippingFee - couponDiscount);
-
     if (_mileageToUse > maxMileage) _mileageToUse = maxMileage;
-    final total = subtotal + shippingFee - couponDiscount - _mileageToUse;
+    final finalAmount = subtotal + shippingFee - couponDiscount - _mileageToUse;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('OUD'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
+        title: const Text('결제'),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 150),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 156),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Checkout',
-              style: TextStyle(fontSize: 35, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.6),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 4),
             const Text(
-              '주문서를 작성하고 결제를 완료해 주세요.',
+              '주문 정보를 확인하고 결제를 진행해 주세요.',
               style: TextStyle(color: OudColors.mutedText),
             ),
             const SizedBox(height: 18),
             const OudStepTitle(step: 1, title: '주문 상품'),
             OudSectionCard(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
               child: Column(
                 children: items.map((item) {
                   final sale = item.product.isSale && item.product.salePrice != null;
@@ -149,15 +151,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         ClipRRect(
                           borderRadius: OudRadii.sm,
                           child: SizedBox(
-                            width: 54,
-                            height: 54,
+                            width: 58,
+                            height: 58,
                             child: item.product.image == null
                                 ? Container(color: OudColors.surface)
                                 : Image.asset(
                                     item.product.image!,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        Container(color: OudColors.surface),
+                                    errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
                                   ),
                           ),
                         ),
@@ -168,18 +169,21 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                             children: [
                               Text(
                                 item.product.title,
-                                style: const TextStyle(fontWeight: FontWeight.w700),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 '${item.option ?? '기본'} / ${item.quantity}개',
-                                style: const TextStyle(color: OudColors.mutedText),
+                                style: const TextStyle(color: OudColors.mutedText, fontSize: 12),
                               ),
                             ],
                           ),
                         ),
                         Text(
                           '₩${format.format(unit * item.quantity)}',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -187,15 +191,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 }).toList(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             const OudStepTitle(step: 2, title: '배송 정보'),
             OudSectionCard(
               child: DropdownButtonFormField<String>(
                 initialValue: _addressId,
-                decoration: const InputDecoration(labelText: '배송지 선택'),
+                decoration: const InputDecoration(
+                  labelText: '배송지 선택',
+                  border: OutlineInputBorder(borderRadius: OudRadii.md),
+                ),
                 items: manager.addresses
                     .map(
-                      (address) => DropdownMenuItem(
+                      (address) => DropdownMenuItem<String>(
                         value: address.id,
                         child: Text('${address.recipient} | ${address.addressLine}'),
                       ),
@@ -204,15 +211,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 onChanged: (value) => setState(() => _addressId = value),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             const OudStepTitle(step: 3, title: '쿠폰 및 마일리지'),
             OudSectionCard(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<String?>(
                     initialValue: _couponId,
-                    decoration: const InputDecoration(labelText: '쿠폰 적용'),
-                    items: [
+                    decoration: const InputDecoration(
+                      labelText: '쿠폰 적용',
+                      border: OutlineInputBorder(borderRadius: OudRadii.md),
+                    ),
+                    items: <DropdownMenuItem<String?>>[
                       const DropdownMenuItem<String?>(
                         value: null,
                         child: Text('쿠폰 사용 안 함'),
@@ -220,9 +231,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ...manager.coupons.where((coupon) => !coupon.isUsed).map(
                             (coupon) => DropdownMenuItem<String?>(
                               value: coupon.id,
-                              child: Text(
-                                '${coupon.title} (₩${format.format(coupon.discountAmount)})',
-                              ),
+                              child: Text('${coupon.title} (₩${format.format(coupon.discountAmount)})'),
                             ),
                           ),
                     ],
@@ -231,18 +240,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      Expanded(
-                        child: Slider(
-                          value: _mileageToUse.toDouble(),
-                          max: maxMileage.toDouble(),
-                          onChanged: (value) => setState(() => _mileageToUse = value.toInt()),
-                        ),
-                      ),
+                      const Text('마일리지', style: OudTypography.label),
+                      const Spacer(),
                       Text(
                         '${format.format(_mileageToUse)}P',
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ],
+                  ),
+                  Slider(
+                    value: _mileageToUse.toDouble(),
+                    max: maxMileage.toDouble(),
+                    onChanged: (value) => setState(() => _mileageToUse = value.toInt()),
                   ),
                   Align(
                     alignment: Alignment.centerRight,
@@ -254,14 +263,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             const OudStepTitle(step: 4, title: '결제 수단'),
             OudSectionCard(
               child: DropdownButtonFormField<String>(
                 initialValue: _paymentId,
-                decoration: const InputDecoration(labelText: '결제 수단 선택'),
+                decoration: const InputDecoration(
+                  labelText: '결제 수단 선택',
+                  border: OutlineInputBorder(borderRadius: OudRadii.md),
+                ),
                 items: manager.paymentMethods
-                    .map((payment) => DropdownMenuItem(value: payment.id, child: Text(payment.label)))
+                    .map((payment) => DropdownMenuItem<String>(value: payment.id, child: Text(payment.label)))
                     .toList(),
                 onChanged: (value) => setState(() => _paymentId = value),
               ),
@@ -272,7 +284,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 contentPadding: EdgeInsets.zero,
                 value: _agreed,
                 onChanged: (value) => setState(() => _agreed = value ?? false),
-                title: const Text('구매 조건 및 결제 진행에 동의합니다.'),
+                title: const Text(
+                  '구매 조건 및 결제 진행에 동의합니다.',
+                  style: TextStyle(fontSize: 14),
+                ),
                 controlAffinity: ListTileControlAffinity.leading,
               ),
             ),
@@ -294,20 +309,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   const SizedBox(height: 8),
                   OudAmountRow(label: '총 상품 금액', value: '₩${format.format(subtotal)}', dark: true),
                   OudAmountRow(label: '배송비', value: '₩${format.format(shippingFee)}', dark: true),
-                  OudAmountRow(
-                    label: '쿠폰 할인',
-                    value: '-₩${format.format(couponDiscount)}',
-                    dark: true,
-                  ),
-                  OudAmountRow(
-                    label: '마일리지 사용',
-                    value: '-₩${format.format(_mileageToUse)}',
-                    dark: true,
-                  ),
+                  OudAmountRow(label: '쿠폰 할인', value: '-₩${format.format(couponDiscount)}', dark: true),
+                  OudAmountRow(label: '마일리지 사용', value: '-₩${format.format(_mileageToUse)}', dark: true),
                   const Divider(color: OudColors.panelDarkDivider),
                   OudAmountRow(
                     label: '최종 결제 금액',
-                    value: '₩${format.format(total)}',
+                    value: '₩${format.format(finalAmount)}',
                     emphasize: true,
                     dark: true,
                   ),
@@ -326,6 +333,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           child: manager.isLoggedIn
               ? OudTapScale(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
                     onPressed: _submitting
                         ? null
                         : () async {
@@ -342,15 +350,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               return;
                             }
 
+                            final addresses = manager.addresses;
+                            final payments = manager.paymentMethods;
+                            if (addresses.isEmpty || payments.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('배송지 또는 결제수단 정보가 없습니다.')),
+                              );
+                              return;
+                            }
+
                             setState(() => _submitting = true);
                             try {
-                              final address = manager.addresses.firstWhere(
+                              final address = addresses.firstWhere(
                                 (item) => item.id == _addressId,
-                                orElse: () => manager.addresses.first,
+                                orElse: () => addresses.first,
                               );
-                              final payment = manager.paymentMethods.firstWhere(
+                              final payment = payments.firstWhere(
                                 (item) => item.id == _paymentId,
-                                orElse: () => manager.paymentMethods.first,
+                                orElse: () => payments.first,
                               );
 
                               if (widget.mode == CheckoutMode.cart) {
@@ -385,9 +402,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => OrderCompleteScreen(
-                                    finalAmount: total,
-                                    itemCount:
-                                        items.fold<int>(0, (count, item) => count + item.quantity),
+                                    finalAmount: finalAmount,
+                                    itemCount: items.fold<int>(0, (count, item) => count + item.quantity),
                                   ),
                                 ),
                               );
@@ -399,6 +415,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ),
                 )
               : OutlinedButton(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
                   onPressed: () async {
                     await Navigator.push(
                       context,
