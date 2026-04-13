@@ -63,6 +63,8 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
+              _statusGuidanceCard(order.status),
+              const SizedBox(height: 10),
               OudSectionCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,15 +145,15 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                                   const SnackBar(content: Text('발송 처리했습니다.')),
                                 );
                               },
-                      child: const Text('발송 처리'),
+                        child: const Text('발송 처리'),
                       ),
                     ),
                     if (!canShip)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          '현재 상태에서는 발송 처리를 할 수 없습니다.',
-                          style: TextStyle(color: OudColors.mutedText),
+                          _shipDisabledReason(order.status),
+                          style: const TextStyle(color: OudColors.mutedText),
                         ),
                       ),
                     if (order.trackingNumber != null &&
@@ -207,11 +209,11 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                       ),
                     ),
                     if (!canCancel)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          '현재 상태에서는 취소 처리를 할 수 없습니다.',
-                          style: TextStyle(color: OudColors.mutedText),
+                          _cancelDisabledReason(order.status),
+                          style: const TextStyle(color: OudColors.mutedText),
                         ),
                       ),
                     if (order.cancelReason != null &&
@@ -259,14 +261,25 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                   children: [
                     const Text('상태 로그', style: TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 8),
-                    ...order.statusLogs.map(
-                      (log) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status} · ${log.actor}',
-                          style: const TextStyle(color: OudColors.mutedText),
+                    if (order.statusLogs.isEmpty)
+                      const Text(
+                        '아직 기록된 상태 로그가 없습니다.',
+                        style: TextStyle(color: OudColors.mutedText),
+                      )
+                    else
+                      ...order.statusLogs.map(
+                        (log) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status} · ${log.actor}',
+                            style: const TextStyle(color: OudColors.mutedText),
+                          ),
                         ),
                       ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '참고: 상태 변경 후 구매자 화면 반영까지 약간의 지연이 발생할 수 있습니다.',
+                      style: TextStyle(fontSize: 12, color: OudColors.mutedText),
                     ),
                   ],
                 ),
@@ -323,5 +336,58 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
         );
       },
     );
+  }
+
+  Widget _statusGuidanceCard(String status) {
+    final message = switch (status) {
+      '결제완료' => '결제완료 상태입니다. 재고/검수 확인 후 배송준비 또는 취소완료로 처리할 수 있습니다.',
+      '배송준비' => '배송준비 상태입니다. 송장번호 입력 후 발송 처리 가능합니다.',
+      '배송중' => '배송중 상태입니다. 구매자 문의 대응 및 배송완료 전환 관리가 필요합니다.',
+      '배송완료' => '배송완료 상태입니다. 추가 상태 변경은 제한됩니다.',
+      '취소요청' => '구매자 취소요청 상태입니다. 사유 확인 후 취소완료 처리해 주세요.',
+      '취소완료' => '취소완료 상태입니다. 추가 상태 변경은 제한됩니다.',
+      _ => '주문 상태를 확인한 후 가능한 작업을 진행해 주세요.',
+    };
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F1E8),
+        borderRadius: OudRadii.md,
+        border: Border.all(color: const Color(0xFFE9D7C6)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, size: 18, color: OudColors.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF6A4A35), height: 1.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _shipDisabledReason(String status) {
+    if (status == '배송중' || status == '배송완료') {
+      return '이미 발송 처리된 주문입니다.';
+    }
+    if (status == '취소요청' || status == '취소완료') {
+      return '취소 단계 주문은 발송 처리할 수 없습니다.';
+    }
+    return '현재 상태에서는 발송 처리를 할 수 없습니다.';
+  }
+
+  String _cancelDisabledReason(String status) {
+    if (status == '배송중' || status == '배송완료') {
+      return '배송 진행/완료 주문은 취소 처리가 제한됩니다.';
+    }
+    if (status == '취소완료') {
+      return '이미 취소 완료된 주문입니다.';
+    }
+    return '현재 상태에서는 취소 처리를 할 수 없습니다.';
   }
 }

@@ -89,6 +89,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     _addressId ??= manager.selectedAddress?.id;
     _paymentId ??= manager.selectedPayment?.id;
+    final hasAddresses = manager.addresses.isNotEmpty;
+    final hasPayments = manager.paymentMethods.isNotEmpty;
 
     int subtotal = 0;
     for (final item in items) {
@@ -149,6 +151,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 const OudTag(label: '파손 시 재배송 지원'),
               ],
             ),
+            if (!hasAddresses || !hasPayments) ...[
+              const SizedBox(height: 10),
+              _warnBanner(
+                !hasAddresses && !hasPayments
+                    ? '배송지와 결제수단 정보가 모두 비어 있습니다. 마이페이지에서 정보를 먼저 등록해 주세요.'
+                    : !hasAddresses
+                        ? '등록된 배송지가 없습니다. 마이페이지에서 배송지를 추가해 주세요.'
+                        : '등록된 결제수단이 없습니다. 마이페이지에서 결제수단을 추가해 주세요.',
+              ),
+            ],
             if (manager.backendError != null) ...[
               const SizedBox(height: 10),
               _warnBanner('백엔드 동기화 이슈가 감지되었습니다. 결제 후 주문내역을 꼭 확인해 주세요.'),
@@ -227,11 +239,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<String>(
-                    initialValue: _addressId,
+                    initialValue: hasAddresses ? _addressId : null,
                     decoration: const InputDecoration(
                       labelText: '배송지 선택',
                       border: OutlineInputBorder(borderRadius: OudRadii.md),
                     ),
+                    hint: const Text('등록된 배송지가 없습니다'),
                     items: manager.addresses
                         .map(
                           (address) => DropdownMenuItem<String>(
@@ -240,7 +253,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                           ),
                         )
                         .toList(),
-                    onChanged: (value) => setState(() => _addressId = value),
+                    onChanged: hasAddresses ? (value) => setState(() => _addressId = value) : null,
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -318,15 +331,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             const OudStepTitle(step: 4, title: '결제 수단'),
             OudSectionCard(
               child: DropdownButtonFormField<String>(
-                initialValue: _paymentId,
+                initialValue: hasPayments ? _paymentId : null,
                 decoration: const InputDecoration(
                   labelText: '결제 수단 선택',
                   border: OutlineInputBorder(borderRadius: OudRadii.md),
                 ),
+                hint: const Text('등록된 결제수단이 없습니다'),
                 items: manager.paymentMethods
                     .map((payment) => DropdownMenuItem<String>(value: payment.id, child: Text(payment.label)))
                     .toList(),
-                onChanged: (value) => setState(() => _paymentId = value),
+                onChanged: hasPayments ? (value) => setState(() => _paymentId = value) : null,
               ),
             ),
             const SizedBox(height: 12),

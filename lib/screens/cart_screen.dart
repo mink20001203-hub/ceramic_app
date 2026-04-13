@@ -32,6 +32,9 @@ class CartScreen extends StatelessWidget {
         final shippingFee = subtotal >= 50000 ? 0 : 3000;
         final finalAmount = subtotal + shippingFee;
         final groupedBySeller = _groupBySeller(items);
+        final soldOutCount = items.where((item) => item.product.stock == 0).length;
+        final overStockCount = items.where((item) => item.quantity > item.product.stock).length;
+        final hasCheckoutIssue = soldOutCount > 0 || overStockCount > 0;
 
         return Column(
           children: [
@@ -88,16 +91,35 @@ class CartScreen extends StatelessWidget {
                     value: '₩${format.format(finalAmount)}',
                     emphasize: true,
                   ),
+                  if (hasCheckoutIssue) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFCE8E3),
+                        borderRadius: OudRadii.md,
+                        border: Border.all(color: const Color(0xFFF1C5B7)),
+                      ),
+                      child: Text(
+                        _checkoutIssueMessage(soldOutCount, overStockCount),
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Color(0xFF7B3B2A),
+                          height: 1.35,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
-                        final soldOut = items.any((item) => item.product.stock == 0);
-                        final overStock = items.any((item) => item.quantity > item.product.stock);
-                        if (soldOut || overStock) {
+                        if (hasCheckoutIssue) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('품절 또는 재고 부족 상품이 있습니다.')),
+                            SnackBar(content: Text(_checkoutIssueMessage(soldOutCount, overStockCount))),
                           );
                           return;
                         }
@@ -247,5 +269,15 @@ class CartScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _checkoutIssueMessage(int soldOutCount, int overStockCount) {
+    if (soldOutCount > 0 && overStockCount > 0) {
+      return '품절 $soldOutCount건, 재고 초과 $overStockCount건이 있습니다. 수량 조정 후 다시 시도해 주세요.';
+    }
+    if (soldOutCount > 0) {
+      return '품절 상품 $soldOutCount건이 있습니다. 삭제 후 결제를 진행해 주세요.';
+    }
+    return '재고 수량을 초과한 상품 $overStockCount건이 있습니다. 수량 조정 후 결제를 진행해 주세요.';
   }
 }

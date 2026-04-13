@@ -89,6 +89,8 @@ class _DetailScreenState extends State<DetailScreen> {
             const SizedBox(height: 12),
             const _TrustInfoCard(),
             const SizedBox(height: 12),
+            _purchaseDecisionCard(product, sale, unitPrice, format),
+            const SizedBox(height: 12),
             _sizeMaterialCard(),
             const SizedBox(height: 12),
             _reviewCard(),
@@ -254,6 +256,44 @@ class _DetailScreenState extends State<DetailScreen> {
             '실사용 팁: 컵/볼류는 밝은 조명 아래에서 표면 색감을 먼저 확인하면 만족도가 높습니다.',
             style: TextStyle(color: OudColors.mutedText, height: 1.45),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _purchaseDecisionCard(Product product, bool sale, int unitPrice, NumberFormat format) {
+    final lowStock = product.stock > 0 && product.stock <= 3;
+    final urgencyText = lowStock ? '잔여 재고 ${product.stock}개로 빠르게 소진될 수 있습니다.' : '현재 재고는 안정적으로 운영 중입니다.';
+
+    return OudSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const OudSectionTitle(title: '구매 결정 포인트'),
+          const SizedBox(height: 8),
+          Text(
+            sale
+                ? '현재 할인 적용가 ₩${format.format(unitPrice)}로 구매 가능합니다.'
+                : '현재 정상가 ₩${format.format(unitPrice)}로 운영 중입니다.',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            urgencyText,
+            style: TextStyle(
+              color: lowStock ? OudColors.danger : OudColors.mutedText,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '이 상품이 잘 맞는 경우',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          const Text('• 매일 쓰는 식기에서 톤 다운된 색감과 질감을 선호할 때', style: TextStyle(height: 1.35)),
+          const Text('• 사진과 실물 차이를 줄이려는 안정적인 선택이 필요할 때', style: TextStyle(height: 1.35)),
+          const Text('• 파손/교환 대응이 명확한 상품을 우선 고려할 때', style: TextStyle(height: 1.35)),
         ],
       ),
     );
