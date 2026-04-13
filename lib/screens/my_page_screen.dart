@@ -8,8 +8,11 @@ import 'admin_role_management_screen.dart';
 import 'coupon_list_screen.dart';
 import 'login_screen.dart';
 import 'mileage_history_screen.dart';
+import 'policy_screen.dart';
+import 'profile_edit_screen.dart';
 import 'review_manage_screen.dart';
 import 'seller_demo_screen.dart';
+import 'support_center_screen.dart';
 import 'user_order_list_screen.dart';
 
 class MyPageScreen extends StatelessWidget {
@@ -39,12 +42,12 @@ class MyPageScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               const Text(
-                '로그인이 필요합니다',
+                '로그인이 필요합니다.',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
               const Text(
-                '주문 내역, 쿠폰, 리뷰 관리 기능을 사용할 수 있습니다.',
+                '주문 내역, 쿠폰, 리뷰, 프로필 관리 기능을 사용할 수 있습니다.',
                 style: TextStyle(color: OudColors.mutedText),
                 textAlign: TextAlign.center,
               ),
@@ -74,21 +77,44 @@ class MyPageScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
       children: [
-        Column(
+        Row(
           children: [
-            const CircleAvatar(
-              radius: 44,
-              backgroundColor: Color(0xFFF2D8CB),
-              child: Icon(Icons.person, size: 40, color: OudColors.primary),
+            CircleAvatar(
+              radius: 42,
+              backgroundColor: const Color(0xFFF2D8CB),
+              backgroundImage: manager.profileImageUrl.trim().isNotEmpty
+                  ? NetworkImage(manager.profileImageUrl)
+                  : null,
+              child: manager.profileImageUrl.trim().isEmpty
+                  ? const Icon(Icons.person, size: 38, color: OudColors.primary)
+                  : null,
             ),
-            const SizedBox(height: 10),
-            Text(
-              '${manager.userName} 작가님',
-              style: const TextStyle(fontSize: 38, fontWeight: FontWeight.w900),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    manager.userName,
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    manager.profileBio,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: OudColors.mutedText, height: 1.35),
+                  ),
+                ],
+              ),
             ),
-            const Text(
-              '지속 가능한 세라믹을 탐구합니다.',
-              style: TextStyle(color: OudColors.mutedText),
+            IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+              ),
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: '프로필 편집',
             ),
           ],
         ),
@@ -110,7 +136,7 @@ class MyPageScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${manager.mileage}',
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -132,7 +158,7 @@ class MyPageScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${manager.availableCouponCount}',
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
                     ),
                   ],
                 ),
@@ -142,7 +168,7 @@ class MyPageScreen extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         const Text(
-          '나의 활동',
+          '계정/운영 허브',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -150,6 +176,15 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        OudMenuTile(
+          icon: Icons.person_outline,
+          iconBg: const Color(0xFFE8F0D9),
+          title: '프로필 편집',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+          ),
+        ),
         OudMenuTile(
           icon: Icons.confirmation_number_outlined,
           iconBg: const Color(0xFFE8F0D9),
@@ -210,7 +245,7 @@ class MyPageScreen extends StatelessWidget {
           ),
         const SizedBox(height: 16),
         const Text(
-          '설정 및 지원',
+          '고객 안내',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
@@ -218,8 +253,24 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _simpleTextTile('고객센터'),
-        _simpleTextTile('약관 및 정책'),
+        OudMenuTile(
+          icon: Icons.support_agent_outlined,
+          iconBg: const Color(0xFFF5EADB),
+          title: '고객센터',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SupportCenterScreen()),
+          ),
+        ),
+        OudMenuTile(
+          icon: Icons.article_outlined,
+          iconBg: const Color(0xFFE8EDF5),
+          title: '약관 및 정책',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PolicyScreen()),
+          ),
+        ),
         const SizedBox(height: 6),
         TextButton(
           onPressed: () => _confirmLogout(context, manager),
@@ -247,26 +298,6 @@ class MyPageScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _simpleTextTile(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Text(
-            text,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const Spacer(),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: OudColors.mutedText,
-            size: 20,
-          ),
-        ],
-      ),
     );
   }
 
