@@ -248,34 +248,50 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _whyOudSection() {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: _PitchCard(
-              icon: Icons.verified_user_outlined,
-              title: '품질 기준',
-              subtitle: '작가 검수 + 출고 전 2차 확인',
-            ),
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: _PitchCard(
-              icon: Icons.local_shipping_outlined,
-              title: '배송 신뢰',
-              subtitle: '파손 시 즉시 재출고 지원',
-            ),
-          ),
-          SizedBox(width: 8),
-          Expanded(
-            child: _PitchCard(
-              icon: Icons.chat_bubble_outline,
-              title: '실사용 리뷰',
-              subtitle: '실제 사용 맥락 중심 후기',
-            ),
-          ),
-        ],
+    const cards = <Widget>[
+      _PitchCard(
+        icon: Icons.verified_user_outlined,
+        title: '품질 기준',
+        subtitle: '작가 검수 + 출고 전 2차 확인',
+      ),
+      _PitchCard(
+        icon: Icons.local_shipping_outlined,
+        title: '배송 신뢰',
+        subtitle: '파손 시 즉시 재출고 지원',
+      ),
+      _PitchCard(
+        icon: Icons.chat_bubble_outline,
+        title: '실사용 리뷰',
+        subtitle: '실제 사용 맥락 중심 후기',
+      ),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: LayoutBuilder(
+        builder: (_, constraints) {
+          final narrow = constraints.maxWidth < 720;
+          if (narrow) {
+            return SizedBox(
+              height: 112,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: cards.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, index) => SizedBox(width: 220, child: cards[index]),
+              ),
+            );
+          }
+          return Row(
+            children: [
+              Expanded(child: cards[0]),
+              const SizedBox(width: 8),
+              Expanded(child: cards[1]),
+              const SizedBox(width: 8),
+              Expanded(child: cards[2]),
+            ],
+          );
+        },
       ),
     );
   }
@@ -441,7 +457,7 @@ class _PitchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 110,
+      height: 112,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,

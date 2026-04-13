@@ -57,14 +57,25 @@ class OrderDetailScreen extends StatelessWidget {
                     children: [
                       const OudSectionTitle(title: '상태 로그'),
                       const SizedBox(height: 8),
-                      ...order.statusLogs.map(
-                        (log) => Padding(
-                          padding: const EdgeInsets.only(bottom: 6),
-                          child: Text(
-                            '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status} · ${log.actor}',
-                            style: const TextStyle(color: OudColors.mutedText),
+                      if (order.statusLogs.isEmpty)
+                        const Text(
+                          '아직 상태 로그가 없습니다.',
+                          style: TextStyle(color: OudColors.mutedText),
+                        )
+                      else
+                        ...order.statusLogs.map(
+                          (log) => Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              '${DateFormat('MM.dd HH:mm').format(log.date)} · ${log.status} · ${log.actor}',
+                              style: const TextStyle(color: OudColors.mutedText),
+                            ),
                           ),
                         ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '참고: 상태 로그는 주문 처리 이력 기준이며, 실제 결제 취소 반영은 결제사 영업일 기준으로 지연될 수 있습니다.',
+                        style: TextStyle(fontSize: 12, color: OudColors.mutedText, height: 1.35),
                       ),
                     ],
                   ),

@@ -77,7 +77,9 @@ class UserOrderListScreen extends StatelessWidget {
                                 ),
                               const SizedBox(height: 6),
                               Text(
-                                canCancel ? '취소 가능 상태입니다. 상세에서 즉시 취소요청할 수 있습니다.' : '배송 단계에서는 상태 변경이 제한될 수 있습니다.',
+                                canCancel
+                                    ? '취소 가능 상태입니다. 상세에서 즉시 취소요청할 수 있습니다.'
+                                    : '배송 단계에서는 취소가 제한될 수 있습니다. 상세 로그를 확인해 주세요.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: canCancel ? const Color(0xFF5A6D46) : OudColors.mutedText,
@@ -151,7 +153,7 @@ class _OrderConfidenceBanner extends StatelessWidget {
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              '주문 상태, 취소 가능 여부, 배송 로그는 주문 상세 화면에서 확인할 수 있습니다.',
+              '주문 상태, 취소 가능 여부, 배송/환불 안내는 주문 상세 화면에서 확인할 수 있습니다.',
               style: TextStyle(fontSize: 12.5, color: Color(0xFF6A4A35), height: 1.35),
             ),
           ),

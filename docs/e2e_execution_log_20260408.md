@@ -78,3 +78,59 @@ Verification (code):
 Manual capture status:
 - [ ] actual device/web screenshot set refresh (home -> detail -> cart -> checkout -> order complete)
 - [ ] attach latest capture filenames to this log
+
+---
+
+## Daily Execution Log (2026-04-13)
+
+Scope:
+- 1차: 실제 플로우 QA + 오류 수집
+- 2차: 수집 화면 이슈 픽셀 튜닝
+- 3차: 주문조회/주문상세 문구 마감
+- 4차: 웹 재배포
+- 5차: E2E 문서/캡처 정리
+
+### 1) QA + Error Collection
+
+- `flutter analyze lib`: PASS
+- `npm run audit:strings` (in `scripts`): PASS (`suspicious=0`)
+- 주요 오류 수집 결과:
+  - 정적 분석상 치명 오류 없음
+  - 수동 확인 대상: 최신 배포본에서 화면 밀도/텍스트 줄바꿈/상태 안내 문구
+
+### 2) Pixel Tuning Applied
+
+- Home:
+  - 신뢰 카드 섹션을 반응형으로 조정
+  - 좁은 화면에서는 가로 스크롤 카드 레이아웃으로 전환
+  - 카테고리 필터 pill 가독성 유지
+- Restock block:
+  - 고정 높이 이슈 제거 후 카드 내부 레이아웃 안정화
+
+### 3) Copy Finalization (Orders)
+
+- Order list:
+  - 취소 가능/제한 상태 안내 문구 정리
+  - 상단 신뢰 배너 문구를 배송/환불 기준으로 보강
+- Order detail:
+  - 상태 로그 비어있을 때 안내 문구 추가
+  - 로그/환불 반영 지연 정책 안내 문구 추가
+
+### 4) Web Redeploy
+
+- `flutter --no-version-check build web --release --base-href /ceramic_app/`: PASS
+- build output synced to gh-pages branch root
+
+### 5) Capture Checklist (latest)
+
+- [ ] 01_home_latest_20260413.png
+- [ ] 02_detail_latest_20260413.png
+- [ ] 03_cart_latest_20260413.png
+- [ ] 04_checkout_latest_20260413.png
+- [ ] 05_order_complete_latest_20260413.png
+- [ ] 06_order_list_latest_20260413.png
+- [ ] 07_order_detail_latest_20260413.png
+
+Notes:
+- capture 완료 후 본 섹션 체크박스 갱신
+- 이슈가 있으면 파일명 끝에 `_issue` 접미사 사용 (예: `04_checkout_latest_20260413_issue.png`)
