@@ -27,4 +27,10 @@ class FirestorePaths {
 
   // coupons/{couponId}
   static const String coupons = 'coupons';
+
+  // policies/{policyId}
+  static const String policies = 'policies';
+
+  // supportFaqs/{faqId}
+  static const String supportFaqs = 'supportFaqs';
 }

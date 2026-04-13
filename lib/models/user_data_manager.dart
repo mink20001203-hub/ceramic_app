@@ -187,6 +187,52 @@ class AdminUserSummary {
   });
 }
 
+class AppNotification {
+  final String id;
+  final String title;
+  final String body;
+  final String type;
+  final String? orderId;
+  final DateTime createdAt;
+
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.type,
+    this.orderId,
+    required this.createdAt,
+  });
+}
+
+class PolicyArticle {
+  final String id;
+  final String title;
+  final String summary;
+  final String content;
+  final DateTime updatedAt;
+
+  PolicyArticle({
+    required this.id,
+    required this.title,
+    required this.summary,
+    required this.content,
+    required this.updatedAt,
+  });
+}
+
+class SupportFaqEntry {
+  final String id;
+  final String question;
+  final String answer;
+
+  SupportFaqEntry({
+    required this.id,
+    required this.question,
+    required this.answer,
+  });
+}
+
 class UserDataManager with ChangeNotifier {
   static const String _defaultSellerId = 'seller_demo';
 
@@ -220,6 +266,9 @@ class UserDataManager with ChangeNotifier {
   UserRole _role = UserRole.user;
   String _userName = "손님";
   String _userEmail = '';
+  String _profileBio = '지속 가능한 세라믹을 탐구합니다.';
+  String _profilePhone = '';
+  String _profileImageUrl = '';
   int _mileage = 1500;
   int _reviewCount = 0;
   String? _backendError;
@@ -236,6 +285,9 @@ class UserDataManager with ChangeNotifier {
   bool get isSeller => _role == UserRole.seller || _role == UserRole.admin;
   String get userName => _userName;
   String get userEmail => _userEmail;
+  String get profileBio => _profileBio;
+  String get profilePhone => _profilePhone;
+  String get profileImageUrl => _profileImageUrl;
   int get mileage => _mileage;
   int get reviewCount => _reviewCount;
   String? get backendError => _backendError;
@@ -267,6 +319,52 @@ class UserDataManager with ChangeNotifier {
   String _selectedAddressId = '';
   String _selectedPaymentId = '';
   String? _selectedCouponId;
+  final Set<String> _readNotificationIds = <String>{};
+
+  final List<PolicyArticle> _policyArticles = <PolicyArticle>[
+    PolicyArticle(
+      id: 'shipping',
+      title: '배송/교환/반품 정책',
+      summary: '배송 일정, 파손 대응, 교환/반품 기준 안내',
+      content:
+          '기본 배송비 3,000원, 50,000원 이상 무료배송입니다.\n파손/오배송은 수령 후 7일 이내 접수 시 무상 재배송 또는 환불 처리됩니다.\n단순 변심 반품은 미사용 상태에서만 가능하며 왕복 배송비가 부과될 수 있습니다.',
+      updatedAt: DateTime(2026, 4, 1),
+    ),
+    PolicyArticle(
+      id: 'privacy',
+      title: '개인정보 처리방침',
+      summary: '수집 항목, 이용 목적, 보관 기간 안내',
+      content:
+          '주문 처리 및 배송을 위해 필요한 최소 개인정보를 수집하며, 관련 법령에 따라 안전하게 보관/파기합니다.\n고객은 언제든지 열람, 정정, 삭제를 요청할 수 있습니다.',
+      updatedAt: DateTime(2026, 4, 1),
+    ),
+    PolicyArticle(
+      id: 'terms',
+      title: '서비스 이용약관',
+      summary: '회원 이용 조건, 주문/결제 책임, 분쟁 처리 기준',
+      content:
+          '회원은 정확한 정보로 주문해야 하며, 부정 사용이 확인되면 서비스 이용이 제한될 수 있습니다.\n주문/결제/환불 분쟁은 전자상거래법 및 회사 내부 분쟁 처리 절차에 따라 진행됩니다.',
+      updatedAt: DateTime(2026, 4, 1),
+    ),
+  ];
+
+  final List<SupportFaqEntry> _supportFaqs = <SupportFaqEntry>[
+    SupportFaqEntry(
+      id: 'faq-1',
+      question: '배송은 얼마나 걸리나요?',
+      answer: '평균 1~3일 내 출고되며 지역에 따라 1~2일 추가 소요될 수 있습니다.',
+    ),
+    SupportFaqEntry(
+      id: 'faq-2',
+      question: '파손되었을 때 어떻게 접수하나요?',
+      answer: '주문 상세의 고객센터 안내에 따라 사진과 함께 접수하면 우선 재배송으로 처리합니다.',
+    ),
+    SupportFaqEntry(
+      id: 'faq-3',
+      question: '취소는 언제까지 가능한가요?',
+      answer: '배송 준비 전까지는 즉시 취소 가능하며, 이후에는 판매자 확인 후 처리됩니다.',
+    ),
+  ];
 
   UserDataManager(
       {bool firebaseReady = false, bool remoteProductsEnabled = false})
@@ -285,6 +383,7 @@ class UserDataManager with ChangeNotifier {
     }
     reloadProducts();
     _restoreSession();
+    _loadPublicContent();
   }
 
   UserRole _roleFromEmail(String email) {
@@ -632,6 +731,60 @@ class UserDataManager with ChangeNotifier {
         orElse: () => _coupons.first);
   }
 
+  List<PolicyArticle> get policyArticles => List<PolicyArticle>.unmodifiable(
+        _policyArticles..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)),
+      );
+
+  List<SupportFaqEntry> get supportFaqs =>
+      List<SupportFaqEntry>.unmodifiable(_supportFaqs);
+
+  List<AppNotification> get notifications {
+    final List<AppNotification> all = <AppNotification>[];
+    for (final order in _orders) {
+      final accessibleToCurrentUser = _role == UserRole.admin ||
+          order.buyerId == _userId ||
+          canAccessSellerRecord(order.sellerId);
+      if (!accessibleToCurrentUser) continue;
+
+      for (int i = 0; i < order.statusLogs.length; i++) {
+        final log = order.statusLogs[i];
+        final id = '${order.id}_${log.status}_${log.date.microsecondsSinceEpoch}_$i';
+        all.add(
+          AppNotification(
+            id: id,
+            title: _notificationTitleByStatus(log.status),
+            body: '주문 ${order.id} · ${log.status} · ${log.actor}',
+            type: 'order_status',
+            orderId: order.id,
+            createdAt: log.date,
+          ),
+        );
+      }
+    }
+    all.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return all;
+  }
+
+  int get unreadNotificationCount =>
+      notifications.where((n) => !_readNotificationIds.contains(n.id)).length;
+
+  bool isNotificationRead(String id) => _readNotificationIds.contains(id);
+
+  void markNotificationAsRead(String id) {
+    if (_readNotificationIds.add(id)) {
+      _persist();
+      notifyListeners();
+    }
+  }
+
+  void markAllNotificationsAsRead() {
+    for (final item in notifications) {
+      _readNotificationIds.add(item.id);
+    }
+    _persist();
+    notifyListeners();
+  }
+
   void setSelectedAddress(String id) {
     _selectedAddressId = id;
     _persist();
@@ -844,6 +997,10 @@ class UserDataManager with ChangeNotifier {
     _role = UserRole.user;
     _userName = "손님";
     _userEmail = '';
+    _profileBio = '지속 가능한 세라믹을 탐구합니다.';
+    _profilePhone = '';
+    _profileImageUrl = '';
+    _readNotificationIds.clear();
     if (_firebaseReady) {
       _auth?.signOut();
     }
@@ -853,6 +1010,22 @@ class UserDataManager with ChangeNotifier {
   void setUserName(String name) {
     _userName = name;
     _persist();
+    notifyListeners();
+  }
+
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+    required String bio,
+    String? imageUrl,
+  }) async {
+    _userName = name.trim().isEmpty ? _userName : name.trim();
+    _profilePhone = phone.trim();
+    _profileBio = bio.trim().isEmpty ? _profileBio : bio.trim();
+    if (imageUrl != null) {
+      _profileImageUrl = imageUrl.trim();
+    }
+    await _persist();
     notifyListeners();
   }
 
@@ -1242,6 +1415,25 @@ class UserDataManager with ChangeNotifier {
     return allowed.contains(to);
   }
 
+  String _notificationTitleByStatus(String status) {
+    switch (status) {
+      case '결제완료':
+        return '결제가 완료되었습니다';
+      case '배송준비':
+        return '상품이 배송 준비 중입니다';
+      case '배송중':
+        return '상품이 배송 중입니다';
+      case '배송완료':
+        return '배송이 완료되었습니다';
+      case '취소요청':
+        return '취소 요청이 접수되었습니다';
+      case '취소완료':
+        return '주문이 취소 처리되었습니다';
+      default:
+        return '주문 상태가 변경되었습니다';
+    }
+  }
+
   void requestOrderCancellation(
     String orderId, {
     String? reason,
@@ -1450,6 +1642,45 @@ class UserDataManager with ChangeNotifier {
       ..addAll(snapshot.docs.map((doc) => _mileageLogFromMap(doc.id, doc.data())).toList());
   }
 
+  Future<void> _loadPublicContent() async {
+    if (!_firebaseReady || _db == null) return;
+    await _loadPoliciesFromCollection();
+    await _loadSupportFaqsFromCollection();
+    notifyListeners();
+  }
+
+  Future<void> _loadPoliciesFromCollection() async {
+    if (!_firebaseReady || _db == null) return;
+    try {
+      final snapshot = await _db!
+          .collection(FirestorePaths.policies)
+          .orderBy('updatedAt', descending: true)
+          .get();
+      if (snapshot.docs.isEmpty) return;
+      _policyArticles
+        ..clear()
+        ..addAll(snapshot.docs.map((doc) => _policyFromMap(doc.id, doc.data())));
+    } catch (_) {
+      // fallback to bundled defaults
+    }
+  }
+
+  Future<void> _loadSupportFaqsFromCollection() async {
+    if (!_firebaseReady || _db == null) return;
+    try {
+      final snapshot = await _db!
+          .collection(FirestorePaths.supportFaqs)
+          .orderBy('order')
+          .get();
+      if (snapshot.docs.isEmpty) return;
+      _supportFaqs
+        ..clear()
+        ..addAll(snapshot.docs.map((doc) => _faqFromMap(doc.id, doc.data())));
+    } catch (_) {
+      // fallback to bundled defaults
+    }
+  }
+
   Future<void> _upsertAddress(Address address) async {
     if (!_firebaseReady || _db == null || _userId == null) return;
     await _db!
@@ -1595,6 +1826,9 @@ class UserDataManager with ChangeNotifier {
       final data = doc.data()!;
       _userName = data['userName'] ?? _userName;
       _userEmail = data['email'] ?? _userEmail;
+      _profileBio = data['profileBio'] as String? ?? _profileBio;
+      _profilePhone = data['profilePhone'] as String? ?? _profilePhone;
+      _profileImageUrl = data['profileImageUrl'] as String? ?? _profileImageUrl;
       _mileage = data['mileage'] ?? _mileage;
       final roleStr = data['role'] as String? ?? 'user';
       _role = _roleFromString(roleStr);
@@ -1643,6 +1877,10 @@ class UserDataManager with ChangeNotifier {
       _selectedAddressId = (data['selectedAddressId'] as String?) ?? _selectedAddressId;
       _selectedPaymentId = (data['selectedPaymentId'] as String?) ?? _selectedPaymentId;
       _selectedCouponId = data['selectedCouponId'] as String?;
+      _readNotificationIds
+        ..clear()
+        ..addAll((data['readNotificationIds'] as List<dynamic>? ?? [])
+            .map((e) => '$e'));
       _ensureCheckoutDefaults();
       _reviewCount = _reviews.length;
       await _syncUserSubcollectionsFromMemory();
@@ -1659,12 +1897,16 @@ class UserDataManager with ChangeNotifier {
     final data = {
       'userName': _userName,
       'email': _userEmail,
+      'profileBio': _profileBio,
+      'profilePhone': _profilePhone,
+      'profileImageUrl': _profileImageUrl,
       'mileage': _mileage,
       'reviewCount': _reviews.length,
       'role': _roleToString(_role),
       'selectedAddressId': _selectedAddressId,
       'selectedPaymentId': _selectedPaymentId,
       'selectedCouponId': _selectedCouponId,
+      'readNotificationIds': _readNotificationIds.toList(),
     };
     try {
       await _db!
@@ -1793,6 +2035,26 @@ class UserDataManager with ChangeNotifier {
         date: DateTime.tryParse(map['date'] as String? ?? '') ?? DateTime.now(),
         description: map['description'] as String? ?? '',
       );
+
+  PolicyArticle _policyFromMap(String id, Map<String, dynamic> map) => PolicyArticle(
+        id: id,
+        title: map['title'] as String? ?? '정책',
+        summary: map['summary'] as String? ?? '',
+        content: map['content'] as String? ?? '',
+        updatedAt: _dateFromUnknown(map['updatedAt']) ?? DateTime.now(),
+      );
+
+  SupportFaqEntry _faqFromMap(String id, Map<String, dynamic> map) => SupportFaqEntry(
+        id: id,
+        question: map['question'] as String? ?? '',
+        answer: map['answer'] as String? ?? '',
+      );
+
+  DateTime? _dateFromUnknown(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
 
   Map<String, dynamic> _orderItemToMap(OrderItem i) => {
         'product': _productToMap(i.product),
