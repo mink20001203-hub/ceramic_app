@@ -9,6 +9,7 @@ import 'screens/cart_screen.dart';
 import 'screens/category_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/my_page_screen.dart';
+import 'screens/notification_list_screen.dart';
 import 'screens/search_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_tokens.dart';
@@ -72,23 +73,67 @@ class MainScreen extends StatelessWidget {
     final manager = context.watch<UserDataManager>();
     final currentTabIndex = manager.currentTabIndex;
     final cartCount = manager.items.length;
+    final unreadCount = manager.unreadNotificationCount;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('OUD'),
         leading: IconButton(
-          icon: const Icon(Icons.search),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SearchScreen()),
-            );
-          },
+          icon: const Icon(Icons.home_outlined),
+          tooltip: '홈',
+          onPressed: () => manager.setTabIndex(0),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_rounded),
-            onPressed: () {},
+            icon: const Icon(Icons.search),
+            tooltip: '검색',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SearchScreen()),
+              );
+            },
+          ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_none_rounded),
+                tooltip: '알림',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationListScreen(),
+                    ),
+                  );
+                },
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  right: 7,
+                  top: 7,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: 16,
+                      minHeight: 16,
+                    ),
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(
+                      color: OudColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      unreadCount > 99 ? '99+' : '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 8),
         ],
