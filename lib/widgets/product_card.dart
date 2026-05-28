@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+
 import '../models/product.dart';
 import '../models/user_data_manager.dart';
-import '../screens/detail_screen.dart'; // ✅ 실제 파일명에 맞춰 수정됨
+import '../screens/detail_screen.dart';
+import '../theme/app_tokens.dart';
+import 'oud_components.dart';
 
 class ProductCard extends StatelessWidget {
   final Product product;
@@ -11,63 +15,88 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // 상품 클릭 시 상세 페이지로 이동
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                DetailScreen(product: product), // ✅ 클래스명 확인 필요
-          ),
-        );
-      },
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+    final format = NumberFormat('#,###', 'ko_KR');
+    final isSoldOut = product.stock == 0;
+    final sale = product.isSale && product.salePrice != null;
+    final price = sale ? product.salePrice! : product.price;
+
+    return InkWell(
+      borderRadius: OudRadii.lg,
+      onTap: isSoldOut
+          ? null
+          : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => DetailScreen(product: product)),
+              );
+            },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: OudRadii.lg,
+          border: Border.all(color: OudColors.border),
         ),
-        elevation: 2,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. 이미지 및 찜하기 버튼 (Stack 사용)
             Expanded(
               child: Stack(
                 children: [
-                  // 상품 이미지
-                  ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(10)),
-                    child: product.image != null
-                        ? Image.asset(
-                            product.image!,
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                        : const Center(child: Icon(Icons.image, size: 50)),
-                  ),
-                  // 오른쪽 상단 하트 버튼
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Consumer<UserDataManager>(
-                      builder: (context, userManager, child) {
-                        final isFav = userManager.isFavorite(product);
-                        return GestureDetector(
-                          onTap: () {
-                            userManager.toggleWishlist(product);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Colors.black26,
-                              shape: BoxShape.circle,
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                      child: product.image == null
+                          ? Container(color: OudColors.surface)
+                          : Image.asset(
+                              product.image!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
                             ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Row(
+                      children: [
+                        if (isSoldOut)
+                          const OudTag(
+                            label: '품절',
+                            bgColor: Color(0xCC2F2E2B),
+                            textColor: Colors.white,
+                          ),
+                        if (!isSoldOut && product.isNew)
+                          const OudTag(
+                            label: '신상',
+                            bgColor: OudColors.sage,
+                            textColor: Color(0xFF32502E),
+                          ),
+                        if (!isSoldOut && sale) ...[
+                          const SizedBox(width: 6),
+                          const OudTag(
+                            label: '할인',
+                            bgColor: OudColors.primarySoft,
+                            textColor: OudColors.primary,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: Consumer<UserDataManager>(
+                      builder: (_, manager, __) {
+                        final favorite = manager.isFavorite(product);
+                        return GestureDetector(
+                          onTap: () => manager.toggleWishlist(product),
+                          child: CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.white.withValues(alpha: 0.9),
                             child: Icon(
-                              isFav ? Icons.favorite : Icons.favorite_border,
-                              color: isFav ? Colors.red : Colors.white,
-                              size: 20,
+                              favorite ? Icons.favorite : Icons.favorite_border,
+                              size: 16,
+                              color: favorite ? OudColors.primary : OudColors.text,
                             ),
                           ),
                         );
@@ -77,24 +106,32 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-            // 2. 상품 정보 (텍스트 부분)
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.title, // ✅ name 대신 title로 수정됨
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 14),
+                    product.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: OudColors.text),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
-                    "${product.price}원",
+                    product.subTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: OudColors.mutedText, fontSize: 12),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    '₩${format.format(price)}',
                     style: const TextStyle(
-                        color: Colors.redAccent, fontWeight: FontWeight.bold),
+                      color: OudColors.primary,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
                   ),
                 ],
               ),

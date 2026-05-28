@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'product.dart';
 
+// 별도 장바구니 Provider (현재는 데모로 유지).
 class CartItem {
   final Product product;
   int quantity;

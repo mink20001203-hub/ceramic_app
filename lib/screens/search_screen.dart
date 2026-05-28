@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../widgets/product_card.dart';
+import '../models/user_data_manager.dart';
 
+// 검색 화면: 더미 상품 목록에서 제목 기준으로 필터링한다.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -23,7 +26,8 @@ class _SearchScreenState extends State<SearchScreen> {
         _searchResults = [];
       } else {
         // 상품 목록에서 제목(title)에 검색어가 포함된 것만 필터링
-        _searchResults = dummyProducts
+        final products = context.read<UserDataManager>().products;
+        _searchResults = products
             .where((product) => product.title
                 .toLowerCase()
                 .contains(_searchQuery.toLowerCase()))

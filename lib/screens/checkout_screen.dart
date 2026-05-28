@@ -1,136 +1,534 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/product.dart';
-import '../models/user_data_manager.dart';
 import 'package:provider/provider.dart';
 
-class CheckoutScreen extends StatelessWidget {
+import '../models/product.dart';
+import '../models/user_data_manager.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/oud_components.dart';
+import 'login_screen.dart';
+import 'order_complete_screen.dart';
+
+enum CheckoutMode { single, cart }
+
+class CheckoutScreen extends StatefulWidget {
+  final CheckoutMode mode;
+  final Product? product;
+  final String? selectedOption;
+  final int quantity;
+
+  const CheckoutScreen.single({
+    super.key,
+    required this.product,
+    this.selectedOption,
+    this.quantity = 1,
+  }) : mode = CheckoutMode.single;
+
+  const CheckoutScreen.cart({super.key})
+      : mode = CheckoutMode.cart,
+        product = null,
+        selectedOption = null,
+        quantity = 1;
+
+  @override
+  State<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutItem {
   final Product product;
-  const CheckoutScreen({super.key, required this.product});
+  final String? option;
+  final int quantity;
+
+  _CheckoutItem({
+    required this.product,
+    required this.quantity,
+    required this.option,
+  });
+}
+
+class _CheckoutScreenState extends State<CheckoutScreen> {
+  String? _addressId;
+  String? _paymentId;
+  String? _couponId;
+  int _mileageToUse = 0;
+  bool _agreed = false;
+  bool _submitting = false;
 
   @override
   Widget build(BuildContext context) {
-    final priceFormat = NumberFormat('#,###', 'ko_KR');
-    final deliveryFee = 2500;
-    final totalPrice = product.price + deliveryFee;
+    final manager = context.watch<UserDataManager>();
+    final format = NumberFormat('#,###', 'ko_KR');
+
+    final items = widget.mode == CheckoutMode.cart
+        ? manager.items
+            .map(
+              (item) => _CheckoutItem(
+                product: item.product,
+                quantity: item.quantity,
+                option: item.option,
+              ),
+            )
+            .toList()
+        : <_CheckoutItem>[
+            _CheckoutItem(
+              product: widget.product!,
+              quantity: widget.quantity,
+              option: widget.selectedOption,
+            ),
+          ];
+
+    if (widget.mode == CheckoutMode.cart && items.isEmpty) {
+      return const Scaffold(
+        body: OudEmptyState(
+          title: '결제할 상품이 없습니다',
+          subtitle: '장바구니에서 상품을 담은 뒤 다시 시도해 주세요.',
+          icon: Icons.shopping_bag_outlined,
+        ),
+      );
+    }
+
+    _addressId ??= manager.selectedAddress?.id;
+    _paymentId ??= manager.selectedPayment?.id;
+    final hasAddresses = manager.addresses.isNotEmpty;
+    final hasPayments = manager.paymentMethods.isNotEmpty;
+
+    int subtotal = 0;
+    for (final item in items) {
+      final sale = item.product.isSale && item.product.salePrice != null;
+      subtotal += (sale ? item.product.salePrice! : item.product.price) * item.quantity;
+    }
+
+    Coupon? selectedCoupon;
+    if (_couponId != null) {
+      for (final coupon in manager.coupons) {
+        if (coupon.id == _couponId) {
+          selectedCoupon = coupon;
+          break;
+        }
+      }
+    }
+
+    final couponApplicable = selectedCoupon != null &&
+        !selectedCoupon.isUsed &&
+        subtotal >= selectedCoupon.minOrderAmount;
+    final couponDiscount = couponApplicable ? selectedCoupon.discountAmount : 0;
+    final shippingFee = subtotal >= 50000 ? 0 : 3000;
+    final maxMileage = manager.mileage < (subtotal + shippingFee - couponDiscount)
+        ? manager.mileage
+        : (subtotal + shippingFee - couponDiscount);
+    if (_mileageToUse > maxMileage) _mileageToUse = maxMileage;
+    final finalAmount = subtotal + shippingFee - couponDiscount - _mileageToUse;
+    final estimatedDelivery = DateFormat('M/d(EEE)', 'ko_KR').format(
+      DateTime.now().add(const Duration(days: 3)),
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('주문/결제'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('결제'),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 168),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. 주문 상품 섹션
-            _buildSectionTitle('주문상품'),
-            ListTile(
-              leading: Image.asset(product.image!,
-                  width: 60, height: 60, fit: BoxFit.cover),
-              title: Text(product.title),
-              subtitle: Text('${priceFormat.format(product.price)}원'),
+            const Text(
+              'Checkout',
+              style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900, letterSpacing: -0.6),
             ),
-            const Divider(),
-
-            // 2. 배송지 정보 (틀만 작성)
-            _buildSectionTitle('배송지 정보'),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('서울시 강남구 ... (기본 배송지)'),
+            const SizedBox(height: 4),
+            const Text(
+              '배송/쿠폰/결제 정보를 확인하고 안전하게 주문하세요.',
+              style: TextStyle(color: OudColors.mutedText),
             ),
-            const Divider(),
-
-            // 3. 결제 수단 (버튼들 틀만 작성)
-            _buildSectionTitle('결제수단'),
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 3,
-              childAspectRatio: 2,
-              padding: const EdgeInsets.all(16),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                _buildPaymentMethod('신용카드'),
-                _buildPaymentMethod('네이버페이'),
-                _buildPaymentMethod('카카오페이'),
+                const OudTag(label: '50,000원 이상 무료배송'),
+                OudTag(label: '예상 도착 $estimatedDelivery'),
+                const OudTag(label: '파손 시 재배송 지원'),
               ],
             ),
-            const Divider(),
-
-            // 4. 결제 정보 금액 요약
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            if (!hasAddresses || !hasPayments) ...[
+              const SizedBox(height: 10),
+              _warnBanner(
+                !hasAddresses && !hasPayments
+                    ? '배송지와 결제수단 정보가 모두 비어 있습니다. 마이페이지에서 정보를 먼저 등록해 주세요.'
+                    : !hasAddresses
+                        ? '등록된 배송지가 없습니다. 마이페이지에서 배송지를 추가해 주세요.'
+                        : '등록된 결제수단이 없습니다. 마이페이지에서 결제수단을 추가해 주세요.',
+              ),
+            ],
+            if (manager.backendError != null) ...[
+              const SizedBox(height: 10),
+              _warnBanner('백엔드 동기화 이슈가 감지되었습니다. 결제 후 주문내역을 꼭 확인해 주세요.'),
+            ],
+            const SizedBox(height: 16),
+            const OudStepTitle(step: 1, title: '주문 상품'),
+            OudSectionCard(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
               child: Column(
+                children: items.map((item) {
+                  final sale = item.product.isSale && item.product.salePrice != null;
+                  final unit = sale ? item.product.salePrice! : item.product.price;
+                  final lineSoldOut = item.product.stock == 0;
+                  final lineOver = item.quantity > item.product.stock;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      children: [
+                        ClipRRect(
+                          borderRadius: OudRadii.sm,
+                          child: SizedBox(
+                            width: 58,
+                            height: 58,
+                            child: item.product.image == null
+                                ? Container(color: OudColors.surface)
+                                : Image.asset(
+                                    item.product.image!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(color: OudColors.surface),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.product.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${item.option ?? '기본'} / ${item.quantity}개',
+                                style: const TextStyle(color: OudColors.mutedText, fontSize: 12),
+                              ),
+                              if (lineSoldOut)
+                                const Text(
+                                  '품절 상품입니다.',
+                                  style: TextStyle(color: OudColors.danger, fontSize: 12, fontWeight: FontWeight.w700),
+                                ),
+                              if (!lineSoldOut && lineOver)
+                                Text(
+                                  '재고 부족: 최대 ${item.product.stock}개 주문 가능',
+                                  style: const TextStyle(color: OudColors.danger, fontSize: 12, fontWeight: FontWeight.w700),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '₩${format.format(unit * item.quantity)}',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            const OudStepTitle(step: 2, title: '배송 정보'),
+            OudSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPriceRow('상품금액', product.price, priceFormat),
-                  _buildPriceRow('배송비', deliveryFee, priceFormat),
-                  const Divider(),
-                  _buildPriceRow('총 결제금액', totalPrice, priceFormat,
-                      isTotal: true),
+                  DropdownButtonFormField<String>(
+                    initialValue: hasAddresses ? _addressId : null,
+                    decoration: const InputDecoration(
+                      labelText: '배송지 선택',
+                      border: OutlineInputBorder(borderRadius: OudRadii.md),
+                    ),
+                    hint: const Text('등록된 배송지가 없습니다'),
+                    items: manager.addresses
+                        .map(
+                          (address) => DropdownMenuItem<String>(
+                            value: address.id,
+                            child: Text('${address.recipient} | ${address.addressLine}'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: hasAddresses ? (value) => setState(() => _addressId = value) : null,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '배송비 규칙: 50,000원 미만 3,000원 / 이상 무료',
+                    style: TextStyle(fontSize: 12, color: OudColors.mutedText),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            const OudStepTitle(step: 3, title: '쿠폰 및 마일리지'),
+            OudSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String?>(
+                    initialValue: _couponId,
+                    decoration: const InputDecoration(
+                      labelText: '쿠폰 적용',
+                      border: OutlineInputBorder(borderRadius: OudRadii.md),
+                    ),
+                    items: <DropdownMenuItem<String?>>[
+                      const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('쿠폰 사용 안 함'),
+                      ),
+                      ...manager.coupons.where((coupon) => !coupon.isUsed).map(
+                            (coupon) => DropdownMenuItem<String?>(
+                              value: coupon.id,
+                              child: Text('${coupon.title} (₩${format.format(coupon.discountAmount)})'),
+                            ),
+                          ),
+                    ],
+                    onChanged: (value) => setState(() => _couponId = value),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectedCoupon == null
+                        ? '쿠폰 조건: 최소 주문금액 충족 시 자동 반영'
+                        : couponApplicable
+                            ? '쿠폰 적용 가능: 할인 금액이 결제금액에 반영됩니다.'
+                            : '쿠폰 미적용: 최소 주문금액 ${format.format(selectedCoupon.minOrderAmount)}원 필요',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: couponApplicable || selectedCoupon == null ? OudColors.mutedText : OudColors.danger,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Text('마일리지', style: OudTypography.label),
+                      const Spacer(),
+                      Text(
+                        '${format.format(_mileageToUse)}P',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    value: _mileageToUse.toDouble(),
+                    max: maxMileage.toDouble(),
+                    onChanged: (value) => setState(() => _mileageToUse = value.toInt()),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => setState(() => _mileageToUse = maxMileage),
+                      child: const Text('전액 사용'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            const OudStepTitle(step: 4, title: '결제 수단'),
+            OudSectionCard(
+              child: DropdownButtonFormField<String>(
+                initialValue: hasPayments ? _paymentId : null,
+                decoration: const InputDecoration(
+                  labelText: '결제 수단 선택',
+                  border: OutlineInputBorder(borderRadius: OudRadii.md),
+                ),
+                hint: const Text('등록된 결제수단이 없습니다'),
+                items: manager.paymentMethods
+                    .map((payment) => DropdownMenuItem<String>(value: payment.id, child: Text(payment.label)))
+                    .toList(),
+                onChanged: hasPayments ? (value) => setState(() => _paymentId = value) : null,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OudSectionCard(
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _agreed,
+                onChanged: (value) => setState(() => _agreed = value ?? false),
+                title: const Text(
+                  '주문 정보, 환불 정책, 배송 지연 가능성 안내를 확인하고 결제에 동의합니다.',
+                  style: TextStyle(fontSize: 13.5, height: 1.35),
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: OudColors.panelDark,
+                borderRadius: OudRadii.lg,
+              ),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '결제 금액',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  OudAmountRow(label: '총 상품 금액', value: '₩${format.format(subtotal)}', dark: true),
+                  OudAmountRow(label: '배송비', value: '₩${format.format(shippingFee)}', dark: true),
+                  OudAmountRow(label: '쿠폰 할인', value: '-₩${format.format(couponDiscount)}', dark: true),
+                  OudAmountRow(label: '마일리지 사용', value: '-₩${format.format(_mileageToUse)}', dark: true),
+                  const Divider(color: OudColors.panelDarkDivider),
+                  OudAmountRow(
+                    label: '최종 결제 금액',
+                    value: '₩${format.format(finalAmount)}',
+                    emphasize: true,
+                    dark: true,
+                  ),
                 ],
               ),
             ),
           ],
         ),
       ),
-      // 최종 결제하기 버튼
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () {
-            final userManager =
-                Provider.of<UserDataManager>(context, listen: false);
+      bottomSheet: SafeArea(
+        top: false,
+        child: Container(
+          width: double.infinity,
+          color: OudColors.bg,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          child: manager.isLoggedIn
+              ? OudTapScale(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                    onPressed: _submitting
+                        ? null
+                        : () async {
+                            if (_addressId == null || _paymentId == null) {
+                              _toast('배송지와 결제 수단을 선택해 주세요.');
+                              return;
+                            }
+                            if (!_agreed) {
+                              _toast('주문 동의 체크가 필요합니다.');
+                              return;
+                            }
 
-            // 1. 주문 목록에 추가
-            userManager.addPurchase([product]);
+                            final soldOut = items.any((line) => line.product.stock == 0);
+                            if (soldOut) {
+                              _toast('품절 상품이 포함되어 결제를 진행할 수 없습니다.');
+                              return;
+                            }
 
-            // 2. 만약 장바구니에 이 상품이 있다면 제거 (새로 추가할 로직)
-            userManager.removeFromCart(product);
+                            final overStock = items.any((line) => line.quantity > line.product.stock);
+                            if (overStock) {
+                              _toast('재고 수량을 초과한 상품이 있습니다. 수량을 조정해 주세요.');
+                              return;
+                            }
 
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('주문이 완료되었습니다! 장바구니에서 상품을 비웠습니다.')));
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.deepPurple,
-            minimumSize: const Size(double.infinity, 55),
-          ),
-          child: Text('${priceFormat.format(totalPrice)}원 결제하기',
-              style: const TextStyle(fontSize: 18, color: Colors.white)),
+                            final addresses = manager.addresses;
+                            final payments = manager.paymentMethods;
+                            if (addresses.isEmpty || payments.isEmpty) {
+                              _toast('배송지 또는 결제수단 정보가 없습니다.');
+                              return;
+                            }
+
+                            setState(() => _submitting = true);
+                            try {
+                              final address = addresses.firstWhere(
+                                (item) => item.id == _addressId,
+                                orElse: () => addresses.first,
+                              );
+                              final payment = payments.firstWhere(
+                                (item) => item.id == _paymentId,
+                                orElse: () => payments.first,
+                              );
+
+                              if (widget.mode == CheckoutMode.cart) {
+                                manager.placeOrderFromCart(
+                                  couponId: couponDiscount > 0 ? _couponId : null,
+                                  mileageUsed: _mileageToUse,
+                                  shippingFee: shippingFee,
+                                  address: address,
+                                  payment: payment,
+                                  agreementAccepted: true,
+                                );
+                              } else {
+                                manager.placeSingleOrder(
+                                  widget.product!,
+                                  option: widget.selectedOption,
+                                  quantity: widget.quantity,
+                                  couponId: couponDiscount > 0 ? _couponId : null,
+                                  mileageUsed: _mileageToUse,
+                                  shippingFee: shippingFee,
+                                  address: address,
+                                  payment: payment,
+                                  agreementAccepted: true,
+                                );
+                                manager.removeFromCart(
+                                  widget.product!,
+                                  option: widget.selectedOption,
+                                );
+                              }
+
+                              if (!mounted) return;
+                              await Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => OrderCompleteScreen(
+                                    finalAmount: finalAmount,
+                                    itemCount: items.fold<int>(0, (count, item) => count + item.quantity),
+                                  ),
+                                ),
+                              );
+                            } catch (_) {
+                              if (!mounted) return;
+                              _toast('결제 처리 중 오류가 발생했습니다. 네트워크 상태를 확인 후 다시 시도해 주세요.');
+                            } finally {
+                              if (mounted) setState(() => _submitting = false);
+                            }
+                          },
+                    child: Text(_submitting ? '처리 중...' : '결제하기'),
+                  ),
+                )
+              : OutlinedButton(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                    if (mounted) setState(() {});
+                  },
+                  child: const Text('로그인 후 결제하기'),
+                ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+  Widget _warnBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCE8E3),
+        borderRadius: OudRadii.md,
+        border: Border.all(color: const Color(0xFFF1C5B7)),
+      ),
       child: Row(
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Icon(Icons.warning_amber_rounded, color: OudColors.primary, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(fontSize: 12.5, color: Color(0xFF7B3B2A), height: 1.35),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPaymentMethod(String name) {
-    return Card(child: Center(child: Text(name)));
-  }
-
-  Widget _buildPriceRow(String label, int price, NumberFormat format,
-      {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-              style: TextStyle(
-                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text('${format.format(price)}원',
-              style: TextStyle(
-                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-                  fontSize: isTotal ? 20 : 14)),
-        ],
-      ),
-    );
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

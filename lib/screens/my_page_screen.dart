@@ -1,295 +1,342 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
+
 import '../models/user_data_manager.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/oud_components.dart';
+import 'admin_role_management_screen.dart';
+import 'coupon_list_screen.dart';
 import 'login_screen.dart';
-import 'wishlist_screen.dart';
+import 'mileage_history_screen.dart';
+import 'policy_screen.dart';
+import 'profile_edit_screen.dart';
+import 'review_manage_screen.dart';
+import 'seller_demo_screen.dart';
+import 'support_center_screen.dart';
+import 'user_order_list_screen.dart';
 
 class MyPageScreen extends StatelessWidget {
   const MyPageScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final userManager = Provider.of<UserDataManager>(context);
-    final purchasedItems = userManager.purchasedProducts;
-    final priceFormat = NumberFormat('#,###', 'ko_KR');
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('마이페이지'),
-        centerTitle: true,
-        elevation: 0,
-        actions: [
-          if (userManager.isLoggedIn)
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () => _showLogoutConfirmDialog(context, userManager),
-            ),
-        ],
-      ),
-      body: userManager.isLoggedIn
-          ? _buildFullMyPage(context, userManager, purchasedItems, priceFormat)
-          : _buildLoginPrompt(context),
-    );
+    final manager = context.watch<UserDataManager>();
+    if (!manager.isLoggedIn) {
+      return _loggedOut(context);
+    }
+    return _loggedIn(context, manager);
   }
 
-  // --- 1. 로그인 유도 화면 ---
-  Widget _buildLoginPrompt(BuildContext context) {
+  Widget _loggedOut(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.account_circle_outlined,
-              size: 100, color: Colors.grey),
-          const SizedBox(height: 20),
-          const Text('로그인이 필요한 서비스입니다.', style: TextStyle(fontSize: 18)),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-            ),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-            child:
-                const Text('로그인하러 가기', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- 2. 로그인 후 전체 UI ---
-  Widget _buildFullMyPage(
-      BuildContext context, userManager, purchasedItems, priceFormat) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          _buildProfileSection(context, userManager),
-          const Divider(thickness: 8, color: Color(0xFFF5F5F5)),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                const Icon(Icons.shopping_bag_outlined,
-                    color: Colors.deepPurple),
-                const SizedBox(width: 8),
-                const Text('최근 구매 내역',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                Text('총 ${purchasedItems.length}건',
-                    style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-          purchasedItems.isEmpty
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 60),
-                  child: Center(child: Text('구매한 상품이 없습니다.')),
-                )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: purchasedItems.length,
-                  itemBuilder: (context, index) {
-                    final product = purchasedItems[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(10),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: product.image != null
-                              ? Image.asset(product.image!,
-                                  width: 60, height: 60, fit: BoxFit.cover)
-                              : Container(
-                                  width: 60, height: 60, color: Colors.grey),
-                        ),
-                        title: Text(product.title,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
-                            Text('${priceFormat.format(product.price)}원'),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () => _showReviewDialog(
-                                  context, product, userManager),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.deepPurple,
-                                side:
-                                    const BorderSide(color: Colors.deepPurple),
-                                elevation: 0,
-                                minimumSize: const Size(80, 30),
-                              ),
-                              child: const Text('리뷰 쓰기',
-                                  style: TextStyle(fontSize: 12)),
-                            ),
-                          ],
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                        onTap: () {/* 상세 페이지 이동 */},
-                      ),
-                    );
-                  },
-                ),
-        ],
-      ),
-    );
-  }
-
-  // --- 3. 프로필 섹션 위젯 ---
-  Widget _buildProfileSection(
-      BuildContext context, UserDataManager userManager) {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        children: [
-          Row(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: OudSectionCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.deepPurple,
-                child: Icon(Icons.person, size: 50, color: Colors.white),
+                radius: 36,
+                backgroundColor: OudColors.surface,
+                child: Icon(Icons.person_outline, color: OudColors.mutedText),
               ),
-              const SizedBox(width: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ✅ 수정 포인트: const 삭제
-                  Text('${userManager.userName}님',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _buildInfoChip('마일리지', '${userManager.mileage}P'),
-                      const SizedBox(width: 8),
-                      _buildInfoChip('후기', '${userManager.reviewCount}건'),
-                    ],
-                  ),
-                ],
+              const SizedBox(height: 12),
+              const Text(
+                '로그인이 필요합니다.',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '주문 내역, 쿠폰, 리뷰, 프로필 관리 기능을 사용할 수 있습니다.',
+                style: TextStyle(color: OudColors.mutedText),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 14),
+              ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                ),
+                child: const Text('로그인'),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const WishlistScreen())),
-              icon: const Icon(Icons.favorite, size: 18, color: Colors.red),
-              label: const Text('찜한 상품 보기'),
-              style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  foregroundColor: Colors.red),
+        ),
+      ),
+    );
+  }
+
+  Widget _loggedIn(BuildContext context, UserDataManager manager) {
+    final paymentDone = manager.orders.where((order) => order.status == '결제완료').length;
+    final preparing = manager.orders.where((order) => order.status == '배송준비').length;
+    final shipping = manager.orders.where((order) => order.status == '배송중').length;
+    final delivered = manager.orders.where((order) => order.status == '배송완료').length;
+    final cancelRequested = manager.orders.where((order) => order.status == '취소요청').length;
+    final canceled = manager.orders.where((order) => order.status == '취소완료').length;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 42,
+              backgroundColor: const Color(0xFFF2D8CB),
+              backgroundImage: manager.profileImageUrl.trim().isNotEmpty
+                  ? NetworkImage(manager.profileImageUrl)
+                  : null,
+              child: manager.profileImageUrl.trim().isEmpty
+                  ? const Icon(Icons.person, size: 38, color: OudColors.primary)
+                  : null,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Text('$label $value',
-          style: const TextStyle(
-              fontSize: 12,
-              color: Colors.deepPurple,
-              fontWeight: FontWeight.bold)),
-    );
-  }
-
-  // --- 4. 리뷰 작성 팝업창 ---
-  void _showReviewDialog(BuildContext context, product, userManager) {
-    final TextEditingController commentController = TextEditingController();
-    double selectedRating = 5.0;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('${product.title} 리뷰 작성'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('상품은 어떠셨나요?'),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return IconButton(
-                        icon: Icon(
-                            index < selectedRating
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: Colors.amber),
-                        onPressed: () =>
-                            setState(() => selectedRating = index + 1.0),
-                      );
-                    }),
+                  Text(
+                    manager.userName,
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
                   ),
-                  TextField(
-                    controller: commentController,
-                    decoration:
-                        const InputDecoration(hintText: '솔직한 후기를 남겨주세요.'),
-                    maxLines: 3,
+                  const SizedBox(height: 4),
+                  Text(
+                    manager.profileBio,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: OudColors.mutedText, height: 1.35),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('취소')),
-                ElevatedButton(
-                  onPressed: () {
-                    if (commentController.text.isNotEmpty) {
-                      userManager.addReview(product.id, product.title,
-                          selectedRating, commentController.text);
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Text('리뷰가 등록되었습니다! 마일리지 100P 적립!')));
-                    }
-                  },
-                  child: const Text('등록'),
+            ),
+            IconButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+              ),
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: '프로필 편집',
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: OudSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'POINT',
+                      style: TextStyle(
+                        color: Color(0xFFB56C59),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${manager.mileage}',
+                      style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        );
-      },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OudSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'COUPON',
+                      style: TextStyle(
+                        color: Color(0xFF6D8A4B),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${manager.availableCouponCount}',
+                      style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        const Text(
+          '계정/운영 허브',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: OudColors.mutedText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OudMenuTile(
+          icon: Icons.person_outline,
+          iconBg: const Color(0xFFE8F0D9),
+          title: '프로필 편집',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileEditScreen()),
+          ),
+        ),
+        OudMenuTile(
+          icon: Icons.confirmation_number_outlined,
+          iconBg: const Color(0xFFE8F0D9),
+          title: '쿠폰함',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CouponListScreen()),
+          ),
+        ),
+        OudMenuTile(
+          icon: Icons.payments_outlined,
+          iconBg: const Color(0xFFECE1F7),
+          title: '마일리지 내역',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MileageHistoryScreen()),
+          ),
+        ),
+        OudMenuTile(
+          icon: Icons.rate_review_outlined,
+          iconBg: const Color(0xFFF6DDDA),
+          title: '내가 쓴 리뷰',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ReviewManageScreen()),
+          ),
+        ),
+        OudMenuTile(
+          icon: Icons.local_shipping_outlined,
+          iconBg: const Color(0xFFE7E7E7),
+          title: '주문 및 배송 조회',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const UserOrderListScreen()),
+          ),
+        ),
+        if (manager.isSeller)
+          OudMenuTile(
+            icon: Icons.storefront_outlined,
+            iconBg: const Color(0xFFFFE9D8),
+            title: '판매자 주문 관리',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SellerDemoScreen()),
+            ),
+          ),
+        if (manager.isAdmin)
+          OudMenuTile(
+            icon: Icons.admin_panel_settings_outlined,
+            iconBg: const Color(0xFFE1F0FF),
+            title: '판매자 권한 관리',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AdminRoleManagementScreen(),
+              ),
+            ),
+          ),
+        const SizedBox(height: 16),
+        const Text(
+          '고객 안내',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: OudColors.mutedText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OudMenuTile(
+          icon: Icons.support_agent_outlined,
+          iconBg: const Color(0xFFF5EADB),
+          title: '고객센터',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SupportCenterScreen()),
+          ),
+        ),
+        OudMenuTile(
+          icon: Icons.article_outlined,
+          iconBg: const Color(0xFFE8EDF5),
+          title: '약관 및 정책',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PolicyScreen()),
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextButton(
+          onPressed: () => _confirmLogout(context, manager),
+          child: const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '로그아웃',
+              style: TextStyle(color: Color(0xFFBD6E61)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        OudSectionCard(
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 10,
+            children: [
+              _status('결제완료', paymentDone),
+              _status('배송준비', preparing),
+              _status('배송중', shipping),
+              _status('배송완료', delivered),
+              _status('취소요청', cancelRequested),
+              _status('취소완료', canceled),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  // --- 5. 로그아웃 확인 팝업 ---
-  void _showLogoutConfirmDialog(
-      BuildContext context, UserDataManager userManager) {
-    showDialog(
+  Widget _status(String label, int count) {
+    return Column(
+      children: [
+        Text(
+          '$count',
+          style: TextStyle(
+            color: count > 0 ? OudColors.primary : OudColors.mutedText,
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: OudColors.mutedText),
+        ),
+      ],
+    );
+  }
+
+  void _confirmLogout(BuildContext context, UserDataManager manager) {
+    showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃 하시겠습니까?'),
+        content: const Text('현재 계정에서 로그아웃할까요?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('취소')),
-          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
             onPressed: () {
-              userManager.logout();
+              manager.logout();
               Navigator.pop(context);
             },
-            child: const Text('로그아웃', style: TextStyle(color: Colors.red)),
+            child: const Text('로그아웃'),
           ),
         ],
       ),

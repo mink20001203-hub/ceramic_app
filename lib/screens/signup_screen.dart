@@ -1,20 +1,51 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_data_manager.dart';
 
+// 회원가입 화면: 입력값을 확인하고 Firebase Auth 계정을 생성한다.
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
-
 class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   bool _isAgreed = false; // 약관 동의 상태
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  String _messageForAuthCode(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return '이미 가입된 이메일입니다.';
+      case 'invalid-email':
+        return '이메일 형식이 올바르지 않습니다.';
+      case 'weak-password':
+        return '비밀번호는 6자리 이상이어야 합니다.';
+      case 'operation-not-allowed':
+        return '이메일/비밀번호 회원가입이 비활성화되어 있습니다.';
+      default:
+        return '회원가입에 실패했습니다. ($code)';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +57,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Text(
-              '새로운 계정을\n만들어보세요!',
+              '새로운 계정을 만들어보세요!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
@@ -35,7 +66,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(
-                  labelText: '이름', border: OutlineInputBorder()),
+                labelText: '이름',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -43,7 +76,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             TextField(
               controller: _emailController,
               decoration: const InputDecoration(
-                  labelText: '이메일', border: OutlineInputBorder()),
+                labelText: '이메일',
+                border: OutlineInputBorder(),
+              ),
               keyboardType: TextInputType.emailAddress,
             ),
             const SizedBox(height: 16),
@@ -53,7 +88,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               controller: _passwordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: '비밀번호', border: OutlineInputBorder()),
+                labelText: '비밀번호',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -62,7 +99,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
               controller: _confirmPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
-                  labelText: '비밀번호 확인', border: OutlineInputBorder()),
+                labelText: '비밀번호 확인',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 20),
 
@@ -70,7 +109,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             CheckboxListTile(
               title: const Text('이용약관 및 개인정보 처리방침에 동의합니다.'),
               value: _isAgreed,
-              onChanged: (value) => setState(() => _isAgreed = value!),
+              onChanged: (value) => setState(() => _isAgreed = value ?? false),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
@@ -80,44 +119,56 @@ class _SignUpScreenState extends State<SignUpScreen> {
             // 가입하기 버튼
             ElevatedButton(
               onPressed: _isAgreed
-                  ? () {
-                      // 1. 필수 정보 입력 확인
-                      if (_nameController.text.isEmpty ||
-                          _emailController.text.isEmpty ||
-                          _passwordController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('모든 정보를 입력해주세요.')),
-                        );
+                  ? () async {
+                      final manager = context.read<UserDataManager>();
+                      final navigator = Navigator.of(context);
+                      final name = _nameController.text.trim();
+                      final email = _emailController.text.trim();
+                      final password = _passwordController.text;
+                      final confirm = _confirmPasswordController.text;
+
+                      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+                        _showMessage('모든 정보를 입력해주세요.');
                         return;
                       }
 
-                      // 2. 비밀번호 일치 확인
-                      if (_passwordController.text !=
-                          _confirmPasswordController.text) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('비밀번호가 일치하지 않습니다.')),
-                        );
+                      if (password.length < 6) {
+                        _showMessage('비밀번호는 6자리 이상이어야 합니다.');
                         return;
                       }
 
-                      // 3. 모든 검증 통과 시 이름 저장 및 가입 완료 처리
-                      Provider.of<UserDataManager>(context, listen: false)
-                          .setUserName(_nameController.text);
+                      if (password != confirm) {
+                        _showMessage('비밀번호가 일치하지 않습니다.');
+                        return;
+                      }
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('회원가입이 완료되었습니다! 로그인을 진행해주세요.')),
-                      );
+                      try {
+                        await manager.register(
+                          email: email,
+                          password: password,
+                          name: name,
+                        );
 
-                      Navigator.pop(context); // 가입 완료 후 로그인 창으로 돌아가기
+                        _showMessage('회원가입이 완료되었습니다! 로그인해주세요.');
+                        if (!mounted) return;
+                        navigator.pop();
+                      } on FirebaseAuthException catch (e) {
+                        if (!mounted) return;
+                        _showMessage('회원가입 실패: ${_messageForAuthCode(e.code)}');
+                      } catch (_) {
+                        if (!mounted) return;
+                        _showMessage('회원가입에 실패했습니다.');
+                      }
                     }
-                  : null, // 약관 동의 안 하면 버튼 비활성화
+                  : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: const Color(0xFFA53C2C),
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('가입 완료',
-                  style: TextStyle(color: Colors.white, fontSize: 16)),
+              child: const Text(
+                '가입하기',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ),
           ],
         ),
