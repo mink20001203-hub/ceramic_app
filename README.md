@@ -152,9 +152,20 @@ npm run test:rules
 - 공개 배포 전 Firebase Console에서 API key 제한과 Firestore rules 배포 상태를 확인합니다.
 - `keys/` 폴더와 로컬 캡처/빌드 산출물은 `.gitignore`로 제외합니다.
 
-## 11. 스크린샷
+## 11. Screenshots
 
-최신 포트폴리오용 스크린샷은 정리 예정입니다. 캡처 대상은 홈, 상세, 장바구니, 주문, 주문 상세, 판매자 주문 관리, 관리자 역할 관리 화면입니다.
+OUD의 핵심 구매자 흐름은 Home → Detail → Checkout → Payment 순서로 구성했습니다.  
+사용자가 상품을 탐색하고, 옵션과 수량을 선택한 뒤, 주문 정보와 최종 결제 금액을 확인하는 흐름을 중심으로 구현했습니다.
+
+| Home | Detail |
+| --- | --- |
+| ![OUD Home](docs/images/oud-home.png) | ![OUD Detail](docs/images/oud-detail.png) |
+| 상품 목록과 추천 상품 탐색 | 옵션/수량 선택 및 예상 합계 확인 |
+
+| Checkout | Payment |
+| --- | --- |
+| ![OUD Checkout](docs/images/oud-checkout.png) | ![OUD Payment](docs/images/oud-payment.png) |
+| 배송지, 쿠폰, 마일리지, 결제수단 입력 | 배송비, 할인, 최종 결제 금액 확인 |
 
 ## 12. 한계 및 개선 계획
 
