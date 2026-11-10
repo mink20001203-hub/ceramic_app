@@ -348,12 +348,17 @@ class OrderDetailScreen extends StatelessWidget {
       return;
     }
 
-    manager.requestOrderCancellation(orderId, reason: reasonController.text, actor: '구매자');
+    final reason = reasonController.text;
     reasonController.dispose();
-
+    var message = '취소요청이 접수되었습니다. 판매자 확인 후 처리됩니다.';
+    try {
+      await manager.requestOrderCancellation(orderId, reason: reason);
+    } catch (_) {
+      message = '취소 요청을 저장하지 못했습니다. 주문 상태를 확인 후 다시 시도해 주세요.';
+    }
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('취소요청이 접수되었습니다. 판매자 확인 후 처리됩니다.')),
+      SnackBar(content: Text(message)),
     );
   }
 }

@@ -6,7 +6,7 @@ import {
   assertFails,
   assertSucceeds,
 } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from 'firebase/firestore';
 
 const PROJECT_ID = 'demo-ceramic-app';
 const RULES = readFileSync('../firestore.rules', 'utf8');
@@ -32,6 +32,7 @@ test.before(async () => {
       email: 'seller@ceramic.com',
       role: 'seller',
     });
+    await setDoc(doc(db, 'users/other_seller_uid'), { role: 'seller' });
     await setDoc(doc(db, 'users/user_uid'), {
       userName: '구매자',
       email: 'user@ceramic.com',
@@ -100,14 +101,38 @@ test('일반 사용자는 products 문서를 생성할 수 없다', async () => 
   );
 });
 
-test('구매자는 본인 주문을 취소요청으로 업데이트할 수 있다', async () => {
+test('구매자와 담당 판매자가 취소를 처리하고 구매자가 최종 상태를 다시 읽는다', async () => {
   const userDb = testEnv.authenticatedContext('user_uid').firestore();
+  const sellerDb = testEnv.authenticatedContext('seller_uid').firestore();
+  const otherSellerDb = testEnv.authenticatedContext('other_seller_uid').firestore();
+  const orderPath = 'orders/cancellation_flow';
+  const buyerOrder = doc(userDb, orderPath);
+  await assertSucceeds(setDoc(buyerOrder, {
+    buyerId: 'user_uid',
+    sellerId: 'seller_uid',
+    status: '결제완료',
+    totalAmount: 10000,
+  }));
+  await assertFails(updateDoc(buyerOrder, { status: '취소요청', totalAmount: 0 }));
+  await assertFails(getDoc(doc(otherSellerDb, orderPath)));
+  await assertFails(updateDoc(doc(otherSellerDb, orderPath), { status: '취소완료' }));
   await assertSucceeds(
-    updateDoc(doc(userDb, 'orders/order_1'), {
+    updateDoc(buyerOrder, {
       status: '취소요청',
       cancelReason: '단순 변심',
     }),
   );
+  const sellerOrder = doc(sellerDb, orderPath);
+  const sellerOrders = await assertSucceeds(getDocs(
+    query(collection(sellerDb, 'orders'), where('sellerId', '==', 'seller_uid')),
+  ));
+  assert.ok(sellerOrders.docs.some((order) => order.id === 'cancellation_flow'));
+  assert.equal((await assertSucceeds(getDoc(sellerOrder))).data().status, '취소요청');
+  await assertSucceeds(updateDoc(sellerOrder, { status: '취소완료' }));
+  const reloadedBuyerDb = testEnv.authenticatedContext('user_uid').firestore();
+  const reloadedOrder = doc(reloadedBuyerDb, orderPath);
+  assert.equal((await assertSucceeds(getDoc(reloadedOrder))).data().status, '취소완료');
+  await assertFails(updateDoc(reloadedOrder, { status: '취소요청' }));
 });
 
 test('구매자는 본인 주문을 취소완료로 직접 업데이트할 수 없다', async () => {

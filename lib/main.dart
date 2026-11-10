@@ -11,6 +11,7 @@ import 'screens/home_screen.dart';
 import 'screens/my_page_screen.dart';
 import 'screens/notification_list_screen.dart';
 import 'screens/search_screen.dart';
+import 'screens/wishlist_screen.dart';
 import 'theme/app_theme.dart';
 import 'theme/app_tokens.dart';
 
@@ -84,6 +85,14 @@ class MainScreen extends StatelessWidget {
           onPressed: () => manager.setTabIndex(0),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.favorite_border),
+            tooltip: '찜한 상품',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const WishlistScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: '검색',

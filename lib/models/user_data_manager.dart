@@ -382,6 +382,7 @@ class UserDataManager with ChangeNotifier {
       _selectedPaymentId = _paymentMethods.first.id;
     }
     reloadProducts();
+    _wishlistReady = _restoreWishlist();
     _restoreSession();
     _loadPublicContent();
   }
@@ -415,8 +416,11 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  Future<void> _persistOrder(Order order) async {
-    if (!_firebaseReady || _db == null || _userId == null) return;
+  Future<void> _persistOrder(Order order, {bool requireBackend = false}) async {
+    if (!_firebaseReady || _db == null || _userId == null) {
+      if (requireBackend) throw StateError('Order backend unavailable');
+      return;
+    }
     try {
       final payload = _orderToMap(order);
       payload['buyerId'] = order.buyerId ?? _userId;
@@ -429,8 +433,10 @@ class UserDataManager with ChangeNotifier {
       _backendError = null;
     } on FirebaseException catch (e) {
       _backendError = e.code;
+      if (requireBackend) rethrow;
     } catch (_) {
       _backendError = 'unknown';
+      if (requireBackend) rethrow;
     }
   }
 
@@ -444,18 +450,10 @@ class UserDataManager with ChangeNotifier {
           .where('buyerId', isEqualTo: _userId)
           .get();
     } else if (_role == UserRole.seller) {
-      final sellerIds = currentSellerScopeIds();
-      if (sellerIds.length == 1) {
-        snapshot = await _db!
-            .collection(FirestorePaths.orders)
-            .where('sellerId', isEqualTo: sellerIds.first)
-            .get();
-      } else {
-        snapshot = await _db!
-            .collection(FirestorePaths.orders)
-            .where('sellerId', whereIn: sellerIds)
-            .get();
-      }
+      snapshot = await _db!
+          .collection(FirestorePaths.orders)
+          .where('sellerId', isEqualTo: _userId)
+          .get();
     } else {
       snapshot = await _db!.collection(FirestorePaths.orders).get();
     }
@@ -699,7 +697,8 @@ class UserDataManager with ChangeNotifier {
 
   Future<void> deleteProductBySeller(Product product) async {
     _products.removeWhere((p) => p.id == product.id);
-    _wishlist.removeWhere((p) => p.id == product.id);
+    await _wishlistReady;
+    if (_wishlistIds.remove(product.id)) await _saveWishlist();
     _cartWithQuantity.removeWhere((item) => item.product.id == product.id);
     notifyListeners();
 
@@ -1049,18 +1048,45 @@ class UserDataManager with ChangeNotifier {
     return map.values.toList();
   }
 
-  final List<Product> _wishlist = [];
-  List<Product> get wishlist => _wishlist;
+  static const _wishlistKey = 'wishlistProductIds';
+  final Set<String> _wishlistIds = {};
+  late final Future<void> _wishlistReady;
+  SharedPreferences? _wishlistPreferences;
 
-  void toggleWishlist(Product product) {
-    _wishlist.contains(product)
-        ? _wishlist.remove(product)
-        : _wishlist.add(product);
-    _persist();
+  List<Product> get wishlist {
+    final productsById = {for (final product in _products) product.id: product};
+    return [
+      for (final id in _wishlistIds)
+        if (productsById[id] case final product?) product,
+    ];
+  }
+
+  Future<void> _restoreWishlist() async {
+    try {
+      _wishlistPreferences = await SharedPreferences.getInstance();
+      _wishlistIds.addAll(_wishlistPreferences?.getStringList(_wishlistKey) ?? []);
+    } catch (error) {
+      debugPrint('Could not restore wishlist: $error');
+    }
     notifyListeners();
   }
 
-  bool isFavorite(Product product) => _wishlist.contains(product);
+  Future<void> _saveWishlist() async {
+    try {
+      await _wishlistPreferences?.setStringList(_wishlistKey, _wishlistIds.toList());
+    } catch (error) {
+      debugPrint('Could not save wishlist: $error');
+    }
+  }
+
+  Future<void> toggleWishlist(Product product) async {
+    await _wishlistReady;
+    if (!_wishlistIds.remove(product.id)) _wishlistIds.add(product.id);
+    notifyListeners();
+    await _saveWishlist();
+  }
+
+  bool isFavorite(Product product) => _wishlistIds.contains(product.id);
 
   final List<CartItem> _cartWithQuantity = [];
   List<CartItem> get items => _cartWithQuantity;
@@ -1184,14 +1210,14 @@ class UserDataManager with ChangeNotifier {
     product.stock = newStock < 0 ? 0 : newStock;
   }
 
-  void placeOrderFromCart(
+  Future<void> placeOrderFromCart(
       {String? couponId,
       int mileageUsed = 0,
       int shippingFee = 0,
       Address? address,
       PaymentMethod? payment,
-      bool agreementAccepted = false}) {
-    if (_cartWithQuantity.isEmpty) return;
+      bool agreementAccepted = false}) async {
+    if (_cartWithQuantity.isEmpty) throw StateError('Cart is empty');
 
     final items = _cartWithQuantity
         .map((item) => OrderItem(
@@ -1212,10 +1238,6 @@ class UserDataManager with ChangeNotifier {
     final mileageToUse =
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
     final total = subtotal + shippingFee - couponDiscount - mileageToUse;
-
-    for (final item in items) {
-      _decreaseStock(item.product, item.quantity);
-    }
 
     final createdOrder = Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -1239,8 +1261,11 @@ class UserDataManager with ChangeNotifier {
             status: '결제완료', date: DateTime.now(), actor: '시스템'),
       ],
     );
+    await _persistOrder(createdOrder, requireBackend: true);
+    for (final item in items) {
+      _decreaseStock(item.product, item.quantity);
+    }
     _orders.add(createdOrder);
-    _persistOrder(createdOrder);
 
     if (couponDiscount > 0) {
       useCoupon(couponId);
@@ -1267,7 +1292,7 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  void placeSingleOrder(Product product,
+  Future<void> placeSingleOrder(Product product,
       {String? option,
       int quantity = 1,
       String? couponId,
@@ -1275,7 +1300,7 @@ class UserDataManager with ChangeNotifier {
       int shippingFee = 0,
       Address? address,
       PaymentMethod? payment,
-      bool agreementAccepted = false}) {
+      bool agreementAccepted = false}) async {
     final items = [
       OrderItem(
         product: product,
@@ -1294,8 +1319,6 @@ class UserDataManager with ChangeNotifier {
     final mileageToUse =
         _calculateMileageUsage(mileageUsed, subtotal - couponDiscount);
     final total = subtotal + shippingFee - couponDiscount - mileageToUse;
-
-    _decreaseStock(product, quantity);
 
     final createdOrder = Order(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -1319,8 +1342,9 @@ class UserDataManager with ChangeNotifier {
             status: '결제완료', date: DateTime.now(), actor: '시스템'),
       ],
     );
+    await _persistOrder(createdOrder, requireBackend: true);
+    _decreaseStock(product, quantity);
     _orders.add(createdOrder);
-    _persistOrder(createdOrder);
 
     if (couponDiscount > 0) {
       useCoupon(couponId);
@@ -1434,24 +1458,49 @@ class UserDataManager with ChangeNotifier {
     }
   }
 
-  void requestOrderCancellation(
+  Future<void> _saveOrderTransition(
+    Order order,
+    OrderStatusLog log,
+    Map<String, dynamic> fields,
+  ) async {
+    final db = _db;
+    if (db == null || _userId == null) {
+      throw StateError('Order backend unavailable');
+    }
+    final ref = db.collection(FirestorePaths.orders).doc(order.id);
+    final expectedStatus = order.status;
+    await db.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      if (snapshot.data()?['status'] != expectedStatus) {
+        throw StateError('Order status has changed');
+      }
+      transaction.update(ref, {
+        ...fields,
+        'status': log.status,
+        'statusLogs': FieldValue.arrayUnion([_orderLogToMap(log)]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+    _backendError = null;
+    order.status = log.status;
+    order.statusLogs.add(log);
+  }
+
+  Future<void> requestOrderCancellation(
     String orderId, {
     String? reason,
     String actor = '구매자',
-  }) {
+  }) async {
     final order = _orders.firstWhere((o) => o.id == orderId);
-    if (!canRequestCancellation(order)) return;
+    if (!canRequestCancellation(order)) throw StateError('Cannot request cancellation');
 
     final normalizedReason = (reason ?? '').trim();
-    if (normalizedReason.isNotEmpty) {
-      order.cancelReason = normalizedReason;
-    }
-    order.status = '취소요청';
-    order.statusLogs.add(
+    await _saveOrderTransition(
+      order,
       OrderStatusLog(status: '취소요청', date: DateTime.now(), actor: actor),
+      {if (normalizedReason.isNotEmpty) 'cancelReason': normalizedReason},
     );
-    _persistOrder(order);
-    _persist();
+    if (normalizedReason.isNotEmpty) order.cancelReason = normalizedReason;
     notifyListeners();
   }
 
@@ -1477,23 +1526,23 @@ class UserDataManager with ChangeNotifier {
     notifyListeners();
   }
 
-  void markOrderCanceled(
+  Future<void> markOrderCanceled(
     String orderId, {
     required String reason,
     String actor = '판매자',
-  }) {
+  }) async {
     final order = _orders.firstWhere((o) => o.id == orderId);
-    if (!canSellerCancel(order)) return;
-    if (order.status == '배송완료') return;
+    if (!canSellerCancel(order)) throw StateError('Cannot cancel order');
     final normalizedReason = reason.trim();
-    order.cancelReason = normalizedReason.isEmpty ? '판매자 취소 처리' : normalizedReason;
-    order.canceledAt = DateTime.now();
-    order.status = '취소완료';
-    order.statusLogs.add(
-      OrderStatusLog(status: '취소완료', date: DateTime.now(), actor: actor),
+    final cancelReason = normalizedReason.isEmpty ? '판매자 취소 처리' : normalizedReason;
+    final canceledAt = DateTime.now();
+    await _saveOrderTransition(
+      order,
+      OrderStatusLog(status: '취소완료', date: canceledAt, actor: actor),
+      {'cancelReason': cancelReason, 'canceledAt': canceledAt.toIso8601String()},
     );
-    _persistOrder(order);
-    _persist();
+    order.cancelReason = cancelReason;
+    order.canceledAt = canceledAt;
     notifyListeners();
   }
 

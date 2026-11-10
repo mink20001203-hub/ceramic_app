@@ -5,6 +5,12 @@
 - Demo: https://mink20001203-hub.github.io/ceramic_app/
 - GitHub: https://github.com/mink20001203-hub/ceramic_app
 
+## 둘러보기
+
+- **찜한 상품**: 로그인 없이 홈 또는 상세에서 하트를 누른 뒤, 홈 상단의 하트 버튼에서 목록을 엽니다. 목록의 상품을 누르면 상세로 돌아갑니다. 찜은 같은 브라우저 또는 기기에 저장됩니다.
+- **역할별 주문 처리**: 구매자가 데모 주문을 만들고 주문 상세에서 취소를 요청합니다. 상품의 판매자 ID에 연결된 판매자 계정으로 취소를 처리한 뒤 구매자 주문 상세에서 상태를 다시 확인합니다. 실제 결제는 발생하지 않습니다.
+- 두 계정으로 진행한 화면 검증 결과는 [QA 체크리스트](docs/QA_CHECKLIST.md)에 기록했습니다.
+
 ## 빠른 문서 링크
 
 | 문서 | 내용 |
@@ -43,7 +49,7 @@ OUD는 도자기 상품 커머스를 가정하고 만든 Flutter 기반 포트�
 ### 관리자
 
 - 사용자 역할 관리
-- 정책/FAQ 운영 콘텐츠 관리
+- 정책/FAQ 관리자 편집은 현재 브랜치에서 확인되지 않음
 - Firestore rules 기준 관리자 권한 분리
 
 ## 3. 기술 스택
@@ -84,7 +90,7 @@ scripts/
 ```text
 구매자: 홈/검색 -> 상세 -> 장바구니 -> 주문 -> 주문 목록/상세
 판매자: 판매자 화면 -> 본인 주문 확인 -> 배송/취소 처리
-관리자: 관리자 화면 -> 사용자 역할 관리 -> 운영 콘텐츠 관리
+관리자: 관리자 화면 -> 사용자 역할 관리
 ```
 
 ## 6. Firestore 데이터 구조
@@ -152,10 +158,9 @@ npm run test:rules
 - 공개 배포 전 Firebase Console에서 API key 제한과 Firestore rules 배포 상태를 확인합니다.
 - `keys/` 폴더와 로컬 캡처/빌드 산출물은 `.gitignore`로 제외합니다.
 
-## 11. Screenshots
+## 11. 스크린샷
 
-OUD의 핵심 구매자 흐름은 Home → Detail → Checkout → Payment 순서로 구성했습니다.  
-사용자가 상품을 탐색하고, 옵션과 수량을 선택한 뒤, 주문 정보와 최종 결제 금액을 확인하는 흐름을 중심으로 구현했습니다.
+OUD의 핵심 구매자 흐름은 Home → Detail → Checkout → Payment 순서로 구성했습니다. 상품을 탐색하고, 옵션과 수량을 선택한 뒤, 주문 정보와 최종 결제 금액을 확인할 수 있습니다.
 
 | Home | Detail |
 | --- | --- |
@@ -166,6 +171,14 @@ OUD의 핵심 구매자 흐름은 Home → Detail → Checkout → Payment 순�
 | --- | --- |
 | ![OUD Checkout](docs/images/oud-checkout.png) | ![OUD Payment](docs/images/oud-payment.png) |
 | 배송지, 쿠폰, 마일리지, 결제수단 입력 | 배송비, 할인, 최종 결제 금액 확인 |
+
+**찜한 상품**
+
+![찜 목록에 저장된 오트 화이트 머그](docs/screenshots/wishlist.png)
+
+**구매자 주문 내역**
+
+![판매자가 처리한 QA 주문의 취소완료 상태](docs/screenshots/qa-order-canceled.png)
 
 ## 12. 한계 및 개선 계획
 

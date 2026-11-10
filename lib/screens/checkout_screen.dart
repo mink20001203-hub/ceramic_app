@@ -442,7 +442,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                               );
 
                               if (widget.mode == CheckoutMode.cart) {
-                                manager.placeOrderFromCart(
+                                await manager.placeOrderFromCart(
                                   couponId: couponDiscount > 0 ? _couponId : null,
                                   mileageUsed: _mileageToUse,
                                   shippingFee: shippingFee,
@@ -451,7 +451,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                   agreementAccepted: true,
                                 );
                               } else {
-                                manager.placeSingleOrder(
+                                await manager.placeSingleOrder(
                                   widget.product!,
                                   option: widget.selectedOption,
                                   quantity: widget.quantity,
@@ -468,7 +468,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                                 );
                               }
 
-                              if (!mounted) return;
+                              if (!context.mounted) return;
                               await Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(

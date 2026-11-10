@@ -195,14 +195,19 @@ class _SellerOrderDetailScreenState extends State<SellerOrderDetailScreen> {
                       child: OutlinedButton(
                         onPressed: !canCancel
                             ? null
-                            : () {
-                                manager.markOrderCanceled(
-                                  order.id,
-                                  reason: _cancelReasonController.text,
-                                  actor: '판매자',
-                                );
+                            : () async {
+                                var message = '취소완료 처리했습니다.';
+                                try {
+                                  await manager.markOrderCanceled(
+                                    order.id,
+                                    reason: _cancelReasonController.text,
+                                  );
+                                } catch (_) {
+                                  message = '취소 처리를 저장하지 못했습니다. 주문 상태를 확인해 주세요.';
+                                }
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('취소완료 처리했습니다.')),
+                                  SnackBar(content: Text(message)),
                                 );
                               },
                         child: const Text('취소완료 처리'),

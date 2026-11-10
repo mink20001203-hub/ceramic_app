@@ -88,9 +88,12 @@ class ProductCard extends StatelessWidget {
                     child: Consumer<UserDataManager>(
                       builder: (_, manager, __) {
                         final favorite = manager.isFavorite(product);
-                        return GestureDetector(
-                          onTap: () => manager.toggleWishlist(product),
-                          child: CircleAvatar(
+                        return IconButton(
+                          tooltip: favorite ? '찜 해제' : '찜 추가',
+                          onPressed: () => manager.toggleWishlist(product),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+                          icon: CircleAvatar(
                             radius: 16,
                             backgroundColor: Colors.white.withValues(alpha: 0.9),
                             child: Icon(

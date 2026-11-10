@@ -2,6 +2,7 @@
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/user_data_manager.dart';
+import 'detail_screen.dart';
 
 // 위시리스트 화면: 찜한 상품 목록을 보여준다.
 class WishlistScreen extends StatelessWidget {
@@ -41,6 +42,12 @@ class WishlistScreen extends StatelessWidget {
                   margin:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DetailScreen(product: product),
+                      ),
+                    ),
                     contentPadding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: ClipRRect(
@@ -94,6 +101,7 @@ class WishlistScreen extends StatelessWidget {
                       children: [
                         // 장바구니 버튼 로직 처리
                         IconButton(
+                          tooltip: '장바구니에 담기',
                           icon: const Icon(Icons.shopping_cart_outlined),
                           onPressed: () {
                             // 장바구니에 상품 추가
@@ -120,7 +128,10 @@ class WishlistScreen extends StatelessWidget {
                                 action: SnackBarAction(
                                   label: '이동',
                                   textColor: Colors.white,
-                                  onPressed: () => userManager.setTabIndex(2),
+                                  onPressed: () {
+                                    userManager.setTabIndex(2);
+                                    Navigator.pop(context);
+                                  },
                                 ),
                               ),
                             );
@@ -128,6 +139,7 @@ class WishlistScreen extends StatelessWidget {
                         ),
                         // 찜 해제 버튼
                         IconButton(
+                          tooltip: '찜 해제',
                           icon: const Icon(Icons.favorite, color: Colors.red),
                           onPressed: () {
                             userManager.toggleWishlist(product);

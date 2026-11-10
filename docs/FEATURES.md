@@ -8,6 +8,7 @@
 | 구매자 | 카테고리별 상품 탐색 | 구현 | `lib/screens/category_screen.dart`, `lib/screens/category_result_screen.dart` |
 | 구매자 | 상품 검색 | 구현 | `lib/screens/search_screen.dart` |
 | 구매자 | 상품 상세 확인 | 구현 | `lib/screens/detail_screen.dart` |
+| 구매자 | 비로그인 찜 추가, 목록 조회, 상세 복귀 | 로컬 소스에 반영 | `lib/screens/wishlist_screen.dart`, `lib/main.dart` |
 | 구매자 | 장바구니 담기/수량 관리 | 구현 | `lib/screens/cart_screen.dart` |
 | 구매자 | 주문/결제 플로우 | 구현 | `lib/screens/checkout_screen.dart`, `lib/screens/order_complete_screen.dart` |
 | 구매자 | 주문 목록/상세 확인 | 구현 | `lib/screens/user_order_list_screen.dart`, `lib/screens/order_detail_screen.dart` |
@@ -24,7 +25,7 @@
 | 판매자 | 취소 요청 처리 | 구현 | `lib/screens/seller_order_detail_screen.dart` |
 | 판매자 | 상품 등록/수정/삭제 | 구현 | `lib/screens/seller_demo_screen.dart` |
 | 관리자 | 사용자 역할 조회/변경 | 구현 | `lib/screens/admin_role_management_screen.dart` |
-| 관리자 | 정책/FAQ 운영 콘텐츠 관리 | 구현 | `lib/screens/admin_content_management_screen.dart` |
+| 관리자 | 정책/FAQ 운영 콘텐츠 편집 | 확인 필요 | 현재 브랜치에 편집 화면 없음. 공개 데모 지원 여부 미확인 |
 | 관리자 | Firestore rules 기준 관리자 권한 | 구현 | `firestore.rules` |
 
 ## 기능별 설명
@@ -43,7 +44,7 @@
 
 ### 관리자
 
-관리자는 사용자 role을 변경하고 정책/FAQ 데이터를 관리할 수 있습니다. 일반 사용자가 스스로 role을 변경하지 못하도록 Firestore rules에서 제한합니다.
+관리자는 사용자 role을 변경할 수 있습니다. 일반 사용자가 스스로 role을 승격하지 못하도록 Firestore rules에서 제한합니다.
 
 ## 확인 필요
 

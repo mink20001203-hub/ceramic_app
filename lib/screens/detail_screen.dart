@@ -44,6 +44,7 @@ class _DetailScreenState extends State<DetailScreen> {
         centerTitle: true,
         actions: [
           IconButton(
+            tooltip: favorite ? '찜 해제' : '찜 추가',
             onPressed: () => manager.toggleWishlist(product),
             icon: Icon(
               favorite ? Icons.favorite : Icons.favorite_border,
